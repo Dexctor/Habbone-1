@@ -13,7 +13,9 @@ export async function GET() {
   }
   try {
     const rows = await listRoles();
-    if (Array.isArray(rows) && rows.length) return NextResponse.json({ data: rows });
+    if (Array.isArray(rows) && rows.length) {
+      return NextResponse.json({ data: rows, meta: { virtual: false } });
+    }
   } catch {}
   // Fallback virtual roles (no Directus system access)
   const data = DEFAULT_ROLES.map((r) => ({
@@ -23,5 +25,5 @@ export async function GET() {
     admin_access: r.adminAccess,
     app_access: r.appAccess,
   }));
-  return NextResponse.json({ data });
+  return NextResponse.json({ data, meta: { virtual: true } });
 }

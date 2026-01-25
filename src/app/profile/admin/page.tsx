@@ -6,6 +6,8 @@ import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { adminCount, adminCountUsers } from '@/server/directus/admin';
 import {
+  adminListForumTopics,
+  adminListForumPosts,
   adminUpdateForumTopic,
   adminDeleteForumTopic,
   adminUpdateForumPost,
@@ -15,6 +17,7 @@ import {
   adminDeleteForumComment,
 } from '@/server/directus/forum';
 import {
+  adminListNews,
   adminListNewsComments,
   adminUpdateNews,
   adminDeleteNews,
@@ -23,8 +26,6 @@ import {
 } from '@/server/directus/news';
 
 import AdminDashboard from '@/components/admin/AdminDashboard';
-import { listAllPosts, listAllTopics } from '@/lib/directus/forum';
-import { listAllNews } from '@/lib/directus/news';
 
 export const revalidate = 0;
 
@@ -56,9 +57,9 @@ export default async function AdminPage() {
     forumComments,
     newsComments,
   ] = await Promise.all([
-    listAllTopics(1000).catch(() => []),
-    listAllPosts(1000).catch(() => []),
-    listAllNews(1000).catch(() => []),
+    adminListForumTopics(1000).catch(() => []),
+    adminListForumPosts(1000).catch(() => []),
+    adminListNews(1000).catch(() => []),
     adminCount('forum_topicos').catch(() => 0),
     adminCount('noticias').catch(() => 0),
     adminCountUsers().catch(() => 0),

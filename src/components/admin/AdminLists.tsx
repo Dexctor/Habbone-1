@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { formatDateTimeFromString } from "@/lib/date-utils";
 
 type Fn = (formData: FormData) => Promise<void>;
@@ -22,6 +21,14 @@ type VisibleSection =
   | "newsComments";
 
 const ALL_SECTIONS: VisibleSection[] = ["topics", "posts", "articles", "forumComments", "newsComments"];
+const PAGE_SIZE = 20;
+const DEFAULT_PAGES: Record<VisibleSection, number> = {
+  topics: 1,
+  posts: 1,
+  articles: 1,
+  forumComments: 1,
+  newsComments: 1,
+};
 
 export default function AdminLists(props: {
   topics: any[];
@@ -57,8 +64,13 @@ export default function AdminLists(props: {
   const [openForumComment, setOpenForumComment] = useState<number | null>(null);
   const [openNewsComment, setOpenNewsComment] = useState<number | null>(null);
   const [q, setQ] = useState("");
+  const [pages, setPages] = useState(DEFAULT_PAGES);
 
   const qnorm = q.trim().toLowerCase();
+
+  useEffect(() => {
+    setPages({ ...DEFAULT_PAGES });
+  }, [qnorm]);
 
   const topicsView = useMemo(
     () =>
@@ -112,28 +124,6 @@ export default function AdminLists(props: {
     [newsComments, qnorm],
   );
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const u = new URL(window.location.href);
-    const ok = u.searchParams.get("ok");
-    if (!ok) return;
-    const label: Record<string, string> = {
-      "topic-updated": "Sujet mis à jour",
-      "topic-deleted": "Sujet supprimé",
-      "post-updated": "Message mis à jour",
-      "post-deleted": "Message supprimé",
-      "article-updated": "Article mis à jour",
-      "article-deleted": "Article supprimé",
-      "forum-comment-updated": "Commentaire forum mis à jour",
-      "forum-comment-deleted": "Commentaire forum supprimé",
-      "news-comment-updated": "Commentaire article mis à jour",
-      "news-comment-deleted": "Commentaire article supprimé",
-    };
-    toast.success(label[ok] || "Action effectuée");
-    u.searchParams.delete("ok");
-    window.history.replaceState({}, "", u.toString());
-  }, []);
-
   const showTopics = visibleSections.includes("topics");
   const showPosts = visibleSections.includes("posts");
   const showArticles = visibleSections.includes("articles");
@@ -147,9 +137,15 @@ export default function AdminLists(props: {
     (showForumComments ? forumCommentsView.length : 0) +
     (showNewsComments ? newsCommentsView.length : 0);
 
+  const topicsPage = paginate(topicsView, pages.topics, PAGE_SIZE);
+  const postsPage = paginate(postsView, pages.posts, PAGE_SIZE);
+  const newsPage = paginate(newsView, pages.articles, PAGE_SIZE);
+  const newsCommentsPage = paginate(newsCommentsView, pages.newsComments, PAGE_SIZE);
+  const forumCommentsPage = paginate(forumCommentsView, pages.forumComments, PAGE_SIZE);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-12">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
         <Input
           placeholder="Rechercher (titre, auteur, id)"
           value={q}
@@ -157,7 +153,7 @@ export default function AdminLists(props: {
           className="max-w-sm"
           aria-label="Rechercher dans la liste"
         />
-        <span className="text-sm opacity-70">
+          <span className="text-sm opacity-70">
           {totalVisible} résultat{totalVisible > 1 ? "s" : ""}
         </span>
       </div>
@@ -166,19 +162,19 @@ export default function AdminLists(props: {
         {showTopics && (
           <AccordionItem
             value="topics"
-            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-600)] shadow-[0_18px_50px_-35px_rgba(0,0,0,0.6)]"
+            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.55)]"
           >
-            <AccordionTrigger className="px-5 py-3 hover:bg-[color:var(--bg-700)]/40">
+            <AccordionTrigger className="px-5 py-2.5 hover:bg-[color:var(--bg-700)]/30">
               <span className="text-base font-semibold">Forum – Sujets ({topicsView.length})</span>
             </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5">
+            <AccordionContent className="px-5 pb-4">
               <SectionList
                 emptyLabel="Aucun sujet trouvé."
-                items={topicsView}
+                items={topicsPage.items}
                 getKey={(t: any) => t.id}
                 render={(t: any) => (
-                  <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-700)]">
-                    <CardHeader className="pb-3 pt-3">
+                  <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35">
+                    <CardHeader className="pb-2 pt-2">
                       <CardTitle className="text-base font-semibold">{t.titulo || "(sans titre)"}</CardTitle>
                       <div className="flex items-center gap-2">
                         <CardDescription className="text-xs">
@@ -187,7 +183,7 @@ export default function AdminLists(props: {
                         {t?.status ? <Badge variant="secondary">{String(t.status)}</Badge> : null}
                       </div>
                     </CardHeader>
-                    <CardFooter className="gap-2 pt-3">
+                    <CardFooter className="gap-2 pt-2">
                       <Button
                         type="button"
                         variant="default"
@@ -241,6 +237,12 @@ export default function AdminLists(props: {
                   </Card>
                 )}
               />
+              <PaginationControls
+                page={topicsPage.page}
+                pageCount={topicsPage.pageCount}
+                total={topicsPage.total}
+                onPageChange={(next) => setPages((prev) => ({ ...prev, topics: next }))}
+              />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -248,19 +250,19 @@ export default function AdminLists(props: {
         {showPosts && (
           <AccordionItem
             value="posts"
-            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-600)] shadow-[0_18px_50px_-35px_rgba(0,0,0,0.6)]"
+            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.55)]"
           >
-            <AccordionTrigger className="px-5 py-3 hover:bg-[color:var(--bg-700)]/40">
+            <AccordionTrigger className="px-5 py-2.5 hover:bg-[color:var(--bg-700)]/30">
               <span className="text-base font-semibold">Forum – Messages ({postsView.length})</span>
             </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5">
+            <AccordionContent className="px-5 pb-4">
               <SectionList
                 emptyLabel="Aucun message trouvé."
-                items={postsView}
+                items={postsPage.items}
                 getKey={(p: any) => p.id}
                 render={(p: any) => (
-                  <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-700)]">
-                    <CardHeader className="pb-3 pt-3">
+                  <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35">
+                    <CardHeader className="pb-2 pt-2">
                       <CardTitle className="text-base font-semibold">
                         {props.topicTitleById?.[Number(p.id_topico)] || `Sujet #${p.id_topico}`}
                       </CardTitle>
@@ -279,7 +281,7 @@ export default function AdminLists(props: {
                         />
                       </CardContent>
                     )}
-                    <CardFooter className="gap-2 pt-3">
+                    <CardFooter className="gap-2 pt-2">
                       <Button
                         type="button"
                         variant="default"
@@ -317,6 +319,12 @@ export default function AdminLists(props: {
                   </Card>
                 )}
               />
+              <PaginationControls
+                page={postsPage.page}
+                pageCount={postsPage.pageCount}
+                total={postsPage.total}
+                onPageChange={(next) => setPages((prev) => ({ ...prev, posts: next }))}
+              />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -324,19 +332,19 @@ export default function AdminLists(props: {
         {showArticles && (
           <AccordionItem
             value="news"
-            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-600)] shadow-[0_18px_50px_-35px_rgba(0,0,0,0.6)]"
+            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.55)]"
           >
-            <AccordionTrigger className="px-5 py-3 hover:bg-[color:var(--bg-700)]/40">
+            <AccordionTrigger className="px-5 py-2.5 hover:bg-[color:var(--bg-700)]/30">
               <span className="text-base font-semibold">Articles ({newsView.length})</span>
             </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5">
+            <AccordionContent className="px-5 pb-4">
               <SectionList
                 emptyLabel="Aucun article trouvé."
-                items={newsView}
+                items={newsPage.items}
                 getKey={(n: any) => n.id}
                 render={(n: any) => (
-                  <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-700)]">
-                    <CardHeader className="pb-3 pt-3">
+                  <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35">
+                    <CardHeader className="pb-2 pt-2">
                       <CardTitle className="text-base font-semibold">{n.titulo || "(sans titre)"}</CardTitle>
                       <div className="flex items-center gap-2">
                         <CardDescription className="text-xs">
@@ -350,7 +358,7 @@ export default function AdminLists(props: {
                         <p className="text-sm opacity-80">{n.descricao}</p>
                       </CardContent>
                     )}
-                    <CardFooter className="gap-2 pt-3">
+                    <CardFooter className="gap-2 pt-2">
                       <Button
                         type="button"
                         variant="default"
@@ -399,6 +407,12 @@ export default function AdminLists(props: {
                   </Card>
                 )}
               />
+              <PaginationControls
+                page={newsPage.page}
+                pageCount={newsPage.pageCount}
+                total={newsPage.total}
+                onPageChange={(next) => setPages((prev) => ({ ...prev, articles: next }))}
+              />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -406,25 +420,25 @@ export default function AdminLists(props: {
         {showNewsComments && (
           <AccordionItem
             value="news-comments"
-            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-600)] shadow-[0_18px_50px_-35px_rgba(0,0,0,0.6)]"
+            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.55)]"
           >
-            <AccordionTrigger className="px-5 py-3 hover:bg-[color:var(--bg-700)]/40">
+            <AccordionTrigger className="px-5 py-2.5 hover:bg-[color:var(--bg-700)]/30">
               <span className="text-base font-semibold">Articles – Commentaires ({newsCommentsView.length})</span>
             </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5">
+            <AccordionContent className="px-5 pb-4">
               <SectionList
                 emptyLabel="Aucun commentaire trouvé."
-                items={newsCommentsView}
+                items={newsCommentsPage.items}
                 getKey={(c: any) => c.id}
                 render={(c: any) => (
-                  <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-700)]">
-                    <CardHeader className="pb-3 pt-3">
+                  <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35">
+                    <CardHeader className="pb-2 pt-2">
                       <CardTitle className="text-base font-semibold">Commentaire #{c.id}</CardTitle>
                       <CardDescription className="text-xs">
                         Article #{c.id_noticia} · {c.autor || "-"} · {formatDateTimeFromString(c.data)}
                       </CardDescription>
                     </CardHeader>
-                    <CardFooter className="gap-2 pt-3">
+                    <CardFooter className="gap-2 pt-2">
                       <Button
                         type="button"
                         variant="default"
@@ -462,6 +476,12 @@ export default function AdminLists(props: {
                   </Card>
                 )}
               />
+              <PaginationControls
+                page={newsCommentsPage.page}
+                pageCount={newsCommentsPage.pageCount}
+                total={newsCommentsPage.total}
+                onPageChange={(next) => setPages((prev) => ({ ...prev, newsComments: next }))}
+              />
             </AccordionContent>
           </AccordionItem>
         )}
@@ -469,25 +489,25 @@ export default function AdminLists(props: {
         {showForumComments && (
           <AccordionItem
             value="forum-comments"
-            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-600)] shadow-[0_18px_50px_-35px_rgba(0,0,0,0.6)]"
+            className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 shadow-[0_10px_30px_-24px_rgba(0,0,0,0.55)]"
           >
-            <AccordionTrigger className="px-5 py-3 hover:bg-[color:var(--bg-700)]/40">
+            <AccordionTrigger className="px-5 py-2.5 hover:bg-[color:var(--bg-700)]/30">
               <span className="text-base font-semibold">Forum – Commentaires ({forumCommentsView.length})</span>
             </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5">
+            <AccordionContent className="px-5 pb-4">
               <SectionList
                 emptyLabel="Aucun commentaire trouvé."
-                items={forumCommentsView}
+                items={forumCommentsPage.items}
                 getKey={(c: any) => c.id}
                 render={(c: any) => (
-                  <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-700)]">
-                    <CardHeader className="pb-3 pt-3">
+                  <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35">
+                    <CardHeader className="pb-2 pt-2">
                       <CardTitle className="text-base font-semibold">Commentaire #{c.id}</CardTitle>
                       <CardDescription className="text-xs">
                         Sujet #{c.id_forum} · {c.autor || "-"} · {formatDateTimeFromString(c.data)}
                       </CardDescription>
                     </CardHeader>
-                    <CardFooter className="gap-2 pt-3">
+                    <CardFooter className="gap-2 pt-2">
                       <Button
                         type="button"
                         variant="default"
@@ -525,10 +545,78 @@ export default function AdminLists(props: {
                   </Card>
                 )}
               />
+              <PaginationControls
+                page={forumCommentsPage.page}
+                pageCount={forumCommentsPage.pageCount}
+                total={forumCommentsPage.total}
+                onPageChange={(next) => setPages((prev) => ({ ...prev, forumComments: next }))}
+              />
             </AccordionContent>
           </AccordionItem>
         )}
       </Accordion>
+    </div>
+  );
+}
+
+type PaginationResult<T> = {
+  items: T[];
+  page: number;
+  pageCount: number;
+  total: number;
+};
+
+function paginate<T>(items: T[], page: number, pageSize: number): PaginationResult<T> {
+  const total = items.length;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), pageCount);
+  const start = (safePage - 1) * pageSize;
+  return {
+    items: items.slice(start, start + pageSize),
+    page: safePage,
+    pageCount,
+    total,
+  };
+}
+
+function PaginationControls({
+  page,
+  pageCount,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageCount: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[color:var(--foreground)]/70">
+      <span>
+        {total} resultat{total > 1 ? "s" : ""}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+        >
+          Precedent
+        </Button>
+        <span>
+          Page {page} / {pageCount}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= pageCount}
+        >
+          Suivant
+        </Button>
+      </div>
     </div>
   );
 }
@@ -545,10 +633,10 @@ function SectionList<T>({
   getKey?: (item: T, index: number) => string | number;
 }) {
   if (!items.length) {
-    return <p className="py-6 text-center text-sm opacity-70">{emptyLabel}</p>;
+    return <p className="py-4 text-center text-sm opacity-70">{emptyLabel}</p>;
   }
   return (
-    <ul className="space-y-4">
+    <ul className="space-y-3">
       {items.map((item, index) => (
         <li key={getKey ? getKey(item, index) : index}>{render(item)}</li>
       ))}

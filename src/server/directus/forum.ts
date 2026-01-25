@@ -15,11 +15,32 @@ export async function adminListForumTopics(limit = 200): Promise<ForumTopicRecor
   return directusService.request(
     rItems('forum_topicos', {
       limit,
-      filter: { status: { _neq: 'inativo' } } as any,
       sort: ['-data'],
-      fields: ['id', 'titulo', 'conteudo', 'imagem', 'autor', 'data', 'status', 'cat_id'],
+      fields: [
+        'id',
+        'titulo',
+        'conteudo',
+        'imagem',
+        'autor',
+        'data',
+        'views',
+        'fixo',
+        'fechado',
+        'status',
+        'cat_id',
+      ],
     } as any),
   ) as Promise<ForumTopicRecord[]>;
+}
+
+export async function adminListForumPosts(limit = 500): Promise<ForumPostRecord[]> {
+  return directusService.request(
+    rItems('forum_posts', {
+      limit,
+      sort: ['-data'],
+      fields: ['id', 'id_topico', 'conteudo', 'autor', 'data', 'status'],
+    } as any),
+  ) as Promise<ForumPostRecord[]>;
 }
 
 export async function listForumCategoriesService(): Promise<ForumCategoryRecord[]> {

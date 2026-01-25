@@ -14,6 +14,12 @@ type SummaryStat = {
   caption?: string;
 };
 
+type AdminStatus = {
+  rolesVirtual: boolean;
+  usersFallback: boolean;
+  usersSource: "legacy" | "directus" | "unknown";
+};
+
 type AdminDashboardProps = {
   stats: SummaryStat[];
   topics: any[];
@@ -55,10 +61,29 @@ export default function AdminDashboard(props: AdminDashboardProps) {
     deleteNewsComment,
   } = props;
 
+  const [adminStatus, setAdminStatus] = useState<AdminStatus>({
+    rolesVirtual: false,
+    usersFallback: false,
+    usersSource: "unknown",
+  });
+
+  const statusItems: string[] = [];
+  if (adminStatus.rolesVirtual) {
+    statusItems.push(
+      "Roles systeme Directus indisponibles: modification des roles desactivee.",
+    );
+  }
+  if (adminStatus.usersFallback && adminStatus.usersSource === "legacy") {
+    statusItems.push(
+      "Recherche utilisateurs en source legacy (mode auto). Verifie les permissions Directus.",
+    );
+  }
+
   // Roles modal removed: focus on inline actions per user
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
+      <AdminStatusBanner items={statusItems} />
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold">{"Vue d\u2019ensemble"}</h2>
@@ -107,16 +132,32 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           title="Utilisateurs & affectations"
           description="Rechercher, voir et ajuster rapidement les roles/statuts par utilisateur."
         >
-          <AdminUsersPanel />
+          <AdminUsersPanel onStatusChange={setAdminStatus} />
         </DashboardWithHeader>
       </section>
     </div>
   );
 }
 
+function AdminStatusBanner({ items }: { items: string[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+      <div className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
+        Fallback detecte
+      </div>
+      <ul className="mt-2 space-y-1 text-xs text-amber-100/80">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SummaryCard(stat: SummaryStat) {
   return (
-    <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-600)] shadow-sm">
+    <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/45 shadow-[0_10px_28px_-24px_rgba(0,0,0,0.55)]">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium opacity-75">{stat.label}</CardTitle>
       </CardHeader>
@@ -130,7 +171,7 @@ function SummaryCard(stat: SummaryStat) {
 
 function DashboardModule({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="border-[color:var(--bg-800)] bg-[color:var(--bg-600)] shadow-sm">
+    <Card className="border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/45 shadow-[0_10px_28px_-24px_rgba(0,0,0,0.55)]">
       <CardContent className="p-0">{children}</CardContent>
     </Card>
   );
@@ -150,7 +191,7 @@ function DashboardWithHeader({
   return (
     <Card
       className={cn(
-        "border-[color:var(--bg-800)] bg-[color:var(--bg-600)] shadow-sm",
+        "border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/45 shadow-[0_10px_28px_-24px_rgba(0,0,0,0.55)]",
         className,
       )}
     >

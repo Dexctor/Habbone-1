@@ -30,10 +30,23 @@ type User = {
 
 type SourceOption = "auto" | "legacy" | "directus";
 
+type AdminStatusPayload = {
+  rolesVirtual: boolean;
+  usersFallback: boolean;
+  usersSource: "legacy" | "directus" | "unknown";
+};
+
 const limit = 10;
 
-export default function AdminUsersPanel() {
+export default function AdminUsersPanel({
+  onStatusChange,
+}: {
+  onStatusChange?: (status: AdminStatusPayload) => void;
+}) {
   const [roles, setRoles] = useState<Role[]>([]);
+  const [rolesVirtual, setRolesVirtual] = useState(false);
+  const [usersSource, setUsersSource] = useState<AdminStatusPayload["usersSource"]>("unknown");
+  const [usersFallback, setUsersFallback] = useState(false);
   const [items, setItems] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
 
@@ -53,11 +66,21 @@ export default function AdminUsersPanel() {
   useEffect(() => {
     fetch("/api/admin/roles/list", { cache: "no-store" })
       .then((r) => r.json())
-      .then((json) => setRoles(Array.isArray(json?.data) ? json.data : []))
-      .catch(() => setRoles([]));
+      .then((json) => {
+        setRoles(Array.isArray(json?.data) ? json.data : []);
+        setRolesVirtual(Boolean(json?.meta?.virtual));
+      })
+      .catch(() => {
+        setRoles([]);
+        setRolesVirtual(false);
+      });
   }, []);
 
   const roleOptions = useMemo(() => roles.map((r) => ({ value: r.id, label: r.name })), [roles]);
+
+  useEffect(() => {
+    onStatusChange?.({ rolesVirtual, usersFallback, usersSource });
+  }, [rolesVirtual, usersFallback, usersSource, onStatusChange]);
 
   const getUsers = async ({ page: targetPage = page, source: targetSource = source, query = q, role = roleId, stat = status } = {}) => {
     setLoading(true);
@@ -72,6 +95,10 @@ export default function AdminUsersPanel() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || "FETCH_FAILED");
       const rows: User[] = Array.isArray(json?.data) ? json.data : [];
+      const metaSource = json?.meta?.source;
+      const resolvedSource = metaSource === "legacy" || metaSource === "directus" ? metaSource : "unknown";
+      setUsersSource(resolvedSource);
+      setUsersFallback(Boolean(json?.meta?.fallback));
       const decorated = rows
         .map((u) => {
           const roleObj = (typeof u.role === "object" && u.role) ? (u.role as any) : null;
@@ -99,6 +126,8 @@ export default function AdminUsersPanel() {
       toast.error("Impossible de charger les utilisateurs");
       setItems([]);
       setTotal(0);
+      setUsersSource("unknown");
+      setUsersFallback(false);
     } finally {
       setLoading(false);
     }
@@ -195,9 +224,9 @@ export default function AdminUsersPanel() {
   const formatFullName = (u: User) => [u.first_name, u.last_name].filter(Boolean).join(" ") || "-";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Filters */}
-      <section className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/40 p-4">
+      <section className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/35 p-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="flex-1 space-y-1">
             <Label htmlFor="admin-users-search" className="text-xs text-[color:var(--foreground)]/70">Recherche</Label>
@@ -256,10 +285,10 @@ export default function AdminUsersPanel() {
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button onClick={handleSearch} disabled={loading} className="h-10 px-4">
+          <Button onClick={handleSearch} disabled={loading} className="h-9 px-3">
             {loading ? "Recherche..." : "Appliquer"}
           </Button>
-          <Button variant="outline" onClick={handleReset} disabled={loading} className="h-10 px-4">
+          <Button variant="outline" onClick={handleReset} disabled={loading} className="h-9 px-3">
             Reinitialiser
           </Button>
           <span className="ml-auto text-xs text-[color:var(--foreground)]/70">{loading ? "Chargement..." : `${total} resultat${total>1?'s':''}`}</span>
@@ -267,17 +296,17 @@ export default function AdminUsersPanel() {
       </section>
 
       {/* Users table */}
-      <section className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/40 p-0">
+      <section className="rounded-lg border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/35 p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-[color:var(--bg-800)]/60 text-[color:var(--foreground)]/80">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Utilisateur</th>
-                <th className="px-4 py-3 text-left font-medium">Email</th>
-                <th className="px-4 py-3 text-left font-medium">Role</th>
-                <th className="px-4 py-3 text-left font-medium">Statut</th>
-                <th className="px-4 py-3 text-left font-medium">Source</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+                <th className="px-4 py-2.5 text-left font-medium">Utilisateur</th>
+                <th className="px-4 py-2.5 text-left font-medium">Email</th>
+                <th className="px-4 py-2.5 text-left font-medium">Role</th>
+                <th className="px-4 py-2.5 text-left font-medium">Statut</th>
+                <th className="px-4 py-2.5 text-left font-medium">Source</th>
+                <th className="px-4 py-2.5 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -294,7 +323,7 @@ export default function AdminUsersPanel() {
                 const isAdmin = !!u._flags?.isAdmin && !isFounder;
                 return (
                   <tr key={u.id} className="border-t border-[color:var(--bg-700)]/50">
-                    <td className="px-4 py-3 text-[color:var(--foreground)]">
+                    <td className="px-4 py-2.5 text-[color:var(--foreground)]">
                       <div className="flex flex-col">
                         <span>{formatFullName(u)}</span>
                         <div className="mt-1 flex items-center gap-2 text-xs text-[color:var(--foreground)]/70">
@@ -307,12 +336,12 @@ export default function AdminUsersPanel() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-[color:var(--foreground)]/80">{u.email || '-'}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5 text-[color:var(--foreground)]/80">{u.email || '-'}</td>
+                    <td className="px-4 py-2.5">
                       <Select
                         value={String(selected || '')}
                         onValueChange={async (v) => { setSelectedRoles((m) => ({ ...m, [u.id]: v })); await onSaveRole(u.id, v); }}
-                        disabled={isSaving}
+                        disabled={isSaving || rolesVirtual}
                       >
                         <SelectTrigger className="h-9 min-w-40 border border-[color:var(--bg-600)]/60 bg-[color:var(--bg-900)]/40">
                           <SelectValue placeholder="Selectionner" />
@@ -326,9 +355,9 @@ export default function AdminUsersPanel() {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-4 py-3"><Badge variant={isSuspended ? 'secondary' : 'default'}>{isSuspended ? 'Suspendu' : 'Actif'}</Badge></td>
-                    <td className="px-4 py-3 text-[color:var(--foreground)]/70 capitalize">{sourceLabel}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-2.5"><Badge variant={isSuspended ? 'secondary' : 'default'}>{isSuspended ? 'Suspendu' : 'Actif'}</Badge></td>
+                    <td className="px-4 py-2.5 text-[color:var(--foreground)]/70 capitalize">{sourceLabel}</td>
+                    <td className="px-4 py-2.5 text-right">
                       <div className="inline-flex items-center gap-2">
                         <Button
                           variant={isSuspended ? 'secondary' : 'outline'}

@@ -67,6 +67,7 @@ export {
 
 export {
   adminListForumTopics,
+  adminListForumPosts,
   listForumCategoriesService,
   listForumTopicsWithCategories,
   adminCreateForumPost,

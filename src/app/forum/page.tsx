@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { JSX } from 'react'
+import ContentCard from '@/components/shared/content-card'
 import {
   listForumCategoriesService,
   listForumTopicsWithCategories,
 } from '@/server/directus/forum'
 import { mediaUrl } from '@/lib/directus/media'
 import { formatDateShortFr, parseTimestamp } from '@/lib/date-utils'
-import { stripHtml } from '@/lib/text-utils'
+import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
 
 export const revalidate = 60
 
@@ -66,15 +67,6 @@ function isActiveTopic(topic: ForumTopic): boolean {
 
 function toTimestamp(value: unknown): number {
   return parseTimestamp(value, { numeric: 'ms', numericString: 'parse' })
-}
-
-function buildExcerpt(html?: string | null): string {
-  const source = toStringSafe(html)
-  if (!source) return ''
-  const plain = stripHtml(source)
-  if (!plain) return ''
-  if (plain.length <= 160) return plain
-  return `${plain.slice(0, 160).trimEnd()}...`
 }
 
 function getCategoryKey(id: unknown): string {
@@ -175,61 +167,42 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
     const title = toStringSafe(topic?.titulo) || (topicId ? `Sujet #${topicId}` : 'Sujet')
     const author = toStringSafe(topic?.autor)
     const publishedAt = formatDateShortFr(topic?.data)
-    const excerpt = buildExcerpt(topic?.conteudo)
-    const bodyPreview = excerpt ? excerpt.slice(0, 140) : ''
-    const previewText = bodyPreview
-      ? bodyPreview + (excerpt.length > bodyPreview.length ? '.' : '')
-      : ''
+    const excerpt = buildExcerptFromHtml(topic?.conteudo ?? '')
+    const previewText = buildPreviewText(excerpt, { maxLength: 140 })
     const pinned = asBoolean(topic?.fixo)
     const closed = asBoolean(topic?.fechado)
     const imageUrl = mediaUrl(toStringSafe(topic?.imagem))
 
     return (
-      <div
+      <ContentCard
         key={topicId}
-        className="rounded-[2px] border border-[color:var(--bg-700)]/45 bg-[color:var(--bg-900)]/50 px-4 py-5 shadow-[0_18px_55px_-58px_rgba(0,0,0,0.82)] sm:flex sm:items-center sm:justify-between sm:gap-6"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5 sm:max-w-[70%]">
-          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden border border-[color:var(--bg-700)]/45 bg-[color:var(--bg-800)]/55 p-2">
+        title={title}
+        href={`/forum/topic/${topicId}`}
+        preview={previewText}
+        image={
+          <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl || FALLBACK_ICON} alt="" className="h-full w-full object-contain" />
-          </div>
-          <div className="flex flex-col gap-3">
-            <Link
-              href={`/forum/topic/${topicId}`}
-              className="block text-sm font-semibold uppercase tracking-[0.08em] text-[color:var(--foreground)] hover:text-[color:var(--foreground)]/80"
-            >
-              {title}
-            </Link>
-            {previewText ? (
-              <p className="text-sm leading-relaxed text-[color:var(--foreground)]/65">{previewText}</p>
+          </>
+        }
+        meta={
+          <>
+            {author ? <span>Par {author}</span> : null}
+            {author && publishedAt ? (
+              <span className="mx-1 h-px w-3 bg-[color:var(--foreground)]/20" />
             ) : null}
-            <div className="flex flex-wrap items-center gap-2 text-[0.68rem] font-medium uppercase tracking-[0.07em] text-[color:var(--foreground)]/55">
-              {author ? <span>Par {author}</span> : null}
-              {author && publishedAt ? (
-                <span className="mx-1 h-px w-3 bg-[color:var(--foreground)]/20" />
-              ) : null}
-              {publishedAt ? <span>Publie le {publishedAt}</span> : null}
-              {pinned ? (
-                <span className="rounded-[2px] bg-emerald-400/15 px-2 py-0.5 text-emerald-200">
-                  Epingle
-                </span>
-              ) : null}
-              {closed ? (
-                <span className="rounded-[2px] bg-rose-400/15 px-2 py-0.5 text-rose-200">Ferme</span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex w-full justify-end gap-3 text-[0.7rem] font-semibold uppercase text-[color:var(--foreground)]/70 sm:mt-0 sm:w-auto sm:self-center">
-          <Link
-            href={`/forum/topic/${topicId}`}
-            className="mr-10 rounded-[2px] bg-[#4c7dff] px-[1.35rem] py-[0.45rem] text-white transition hover:bg-[#6a95ff]"
-          >
-            Voir plus
-          </Link>
-        </div>
-      </div>
+            {publishedAt ? <span>Publie le {publishedAt}</span> : null}
+            {pinned ? (
+              <span className="rounded-[2px] bg-emerald-400/15 px-2 py-0.5 text-emerald-200">
+                Epingle
+              </span>
+            ) : null}
+            {closed ? (
+              <span className="rounded-[2px] bg-rose-400/15 px-2 py-0.5 text-rose-200">Ferme</span>
+            ) : null}
+          </>
+        }
+      />
     )
   }
 

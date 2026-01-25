@@ -13,6 +13,15 @@ type SearchInput = {
   preferSource: 'auto' | 'legacy' | 'directus';
 };
 
+type SearchResult = {
+  data: any[];
+  total: number;
+  meta: {
+    source: 'legacy' | 'directus';
+    fallback: boolean;
+  };
+};
+
 type ActionResult =
   | { data: true }
   | { error: string; code: string; status: number };
@@ -24,7 +33,7 @@ function normalizeLegacyStatus(value: unknown) {
   return { isBanned, isActive };
 }
 
-export async function searchAdminUsers(input: SearchInput) {
+export async function searchAdminUsers(input: SearchInput): Promise<SearchResult> {
   const { q, roleId, status, page, limit, preferSource } = input;
   const forceLegacy = preferSource === 'legacy';
   const forceDirectus = preferSource === 'directus';
@@ -78,11 +87,19 @@ export async function searchAdminUsers(input: SearchInput) {
     });
     if (roleNameTarget) mapped = mapped.filter((u) => String((u as any)?._roleName || '').toLowerCase() === roleNameTarget);
     if (status) mapped = mapped.filter((u) => String((u as any)?.status) === status);
-    return { data: mapped, total: legacy?.total || mapped.length };
+    return {
+      data: mapped,
+      total: legacy?.total || mapped.length,
+      meta: { source: 'legacy', fallback: preferSource !== 'legacy' },
+    };
   }
 
   if (forceLegacy) {
-    return { data: [], total: legacy?.total || 0 };
+    return {
+      data: [],
+      total: legacy?.total || 0,
+      meta: { source: 'legacy', fallback: false },
+    };
   }
 
   const { items, total } = await searchUsers(q, roleId, status, limit, page).catch(() => ({ items: [], total: 0 }));
@@ -118,7 +135,7 @@ export async function searchAdminUsers(input: SearchInput) {
       };
     })
   );
-  return { data: enriched, total };
+  return { data: enriched, total, meta: { source: 'directus', fallback: false } };
 }
 
 export async function banAdminUser(userId: string, ban: boolean): Promise<ActionResult> {
