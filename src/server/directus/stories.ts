@@ -146,16 +146,22 @@ function extractStoryTimestamp(row: any): number {
 }
 
 export async function listStoriesService(limit = 30): Promise<unknown[]> {
+  console.log('[Stories] Starting listStoriesService, checking tables:', resolveStoriesTables());
   for (const col of resolveStoriesTables()) {
     try {
+      console.log(`[Stories] Trying table: ${col}`);
       const rows = await directusService.request(
         rItems(col as any, {
           sort: ['-id'] as any,
           limit,
         } as any),
       );
+      console.log(`[Stories] Table ${col} returned ${Array.isArray(rows) ? rows.length : 'non-array'} rows`);
       if (Array.isArray(rows) && rows.length) return rows as any[];
-    } catch {}
+    } catch (error) {
+      console.error(`[Stories] Error fetching from table ${col}:`, error);
+    }
   }
+  console.log('[Stories] No stories found in any table');
   return [] as any[];
 }
