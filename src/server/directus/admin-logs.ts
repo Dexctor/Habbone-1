@@ -3,8 +3,8 @@
  * Track admin actions for audit trail
  */
 
-import { directusService as directus } from "@/server/directus/client";
-import { createItem, readItems, aggregate } from "@directus/sdk";
+import { directusService as directus, rItems, cItem } from "@/server/directus/client";
+import { aggregate } from "@directus/sdk";
 
 export type AdminAction =
     | "user.ban"
@@ -42,14 +42,14 @@ interface AdminLogRow {
 export async function logAdminAction(entry: Omit<AdminLogEntry, "id" | "created_at">): Promise<void> {
     try {
         await directus.request(
-            createItem("admin_logs" as any, {
+            cItem("admin_logs", {
                 action: entry.action,
                 admin_id: entry.admin_id,
                 admin_name: entry.admin_name || null,
                 target_type: entry.target_type || null,
                 target_id: entry.target_id ? String(entry.target_id) : null,
                 details: entry.details || null,
-            } as any)
+            })
         );
     } catch (error) {
         // Log to console but don't throw - logging should never break the main action
@@ -87,13 +87,13 @@ export async function getAdminLogs(options: {
 
         const [rows, countResult] = await Promise.all([
             directus.request(
-                readItems("admin_logs" as any, {
+                rItems("admin_logs", {
                     ...(hasFilter ? { filter } : {}),
                     sort: ["-date_created"],
                     limit,
                     offset: (page - 1) * limit,
                     fields: ["id", "action", "admin_id", "admin_name", "target_type", "target_id", "details", "date_created"],
-                } as any)
+                })
             ) as unknown as Promise<AdminLogRow[]>,
             directus.request(
                 aggregate("admin_logs" as any, {
@@ -137,11 +137,11 @@ export async function getLogStats(days: number = 7): Promise<{
 
     try {
         const rows = await directus.request(
-            readItems("admin_logs" as any, {
+            rItems("admin_logs", {
                 filter: { date_created: { _gte: fromDateStr } },
                 fields: ["action", "date_created"],
                 limit: 10000,
-            } as any)
+            })
         ) as unknown as { action: string; date_created: string }[];
 
         // Count by action
