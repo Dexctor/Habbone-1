@@ -1,9 +1,8 @@
 import { readItem, readItems } from '@directus/sdk';
 
 import { directus } from './client';
+import { getLikesMapForNewsComments } from './likes';
 import type { NewsCommentRecord, NewsRecord } from './types';
-
-type LikeRow = { id_comentario: number | string };
 
 export function getNews(query?: string): Promise<NewsRecord[]> {
   const q = typeof query === 'string' ? query.trim() : '';
@@ -67,20 +66,7 @@ export function getNewsComments(newsId: number): Promise<NewsCommentRecord[]> {
   ) as Promise<NewsCommentRecord[]>;
 }
 
-export async function getLikesMapForNewsComments(commentIds: number[]): Promise<Record<number, number>> {
-  if (!commentIds?.length) return {};
-  const likes = (await directus.request(
-    readItems('noticias_coment_curtidas', {
-      filter: { id_comentario: { _in: commentIds } },
-      fields: ['id_comentario'],
-      limit: 5000,
-    })
-  )) as LikeRow[];
-  return (likes as LikeRow[]).reduce((acc: Record<number, number>, row: LikeRow) => {
-    const cid = Number((row as LikeRow).id_comentario);
-    acc[cid] = (acc[cid] ?? 0) + 1;
-    return acc;
-  }, {});
-}
+// Re-export from shared likes module
+export { getLikesMapForNewsComments };
 
 export type { NewsRecord, NewsCommentRecord } from './types';

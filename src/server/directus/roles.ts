@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { directusService, rItems, rItem, cItem, uItem } from './client';
+import { readRoles } from '@directus/sdk';
 import type { DirectusRoleLite, DirectusUserLite } from './types';
 
 type DirectusRolePayload = {
@@ -25,15 +26,20 @@ export type UpdateRoleInput = Partial<{
 }>;
 
 export async function listRoles(): Promise<DirectusRoleLite[]> {
-  const rows = await directusService
-    .request(
-      rItems('directus_roles', {
-        fields: ['id', 'name', 'description', 'admin_access', 'app_access'] as any,
-        sort: ['name'] as any,
+  try {
+    // Use readRoles for core collections (Directus SDK v11+)
+    const rows = await directusService.request(
+      readRoles({
+        fields: ['id', 'name', 'description', 'admin_access', 'app_access'],
+        sort: ['name'],
       } as any),
-    )
-    .catch(() => []);
-  return Array.isArray(rows) ? (rows as DirectusRoleLite[]) : [];
+    );
+    return Array.isArray(rows) ? (rows as unknown as DirectusRoleLite[]) : [];
+  } catch {
+    // Expected to fail if token doesn't have admin permissions
+    // Fallback to DEFAULT_ROLES is handled in the API route
+    return [];
+  }
 }
 
 export async function createRole(role: CreateRoleInput): Promise<DirectusRoleLite> {

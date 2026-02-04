@@ -2,33 +2,47 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-function applySecurityHeaders(res: NextResponse, req?: NextRequest) {
-  const isProd = process.env.NODE_ENV === 'production'
-  const directives: string[] = []
-  directives.push("default-src 'self'")
-  directives.push("base-uri 'self'")
-  directives.push("object-src 'none'")
-  directives.push("frame-ancestors 'none'")
-  directives.push("img-src 'self' data: https:")
-  directives.push("font-src 'self' https: data:")
-  directives.push("style-src 'self' 'unsafe-inline'")
-  // Allow inline scripts but avoid eval in production; dev needs eval/ws for HMR
-  const scriptSrc = isProd
-    ? "script-src 'self' 'unsafe-inline'"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  directives.push(scriptSrc)
-  const connectSrc = isProd ? "connect-src 'self' https:" : "connect-src 'self' https: ws:"
-  directives.push(connectSrc)
-  directives.push('upgrade-insecure-requests')
+// ============================================================================
+// CSP Configuration (declarative for maintainability)
+// ============================================================================
 
-  res.headers.set('Content-Security-Policy', directives.join('; '))
-  res.headers.set('X-Frame-Options', 'DENY')
-  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-  res.headers.set('Referrer-Policy', 'no-referrer-when-downgrade')
-  res.headers.set('X-Content-Type-Options', 'nosniff')
-  res.headers.set('X-XSS-Protection', '0')
-  return res
+type CSPDirectives = Record<string, string[] | ((isProd: boolean) => string[])>;
+
+const CSP_CONFIG: CSPDirectives = {
+  'default-src': ["'self'"],
+  'base-uri': ["'self'"],
+  'object-src': ["'none'"],
+  'frame-ancestors': ["'none'"],
+  'img-src': ["'self'", 'data:', 'https:'],
+  'font-src': ["'self'", 'https:', 'data:'],
+  'style-src': ["'self'", "'unsafe-inline'"],
+  'script-src': (isProd) => (isProd ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
+  'connect-src': (isProd) => (isProd ? ["'self'", 'https:'] : ["'self'", 'https:', 'ws:']),
+};
+
+function buildCSP(isProd: boolean): string {
+  const directives = Object.entries(CSP_CONFIG).map(([key, value]) => {
+    const sources = typeof value === 'function' ? value(isProd) : value;
+    return `${key} ${sources.join(' ')}`;
+  });
+  directives.push('upgrade-insecure-requests');
+  return directives.join('; ');
 }
+
+function applySecurityHeaders(res: NextResponse): NextResponse {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.headers.set('Content-Security-Policy', buildCSP(isProd));
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.headers.set('Referrer-Policy', 'no-referrer-when-downgrade');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-XSS-Protection', '0');
+  return res;
+}
+
+// ============================================================================
+// Middleware
+// ============================================================================
 
 export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -36,10 +50,10 @@ export async function middleware(req: NextRequest) {
     const url = new URL('/login', req.url);
     url.searchParams.set('from', req.nextUrl.pathname);
     const res = NextResponse.redirect(url);
-    return applySecurityHeaders(res, req);
+    return applySecurityHeaders(res);
   }
   const res = NextResponse.next();
-  return applySecurityHeaders(res, req);
+  return applySecurityHeaders(res);
 }
 
 export const config = {

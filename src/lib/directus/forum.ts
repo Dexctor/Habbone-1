@@ -1,9 +1,8 @@
 import { readItem, readItems } from '@directus/sdk';
 
 import { directus } from './client';
+import { getLikesMapForTopicComments } from './likes';
 import type { ForumCategoryRecord, ForumCommentRecord, ForumPostRecord, ForumTopicRecord } from './types';
-
-type LikeRow = { id_comentario: number | string };
 
 export function getTopics(): Promise<ForumTopicRecord[]> {
   return directus.request(
@@ -72,21 +71,8 @@ export function getTopicComments(topicId: number): Promise<ForumCommentRecord[]>
   ) as Promise<ForumCommentRecord[]>;
 }
 
-export async function getLikesMapForTopicComments(commentIds: number[]): Promise<Record<number, number>> {
-  if (!commentIds?.length) return {};
-  const likes = (await directus.request(
-    readItems('forum_coment_curtidas', {
-      filter: { id_comentario: { _in: commentIds } },
-      fields: ['id_comentario'],
-      limit: 5000,
-    })
-  )) as LikeRow[];
-  return (likes as LikeRow[]).reduce((acc: Record<number, number>, row: LikeRow) => {
-    const cid = Number((row as LikeRow).id_comentario);
-    acc[cid] = (acc[cid] ?? 0) + 1;
-    return acc;
-  }, {});
-}
+// Re-export from shared likes module
+export { getLikesMapForTopicComments };
 
 export type {
   ForumTopicRecord,

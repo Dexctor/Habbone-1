@@ -25,7 +25,7 @@ import {
   adminDeleteNewsComment,
 } from '@/server/directus/news';
 
-import AdminDashboard from '@/components/admin/AdminDashboard';
+import AdminDashboardNew from '@/components/admin/AdminDashboardNew';
 
 export const revalidate = 0;
 
@@ -210,7 +210,7 @@ export default async function AdminPage() {
         </div>
       </header>
 
-      <AdminDashboard
+      <AdminDashboardNew
         stats={summaryStats}
         topics={topicsArray}
         posts={postsArray}

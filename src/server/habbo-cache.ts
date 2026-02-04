@@ -24,6 +24,8 @@ type CacheOptions = { cache?: boolean }
 const CORE_TTL = 24 * 60 * 60 * 1000 // 24h
 const HEAVY_TTL = 6 * 60 * 60 * 1000 // 6h
 const CATALOG_TTL = 24 * 60 * 60 * 1000 // 24h
+const MAX_CACHE_SIZE = 1000 // Max entries before eviction
+const EVICTION_BATCH_SIZE = 100 // How many entries to evict at once
 
 function now() {
   return Date.now()
@@ -34,7 +36,27 @@ function getStore() {
   if (!g.__habboCache) {
     g.__habboCache = new Map<string, Entry<any>>()
   }
-  return g.__habboCache as Map<string, Entry<any>>
+  const store = g.__habboCache as Map<string, Entry<any>>
+
+  // Evict oldest entries if cache is full
+  if (store.size >= MAX_CACHE_SIZE) {
+    const currentTime = now()
+    // First, remove expired entries
+    for (const [key, entry] of store.entries()) {
+      if (entry.exp < currentTime) {
+        store.delete(key)
+      }
+    }
+    // If still over limit, remove oldest batch (FIFO)
+    if (store.size >= MAX_CACHE_SIZE) {
+      const keysToRemove = Array.from(store.keys()).slice(0, EVICTION_BATCH_SIZE)
+      for (const key of keysToRemove) {
+        store.delete(key)
+      }
+    }
+  }
+
+  return store
 }
 
 function getInflightStore() {

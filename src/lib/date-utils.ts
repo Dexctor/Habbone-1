@@ -1,9 +1,18 @@
+/**
+ * Date Utilities
+ * Consolidated date parsing and formatting functions
+ */
+
 export type TimestampParseOptions = {
   numeric?: 'ms' | 'auto';
   numericString?: 'parse' | 'number';
   mysqlLike?: boolean;
 };
 
+/**
+ * Parse any value into a timestamp (milliseconds)
+ * Handles: Date objects, numbers (ms or seconds), ISO strings, MySQL-like strings
+ */
 export function parseTimestamp(value: unknown, options?: TimestampParseOptions): number {
   const numericMode = options?.numeric ?? 'ms';
   const numericString = options?.numericString ?? 'parse';
@@ -35,79 +44,48 @@ export function parseTimestamp(value: unknown, options?: TimestampParseOptions):
   return 0;
 }
 
-export function formatDateTimeFromString(value?: string | null): string {
-  if (!value) return '';
-  const d = new Date(value);
-  return Number.isNaN(+d) ? '' : d.toLocaleString();
-}
+// ============================================================================
+// Unified Date Formatting
+// ============================================================================
 
-export function formatDateTimeFromAny(value?: string | number | null): string {
-  if (value == null) return '';
-  return formatDateTimeFromString(String(value));
-}
+export type DateFormatStyle = 'short' | 'medium' | 'long' | 'date-only';
 
-export function formatDateTimeSmart(value?: string | number | null): string {
-  if (value == null) return '';
-  if (typeof value === 'number') {
-    const ms = value < 1e12 ? value * 1000 : value;
-    const d = new Date(ms);
-    return Number.isNaN(+d) ? '' : d.toLocaleString();
-  }
-  const numeric = Number(value);
-  if (Number.isFinite(numeric)) {
-    const ms = numeric < 1e12 ? numeric * 1000 : numeric;
-    const d = new Date(ms);
-    return Number.isNaN(+d) ? '' : d.toLocaleString();
-  }
-  const d = new Date(value);
-  return Number.isNaN(+d) ? '' : d.toLocaleString();
-}
+export type DateFormatOptions = {
+  locale?: string;
+  style?: DateFormatStyle;
+  fallback?: string;
+};
 
-export function formatDateTimeLoose(value?: string | number | null): string {
-  if (value == null || value === '') return '';
-  try {
-    if (typeof value === 'number') {
-      const ms = value > 1e12 ? value : value * 1000;
-      const d = new Date(ms);
-      return Number.isNaN(+d) ? String(value) : d.toLocaleString();
-    }
-    const numeric = Number(value);
-    if (!Number.isNaN(numeric) && numeric > 0) {
-      const ms = numeric > 1e12 ? numeric : numeric * 1000;
-      const d = new Date(ms);
-      return Number.isNaN(+d) ? String(value) : d.toLocaleString();
-    }
-    const d = new Date(value);
-    return Number.isNaN(+d) ? String(value) : d.toLocaleString();
-  } catch {
-    return String(value);
-  }
-}
+const FORMAT_CONFIGS: Record<DateFormatStyle, Intl.DateTimeFormatOptions> = {
+  short: { dateStyle: 'short', timeStyle: 'short' },
+  medium: { dateStyle: 'medium', timeStyle: 'short' },
+  long: { dateStyle: 'long', timeStyle: 'medium' },
+  'date-only': { day: '2-digit', month: '2-digit', year: 'numeric' },
+};
 
-export function formatDateTimeNative(value: unknown): string {
-  if (value == null) return '';
-  const d = new Date(value as any);
-  const output = d.toLocaleString?.();
-  return output || String(value);
-}
-
-export function formatDateTimeFlexible(value?: unknown): string {
-  if (value == null || value === '') return '';
+/**
+ * Unified date formatting function
+ * Replaces: formatDateTimeFlexible, formatDateTimeSmart, formatDateTimeLoose, etc.
+ */
+export function formatDateTime(
+  value: unknown,
+  options: DateFormatOptions = {}
+): string {
+  const { locale = 'fr-FR', style = 'medium', fallback = '' } = options;
   const ts = parseTimestamp(value, { numeric: 'auto', numericString: 'number', mysqlLike: true });
-  return ts ? new Date(ts).toLocaleString() : '';
-}
+  if (!ts) return fallback;
 
-export function formatDateTimeShortFr(value?: unknown): string {
-  const ts = parseTimestamp(value, { numeric: 'ms', numericString: 'parse' });
-  if (!ts) return '';
   try {
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(ts);
+    return new Intl.DateTimeFormat(locale, FORMAT_CONFIGS[style]).format(ts);
   } catch {
-    return '';
+    return fallback;
   }
 }
 
-export function formatDateShortFr(value?: unknown): string | null {
+/**
+ * Format date only (no time) in French format
+ */
+export function formatDateFr(value: unknown): string | null {
   const ts = parseTimestamp(value, { numeric: 'ms', numericString: 'parse' });
   if (!ts) return null;
   try {
@@ -119,4 +97,51 @@ export function formatDateShortFr(value?: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+// ============================================================================
+// Legacy Aliases (for backward compatibility)
+// These delegate to the unified function to avoid breaking existing code
+// ============================================================================
+
+/** @deprecated Use formatDateTime(value) instead */
+export function formatDateTimeFlexible(value?: unknown): string {
+  return formatDateTime(value, { style: 'medium' });
+}
+
+/** @deprecated Use formatDateTime(value, { style: 'short' }) instead */
+export function formatDateTimeShortFr(value?: unknown): string {
+  return formatDateTime(value, { locale: 'fr-FR', style: 'short' });
+}
+
+/** @deprecated Use formatDateTime(value) instead */
+export function formatDateTimeSmart(value?: string | number | null): string {
+  return formatDateTime(value, { style: 'medium' });
+}
+
+/** @deprecated Use formatDateTime(value, { fallback: String(value) }) instead */
+export function formatDateTimeLoose(value?: string | number | null): string {
+  if (value == null || value === '') return '';
+  return formatDateTime(value, { fallback: String(value) });
+}
+
+/** @deprecated Use formatDateTime(value) instead */
+export function formatDateTimeNative(value: unknown): string {
+  if (value == null) return '';
+  return formatDateTime(value, { fallback: String(value) });
+}
+
+/** @deprecated Use formatDateTime(value) instead */
+export function formatDateTimeFromString(value?: string | null): string {
+  return formatDateTime(value);
+}
+
+/** @deprecated Use formatDateTime(value) instead */
+export function formatDateTimeFromAny(value?: string | number | null): string {
+  return formatDateTime(value);
+}
+
+/** @deprecated Use formatDateFr(value) instead */
+export function formatDateShortFr(value?: unknown): string | null {
+  return formatDateFr(value);
 }

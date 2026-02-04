@@ -1,0 +1,175 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Highlight from "@tiptap/extension-highlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Image from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+import {
+    Bold,
+    Italic,
+    Strikethrough,
+    Underline as UnderlineIcon,
+    Highlighter,
+    Minus,
+    List,
+    ListOrdered,
+    Quote,
+    Code as CodeIcon,
+    Image as ImageIcon,
+    Link as LinkIcon,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const low = createLowlight(common);
+
+interface AdminRichEditorProps {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+}
+
+export default function AdminRichEditor({
+    value,
+    onChange,
+    placeholder = "Écrivez ici...",
+}: AdminRichEditorProps) {
+    const extensions = [
+        StarterKit.configure({ codeBlock: false }),
+        Placeholder.configure({ placeholder }),
+        TextAlign.configure({ types: ["heading", "paragraph"] }),
+        Underline,
+        Link.configure({ openOnClick: true, autolink: true, linkOnPaste: true }),
+        Highlight.configure({ multicolor: true }),
+        TextStyle,
+        Color,
+        Image.configure({ allowBase64: true }),
+        CodeBlockLowlight.configure({ lowlight: low }),
+    ];
+
+    const editor = useEditor({
+        extensions,
+        content: value || "",
+        immediatelyRender: false,
+        onUpdate: ({ editor }) => {
+            onChange(editor.getHTML());
+        },
+        editorProps: {
+            attributes: {
+                class:
+                    "prose prose-invert max-w-none min-h-[150px] rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-600)] p-3 focus:outline-none",
+            },
+        },
+    });
+
+    // Update editor content when value prop changes (initial load)
+    useEffect(() => {
+        if (editor && value && editor.getHTML() !== value) {
+            editor.commands.setContent(value);
+        }
+    }, [editor, value]);
+
+    const toggle = (cmd: () => void) => (e: React.MouseEvent) => {
+        e.preventDefault();
+        cmd();
+    };
+
+    if (!editor) return <div className="h-32 bg-[color:var(--bg-700)] rounded animate-pulse" />;
+
+    return (
+        <div className="space-y-2">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-1 text-xs rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-700)] p-2">
+                <ToolbarButton active={editor.isActive("bold")} label="Gras" onClick={toggle(() => editor.chain().focus().toggleBold().run())}>
+                    <Bold className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("italic")} label="Italique" onClick={toggle(() => editor.chain().focus().toggleItalic().run())}>
+                    <Italic className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("strike")} label="Barré" onClick={toggle(() => editor.chain().focus().toggleStrike().run())}>
+                    <Strikethrough className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("underline")} label="Souligné" onClick={toggle(() => editor.chain().focus().toggleUnderline().run())}>
+                    <UnderlineIcon className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <div className="w-px h-4 bg-[color:var(--bg-600)]" />
+                <ToolbarButton active={editor.isActive("highlight")} label="Surlignage" onClick={toggle(() => editor.chain().focus().toggleHighlight().run())}>
+                    <Highlighter className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton label="Règle" onClick={toggle(() => editor.chain().focus().setHorizontalRule().run())}>
+                    <Minus className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <div className="w-px h-4 bg-[color:var(--bg-600)]" />
+                <ToolbarButton active={editor.isActive("bulletList")} label="Liste" onClick={toggle(() => editor.chain().focus().toggleBulletList().run())}>
+                    <List className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("orderedList")} label="Liste numérotée" onClick={toggle(() => editor.chain().focus().toggleOrderedList().run())}>
+                    <ListOrdered className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("blockquote")} label="Citation" onClick={toggle(() => editor.chain().focus().toggleBlockquote().run())}>
+                    <Quote className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("codeBlock")} label="Bloc code" onClick={toggle(() => editor.chain().focus().toggleCodeBlock().run())}>
+                    <CodeIcon className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <div className="w-px h-4 bg-[color:var(--bg-600)]" />
+                <ToolbarButton label="Image" onClick={(e) => { e.preventDefault(); const url = prompt("URL de l'image"); if (url) editor.chain().focus().setImage({ src: url }).run(); }}>
+                    <ImageIcon className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive("link")} label="Lien" onClick={(e) => { e.preventDefault(); const url = prompt("URL du lien"); if (url) editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); }}>
+                    <LinkIcon className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <div className="w-px h-4 bg-[color:var(--bg-600)]" />
+                <ToolbarButton active={editor.isActive({ textAlign: "left" })} label="Gauche" onClick={toggle(() => editor.chain().focus().setTextAlign("left").run())}>
+                    <AlignLeft className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive({ textAlign: "center" })} label="Centrer" onClick={toggle(() => editor.chain().focus().setTextAlign("center").run())}>
+                    <AlignCenter className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton active={editor.isActive({ textAlign: "right" })} label="Droite" onClick={toggle(() => editor.chain().focus().setTextAlign("right").run())}>
+                    <AlignRight className="h-3.5 w-3.5" />
+                </ToolbarButton>
+            </div>
+
+            <EditorContent editor={editor} />
+        </div>
+    );
+}
+
+function btn(active?: boolean) {
+    return `px-2 py-1 border border-[color:var(--bg-800)] rounded-sm ${active ? "bg-white text-black" : "hover:bg-white hover:text-black"}`;
+}
+
+function ToolbarButton({
+    active,
+    label,
+    onClick,
+    children,
+}: {
+    active?: boolean;
+    label: string;
+    onClick: (e: React.MouseEvent) => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button aria-label={label} onClick={onClick} className={btn(active)}>
+                    {children}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={6}>{label}</TooltipContent>
+        </Tooltip>
+    );
+}

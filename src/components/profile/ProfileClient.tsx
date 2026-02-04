@@ -15,8 +15,9 @@ import Link from "next/link";
 import { mediaUrl } from "@/lib/directus/media";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
 import { useHabboProfile } from "@/lib/use-habbo-profile";
-import { formatDateTimeFlexible, formatDateTimeNative } from "@/lib/date-utils";
-import type { HabboFriend, HabboGroup, HabboRoom, HabboBadge, HabboAchievement } from "@/lib/habbo";
+import { formatDateTime } from "@/lib/date-utils";
+import { usePaginatedList } from "./hooks/usePaginatedList";
+import type { HabboFriend, HabboGroup, HabboRoom, HabboBadge } from "@/lib/habbo";
 import type { HabboProfileResponse } from "@/types/habbo";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import "./profile.tailwind.css";
@@ -28,16 +29,19 @@ export default function ProfileClient({ nick }: { nick: string }) {
     fallbackMessage: "Erreur de récupération du profil",
   });
 
-  const [friendsPage, setFriendsPage] = useState(1);
-  const [groupsPage, setGroupsPage] = useState(1);
-  const [badgesPage, setBadgesPage] = useState(1);
-  const [roomsPage, setRoomsPage] = useState(1);
+  // Articles state (different pagination pattern - carousel style)
   type ArticleCard = { id: number | string; imagem?: string; titulo?: string; autor?: string; data?: string | number | null };
   const [articles, setArticles] = useState<ArticleCard[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [articlesPage, setArticlesPage] = useState(0);
   const [articlesDir, setArticlesDir] = useState<1 | -1>(1);
   const reduce = useReducedMotion();
+
+  // Use paginated list hook for friends, groups, badges, rooms
+  const friendsPagination = usePaginatedList(data?.friends ?? [], PAGE_SIZE);
+  const groupsPagination = usePaginatedList(data?.groups ?? [], PAGE_SIZE);
+  const badgesPagination = usePaginatedList(data?.badges ?? [], PAGE_SIZE);
+  const roomsPagination = usePaginatedList(data?.rooms ?? [], PAGE_SIZE);
 
   // Broadcast profile data to the header (mutualize on /profile)
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
       const lvl = typeof data.user?.currentLevel === "number" ? data.user.currentLevel : null;
       window.__habboLevel = lvl;
       window.dispatchEvent(new CustomEvent<HabboProfileResponse>("habbo:profile", { detail: data }));
-    } catch {}
+    } catch { }
   }, [data]);
 
   // Fetch articles by logged user nick
@@ -121,23 +125,6 @@ export default function ProfileClient({ nick }: { nick: string }) {
       achievementsTotal: achTotal,
     } as const;
   }, [data]);
-
-  const friendsVisible = useMemo(
-    () => (data?.friends ?? []).slice(0, friendsPage * PAGE_SIZE),
-    [data, friendsPage]
-  );
-  const groupsVisible = useMemo(
-    () => (data?.groups ?? []).slice(0, groupsPage * PAGE_SIZE),
-    [data, groupsPage]
-  );
-  const badgesVisible = useMemo(
-    () => (data?.badges ?? []).slice(0, badgesPage * PAGE_SIZE),
-    [data, badgesPage]
-  );
-  const roomsVisible = useMemo(
-    () => (data?.rooms ?? []).slice(0, roomsPage * PAGE_SIZE),
-    [data, roomsPage]
-  );
 
   function fmtMemberSince(v?: string) {
     if (!v) return "";
@@ -266,7 +253,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
                                   {a.titulo ?? `Article #${a.id}`}
                                 </Link>
                                 <div className="text-xs opacity-70 mt-1 truncate">
-                                  Par {a.autor ?? '—'} · {formatDateTimeFlexible(a.data)}
+                                  Par {a.autor ?? '—'} · {formatDateTime(a.data)}
                                 </div>
                               </div>
                             </div>
@@ -295,7 +282,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
                     <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 overflow-x-hidden">
-                      {friendsVisible.map((f: HabboFriend, idx) => (
+                      {friendsPagination.visible.map((f: HabboFriend, idx: number) => (
                         <li
                           key={f?.uniqueId || f?.name || idx}
                           className="group flex flex-col items-center text-center gap-3 border rounded p-2 border-[color:var(--border)] bg-[color:var(--bg-700)] hover:bg-[color:var(--bg-600)] transition min-w-0"
@@ -339,14 +326,14 @@ export default function ProfileClient({ nick }: { nick: string }) {
                       ))}
                     </ul>
                   </ScrollArea>
-                  {counts.friends > friendsVisible.length && (
+                  {friendsPagination.hasMore && (
                     <Button
                       variant="secondary"
                       className="mt-2"
-                      onClick={() => setFriendsPage((p) => p + 1)}
+                      onClick={friendsPagination.loadMore}
                       aria-label="Charger plus d'amis"
                     >
-                      Charger +{Math.min(PAGE_SIZE, counts.friends - friendsVisible.length)}
+                      Charger +{friendsPagination.remaining}
                     </Button>
                   )}
                 </>
@@ -355,7 +342,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
                     <ul className="space-y-3">
-                      {groupsVisible.map((g: HabboGroup, idx) => (
+                      {groupsPagination.visible.map((g: HabboGroup, idx: number) => (
                         <li key={g?.id || g?.groupId || idx} className="border rounded p-2 border-[color:var(--border)]">
                           <div className="font-medium">{g?.name || "—"}</div>
                           {g?.description && <div className="text-xs opacity-70">{g.description}</div>}
@@ -363,14 +350,14 @@ export default function ProfileClient({ nick }: { nick: string }) {
                       ))}
                     </ul>
                   </ScrollArea>
-                  {counts.groups > groupsVisible.length && (
+                  {groupsPagination.hasMore && (
                     <Button
                       variant="secondary"
                       className="mt-2"
-                      onClick={() => setGroupsPage((p) => p + 1)}
+                      onClick={groupsPagination.loadMore}
                       aria-label="Charger plus de groupes"
                     >
-                      Charger +{Math.min(PAGE_SIZE, counts.groups - groupsVisible.length)}
+                      Charger +{groupsPagination.remaining}
                     </Button>
                   )}
                 </>
@@ -379,7 +366,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
                     <ul className="grid grid-cols-6 sm:grid-cols-10 gap-2">
-                      {badgesVisible.map((b: HabboBadge, idx) => {
+                      {badgesPagination.visible.map((b: HabboBadge, idx: number) => {
                         const rawCode = (b?.code || b?.badgeCode || b?.badge_code || b?.badge?.code || '').toString();
                         // Preserve original case; CDN filenames for ACH_* are case-sensitive (e.g., ACH_Tutorial3)
                         const code = rawCode.trim();
@@ -417,16 +404,16 @@ export default function ProfileClient({ nick }: { nick: string }) {
                           </li>
                         );
                       })}
-                  </ul>
-                </ScrollArea>
-                  {counts.badges > badgesVisible.length && (
+                    </ul>
+                  </ScrollArea>
+                  {badgesPagination.hasMore && (
                     <Button
                       variant="secondary"
                       className="mt-2"
-                      onClick={() => setBadgesPage((p) => p + 1)}
+                      onClick={badgesPagination.loadMore}
                       aria-label="Charger plus de badges"
                     >
-                      Charger +{Math.min(PAGE_SIZE, counts.badges - badgesVisible.length)}
+                      Charger +{badgesPagination.remaining}
                     </Button>
                   )}
                 </>
@@ -436,27 +423,27 @@ export default function ProfileClient({ nick }: { nick: string }) {
             <ProfileSection title="Salles">
               <ScrollArea className="max-h-72 scroll-area">
                 <ul className="space-y-3">
-                  {roomsVisible.map((r: HabboRoom, idx) => (
+                  {roomsPagination.visible.map((r: HabboRoom, idx: number) => (
                     <li key={r?.id || idx} className="border rounded p-2 border-[color:var(--border)]">
                       <div className="font-medium">{r?.name || "—"}</div>
                       {r?.description && <div className="text-xs opacity-70">{r.description}</div>}
                       {r?.creationTime && (
                         <div className="text-xs opacity-60 mt-1">
-                          {formatDateTimeNative(r.creationTime)}
+                          {formatDateTime(r.creationTime)}
                         </div>
                       )}
                     </li>
                   ))}
                 </ul>
               </ScrollArea>
-              {counts.rooms > roomsVisible.length && (
+              {roomsPagination.hasMore && (
                 <Button
                   variant="secondary"
                   className="mt-2"
-                  onClick={() => setRoomsPage((p) => p + 1)}
+                  onClick={roomsPagination.loadMore}
                   aria-label="Charger plus de salles"
                 >
-                  Charger +{Math.min(PAGE_SIZE, counts.rooms - roomsVisible.length)}
+                  Charger +{roomsPagination.remaining}
                 </Button>
               )}
             </ProfileSection>
@@ -477,11 +464,11 @@ export default function ProfileClient({ nick }: { nick: string }) {
               rankings={[]}
               favoritesBadges={[]}
               onRefresh={() => {
-                // Simple refetch
-                setFriendsPage(1);
-                setGroupsPage(1);
-                setBadgesPage(1);
-                setRoomsPage(1);
+                // Reset pagination and refetch
+                friendsPagination.reset();
+                groupsPagination.reset();
+                badgesPagination.reset();
+                roomsPagination.reset();
                 setTimeout(() => {
                   // trigger effect by changing nick dependency pattern if needed
                   // here just re-run current fetch

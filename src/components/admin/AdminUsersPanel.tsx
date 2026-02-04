@@ -8,6 +8,7 @@ import { Ban, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import UserHistoryModal from "@/components/admin/UserHistoryModal";
 
 type Role = {
   id: string;
@@ -60,7 +61,7 @@ export default function AdminUsersPanel({
   const [q, setQ] = useState("");
   const [roleId, setRoleId] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<string | undefined>(undefined);
-  const [source, setSource] = useState<SourceOption>("auto");
+  const [source, setSource] = useState<SourceOption>("legacy");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -246,7 +247,7 @@ export default function AdminUsersPanel({
                 <SelectTrigger id="admin-users-source" className="h-10 border border-[color:var(--bg-600)]/60 bg-[color:var(--bg-900)]/40">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
-              <SelectContent className="border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/95 text-[color:var(--foreground)]">
+                <SelectContent className="border border-[color:var(--bg-700)]/60 bg-[color:var(--bg-800)]/95 text-[color:var(--foreground)]">
                   <SelectItem value="auto">Auto</SelectItem>
                   <SelectItem value="legacy">Legacy</SelectItem>
                   <SelectItem value="directus">Directus</SelectItem>
@@ -291,7 +292,7 @@ export default function AdminUsersPanel({
           <Button variant="outline" onClick={handleReset} disabled={loading} className="h-9 px-3">
             Reinitialiser
           </Button>
-          <span className="ml-auto text-xs text-[color:var(--foreground)]/70">{loading ? "Chargement..." : `${total} resultat${total>1?'s':''}`}</span>
+          <span className="ml-auto text-xs text-[color:var(--foreground)]/70">{loading ? "Chargement..." : `${total} resultat${total > 1 ? 's' : ''}`}</span>
         </div>
       </section>
 
@@ -341,7 +342,7 @@ export default function AdminUsersPanel({
                       <Select
                         value={String(selected || '')}
                         onValueChange={async (v) => { setSelectedRoles((m) => ({ ...m, [u.id]: v })); await onSaveRole(u.id, v); }}
-                        disabled={isSaving || rolesVirtual}
+                        disabled={isSaving}
                       >
                         <SelectTrigger className="h-9 min-w-40 border border-[color:var(--bg-600)]/60 bg-[color:var(--bg-900)]/40">
                           <SelectValue placeholder="Selectionner" />
@@ -359,6 +360,7 @@ export default function AdminUsersPanel({
                     <td className="px-4 py-2.5 text-[color:var(--foreground)]/70 capitalize">{sourceLabel}</td>
                     <td className="px-4 py-2.5 text-right">
                       <div className="inline-flex items-center gap-2">
+                        <UserHistoryModal userId={u.id} userName={formatFullName(u)} />
                         <Button
                           variant={isSuspended ? 'secondary' : 'outline'}
                           onClick={() => handleToggleBan(u, !isSuspended)}
@@ -391,11 +393,11 @@ export default function AdminUsersPanel({
           <div className="py-16 text-center text-sm text-[color:var(--foreground)]/60">Aucun resultat</div>
         ) : null}
         <div className="flex items-center justify-between px-4 py-3 text-xs text-[color:var(--foreground)]/70">
-          <div>{loading ? 'Chargement...' : `${total} resultat${total>1?'s':''}`}</div>
+          <div>{loading ? 'Chargement...' : `${total} resultat${total > 1 ? 's' : ''}`}</div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" disabled={page<=1||loading} onClick={() => { const p=Math.max(1,page-1); setPage(p); getUsers({ page: p }).catch(()=>undefined) }} className="h-8 px-3">Precedent</Button>
-            <div>Page {page} / {Math.max(1, Math.ceil(total/limit))}</div>
-            <Button variant="outline" disabled={loading || items.length===0 || items.length<limit} onClick={() => { const n=page+1; setPage(n); getUsers({ page: n }).catch(()=>undefined) }} className="h-8 px-3">Suivant</Button>
+            <Button variant="outline" disabled={page <= 1 || loading} onClick={() => { const p = Math.max(1, page - 1); setPage(p); getUsers({ page: p }).catch(() => undefined) }} className="h-8 px-3">Precedent</Button>
+            <div>Page {page} / {Math.max(1, Math.ceil(total / limit))}</div>
+            <Button variant="outline" disabled={loading || items.length === 0 || items.length < limit} onClick={() => { const n = page + 1; setPage(n); getUsers({ page: n }).catch(() => undefined) }} className="h-8 px-3">Suivant</Button>
           </div>
         </div>
       </section>
