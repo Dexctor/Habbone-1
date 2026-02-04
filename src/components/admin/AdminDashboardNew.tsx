@@ -82,12 +82,14 @@ export default function AdminDashboardNew(props: AdminDashboardProps) {
                     >
                         👥 Utilisateurs
                     </TabsTrigger>
+                    {/* TODO: Réactiver quand les permissions Directus admin_logs seront configurées
                     <TabsTrigger
                         value="logs"
                         className="px-6 py-3 text-sm font-medium data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md transition-all"
                     >
                         📜 Logs
                     </TabsTrigger>
+                    */}
                 </TabsList>
 
                 {/* Activity Dashboard Tab */}
@@ -152,7 +154,7 @@ export default function AdminDashboardNew(props: AdminDashboardProps) {
                     </Card>
                 </TabsContent>
 
-                {/* Admin Logs Tab */}
+                {/* TODO: Réactiver quand les permissions Directus admin_logs seront configurées
                 <TabsContent value="logs">
                     <Card className="border-[color:var(--bg-700)]/50 bg-[color:var(--bg-800)]/30">
                         <CardHeader className="pb-3">
@@ -166,6 +168,7 @@ export default function AdminDashboardNew(props: AdminDashboardProps) {
                         </CardContent>
                     </Card>
                 </TabsContent>
+                */}
             </Tabs>
         </div>
     );
