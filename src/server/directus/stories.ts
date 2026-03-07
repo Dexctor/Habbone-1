@@ -8,9 +8,18 @@ import {
   STORIES_FOLDER_ID,
   rItems,
   cItem,
+  uItem,
+  dItem,
 } from './client';
-import { resolveStoriesTables } from '@/lib/directus/tables';
+import type { StoryRecord } from './types';
 import { parseTimestamp } from '@/lib/date-utils';
+
+// ============ CONSTANTS ============
+
+/** Resolved table name — single source of truth */
+const TABLE = STORIES_TABLE || 'usuarios_storie';
+
+// ============ TYPES ============
 
 type StoryRowInput = {
   author: string;
@@ -19,13 +28,14 @@ type StoryRowInput = {
   status?: string | null;
 };
 
+// ============ FILE UPLOAD ============
+
 export async function uploadFileToDirectus(
   file: File,
   filename: string,
   mimeType: string,
 ): Promise<{ id: string }> {
   const safeName = filename?.trim() || `story-${Date.now()}`;
-  const effectiveMime = mimeType?.trim() || file.type || 'application/octet-stream';
   const formData = new FormData();
   formData.set('file', file, safeName);
   formData.set('title', safeName);
@@ -33,9 +43,7 @@ export async function uploadFileToDirectus(
 
   const response = await fetch(`${directusUrl}/files`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${serviceToken}`,
-    },
+    headers: { Authorization: `Bearer ${serviceToken}` },
     body: formData,
   }).catch((error: unknown) => {
     throw new Error(`UPLOAD_NETWORK_ERROR: ${error instanceof Error ? error.message : String(error)}`);
@@ -53,26 +61,30 @@ export async function uploadFileToDirectus(
   return { id: String(id) };
 }
 
+// ============ CREATE ============
+
 export async function createStoryRow(input: StoryRowInput) {
-  const table = STORIES_TABLE || 'usuarios_storie';
   const nowIso = new Date().toISOString();
   const unixSeconds = Math.floor(Date.now() / 1000);
+
   const payload: Record<string, unknown> = {
     autor: input.author,
-    image: input.imageId,
-    imagem: input.imageId,
-    image_id: input.imageId,
+    image: input.imageId,           // Possible column name
+    imagem: input.imageId,          // Possible column name (Portuguese)
+    image_id: input.imageId,        // Possible column name
     status: input.status ?? 'public',
-    data: nowIso,
-    dta: unixSeconds,
+    data: unixSeconds,              // Legacy integer timestamp (unix seconds)
+    dta: unixSeconds,               // Legacy column alias
+    date_created: nowIso,           // ISO string for Directus metadata
     published_at: input.status === 'draft' ? null : nowIso,
   };
   if (input.title) payload.titulo = input.title;
 
   try {
-    return await directusService.request(cItem(table as any, payload as any));
+    return await directusService.request(cItem(TABLE as any, payload as any));
   } catch {
-    const response = await fetch(`${directusUrl}/items/${encodeURIComponent(table)}`, {
+    // Fallback: raw POST — Directus ignores unknown fields gracefully
+    const response = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${serviceToken}`,
@@ -89,17 +101,19 @@ export async function createStoryRow(input: StoryRowInput) {
   }
 }
 
+// ============ COUNT ============
+
 export async function countStoriesThisMonthByAuthor(author: string): Promise<number> {
   if (!author) return 0;
-  const table = STORIES_TABLE || 'usuarios_storie';
+
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startIso = startOfMonth.toISOString();
+  const startUnix = Math.floor(startOfMonth.getTime() / 1000);
 
-  const url = new URL(`${directusUrl}/items/${encodeURIComponent(table)}`);
+  // Try aggregate count first
+  const url = new URL(`${directusUrl}/items/${encodeURIComponent(TABLE)}`);
   url.searchParams.set('filter[autor][_eq]', author);
-  url.searchParams.set('filter[_or][0][published_at][_gte]', startIso);
-  url.searchParams.set('filter[_or][1][date_created][_gte]', startIso);
+  url.searchParams.set('filter[data][_gte]', String(startUnix));
   url.searchParams.set('limit', '0');
   url.searchParams.set('meta', 'total_count');
 
@@ -114,12 +128,13 @@ export async function countStoriesThisMonthByAuthor(author: string): Promise<num
     if (Number.isFinite(total) && total >= 0) return total;
   }
 
+  // Fallback: manual count
   const rows = (await directusService
     .request(
-      rItems(table as any, {
+      rItems(TABLE as any, {
         filter: { autor: { _eq: author } } as any,
         limit: 100 as any,
-        sort: ['-date_created'] as any,
+        sort: ['-data'] as any,
       } as any),
     )
     .catch(() => [])) as any[];
@@ -137,7 +152,7 @@ export async function countStoriesThisMonthByAuthor(author: string): Promise<num
 
 function extractStoryTimestamp(row: any): number {
   if (!row || typeof row !== 'object') return 0;
-  const candidates = [row?.date_created, row?.dateCreated, row?.created_at, row?.createdAt, row?.data, row?.dta];
+  const candidates = [row?.date_created, row?.data, row?.dta];
   for (const candidate of candidates) {
     const ms = parseTimestamp(candidate, { numeric: 'auto', numericString: 'number' });
     if (ms) return ms;
@@ -145,89 +160,31 @@ function extractStoryTimestamp(row: any): number {
   return 0;
 }
 
-export async function listStoriesService(limit = 30): Promise<unknown[]> {
-  for (const col of resolveStoriesTables()) {
-    try {
-      const rows = await directusService.request(
-        rItems(col as any, {
-          sort: ['-id'] as any,
-          limit,
-        } as any),
-      );
-      if (Array.isArray(rows) && rows.length) return rows as any[];
-    } catch { }
-  }
-  return [] as any[];
-}
+// ============ LIST ============
 
-// ============ ADMIN FUNCTIONS ============
-
-import type { StoryRecord } from './types';
-import { uItem, dItem } from './client';
-
-export async function adminListStories(limit = 500): Promise<StoryRecord[]> {
-  const table = STORIES_TABLE || 'usuarios_storie';
+export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
   try {
     const rows = await directusService.request(
-      rItems(table as any, {
+      rItems(TABLE as any, {
         sort: ['-id'] as any,
         limit,
       } as any),
     );
     if (Array.isArray(rows)) return rows as StoryRecord[];
   } catch { }
-
-  // Fallback: direct fetch
-  const response = await fetch(`${directusUrl}/items/${encodeURIComponent(table)}?sort=-id&limit=${limit}`, {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  }).catch(() => null);
-
-  if (response?.ok) {
-    const json = await response.json().catch(() => ({}));
-    return (json?.data ?? []) as StoryRecord[];
-  }
   return [];
 }
 
+// ============ ADMIN FUNCTIONS ============
+
+export async function adminListStories(limit = 500): Promise<StoryRecord[]> {
+  return listStoriesService(limit);
+}
+
 export async function adminUpdateStory(id: number, patch: Partial<StoryRecord>): Promise<void> {
-  const table = STORIES_TABLE || 'usuarios_storie';
-  try {
-    await directusService.request(uItem(table as any, id, patch as any));
-    return;
-  } catch { }
-
-  // Fallback: direct fetch
-  const response = await fetch(`${directusUrl}/items/${encodeURIComponent(table)}/${id}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${serviceToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(patch),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`UPDATE_STORY_FAILED: ${response.status} ${body}`);
-  }
+  await directusService.request(uItem(TABLE as any, id, patch as any));
 }
 
 export async function adminDeleteStory(id: number): Promise<void> {
-  const table = STORIES_TABLE || 'usuarios_storie';
-  try {
-    await directusService.request(dItem(table as any, id));
-    return;
-  } catch { }
-
-  // Fallback: direct fetch
-  const response = await fetch(`${directusUrl}/items/${encodeURIComponent(table)}/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${serviceToken}` },
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`DELETE_STORY_FAILED: ${response.status} ${body}`);
-  }
+  await directusService.request(dItem(TABLE as any, id));
 }

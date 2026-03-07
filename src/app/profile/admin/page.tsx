@@ -30,7 +30,7 @@ import {
   adminDeleteStory,
 } from '@/server/directus/stories';
 
-import AdminDashboardNew from '@/components/admin/AdminDashboardNew';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 export const revalidate = 0;
 
@@ -77,7 +77,6 @@ export default async function AdminPage() {
     adminListNewsComments(500).catch(() => []),
   ]);
   const commentsTotal = (forumCommentsCount || 0) + (newsCommentsCount || 0);
-  const usersCount = (legacyUsersCount || 0) + (directusUsersCount || 0);
 
   // Server actions (passed to client component)
   async function updateTopic(formData: FormData) {
@@ -185,11 +184,34 @@ export default async function AdminPage() {
     await adminDeleteNewsComment(id);
     revalidatePath('/profile/admin');
   }
+
+  async function updateStory(formData: FormData) {
+    "use server";
+    await requireAdmin();
+    const id = Number(formData.get('id') || 0);
+    if (!id) return;
+    const patch: any = {
+      status: String(formData.get('status') || 'public'),
+    };
+    if (formData.has('titulo')) patch.titulo = String(formData.get('titulo') || '');
+    await adminUpdateStory(id, patch);
+    revalidatePath('/profile/admin');
+  }
+
+  async function deleteStory(formData: FormData) {
+    "use server";
+    await requireAdmin();
+    const id = Number(formData.get('id') || 0);
+    if (!id) return;
+    await adminDeleteStory(id);
+    revalidatePath('/profile/admin');
+  }
   const summaryStats = [
     { label: 'Articles', value: newsCount },
     { label: 'Sujets forum', value: topicsCount },
     { label: 'Commentaires', value: commentsTotal },
-    { label: 'Utilisateurs', value: usersCount },
+    { label: 'Utilisateurs (legacy)', value: legacyUsersCount },
+    { label: 'Utilisateurs (Directus)', value: directusUsersCount },
   ];
 
   const topicsArray = Array.isArray(topics) ? topics : [];
@@ -197,6 +219,7 @@ export default async function AdminPage() {
   const newsArray = Array.isArray(news) ? news : [];
   const forumCommentsArray = Array.isArray(forumComments) ? forumComments : [];
   const newsCommentsArray = Array.isArray(newsComments) ? newsComments : [];
+  const storiesArray = Array.isArray(stories) ? stories : [];
   const topicTitleById = topicsArray.reduce((acc: Record<number, string>, t: any) => {
     const id = Number(t?.id);
     if (!Number.isNaN(id)) acc[id] = String(t?.titulo || '');
@@ -217,13 +240,14 @@ export default async function AdminPage() {
         </div>
       </header>
 
-      <AdminDashboardNew
+      <AdminDashboard
         stats={summaryStats}
         topics={topicsArray}
         posts={postsArray}
         news={newsArray}
         forumComments={forumCommentsArray}
         newsComments={newsCommentsArray}
+        stories={storiesArray}
         topicTitleById={topicTitleById}
         updateTopic={updateTopic}
         deleteTopic={deleteTopic}
@@ -235,6 +259,8 @@ export default async function AdminPage() {
         deleteForumComment={deleteForumComment}
         updateNewsComment={updateNewsComment}
         deleteNewsComment={deleteNewsComment}
+        updateStory={updateStory}
+        deleteStory={deleteStory}
       />
     </main>
   );

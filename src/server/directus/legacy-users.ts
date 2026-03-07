@@ -9,12 +9,7 @@ import {
   uItem,
   dItem,
 } from './client';
-import type { LegacyUserLite } from './types';
-
-type CollectionResponse<T> = {
-  data?: T[];
-  meta?: { total_count?: number };
-};
+import type { LegacyUserLite, CollectionResponse } from './types';
 
 export async function getLegacyUserByEmail(email?: string | null) {
   const e = (email || '').trim();
@@ -82,7 +77,7 @@ export async function searchLegacyUsuarios(
       const total = await fetchTotalCount();
       return { items, total: total ?? items.length };
     }
-  } catch {}
+  } catch { }
 
   try {
     const url = new URL(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}`);
@@ -99,7 +94,7 @@ export async function searchLegacyUsuarios(
     const items = Array.isArray(payload?.data) ? payload.data : [];
     const total = await fetchTotalCount();
     return { items, total: total ?? items.length };
-  } catch {}
+  } catch { }
 
   return { items: [], total: 0 };
 }
@@ -120,6 +115,16 @@ export async function setLegacyUserBanStatus(userId: number | string, banned: bo
 
 export async function deleteLegacyUser(userId: number | string) {
   return directusService.request(dItem(USERS_TABLE as any, String(userId)));
+}
+
+export async function adminListUsers(limit = 500) {
+  return directusService.request(
+    rItems(USERS_TABLE as any, {
+      limit,
+      sort: ['-data_criacao'],
+      fields: ['id', 'nick', 'email', 'ativado', 'banido', 'status', 'data_criacao'],
+    } as any),
+  );
 }
 
 export type { LegacyUserLite };

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { directusService, rItems, cItem, uItem, dItem } from './client';
+import { directusService, rItems, rItem, cItem, uItem, dItem } from './client';
 import type { NewsRecord, NewsCommentRecord } from './types';
 
 export async function adminListNews(limit = 500): Promise<NewsRecord[]> {
@@ -104,6 +104,50 @@ export async function createNewsComment(input: {
     status: input.status ?? 'public',
   };
   return directusService.request(cItem('noticias_coment', payload as any)) as Promise<NewsCommentRecord>;
+}
+
+// ============ PUBLIC FETCHER FUNCTIONS ============
+// Replace the old lib/directus/news.ts (which had no auth token)
+
+export function getPublicNews(query?: string): Promise<NewsRecord[]> {
+  const q = typeof query === 'string' ? query.trim() : '';
+  return directusService.request(
+    rItems('noticias', {
+      fields: ['id', 'titulo', 'descricao', 'imagem', 'noticia', 'status', 'autor', 'data'],
+      sort: ['-data'],
+      limit: 24,
+      ...(q ? { search: q } : {}),
+    } as any),
+  ) as Promise<NewsRecord[]>;
+}
+
+export function getPublicNewsById(id: number): Promise<NewsRecord> {
+  return directusService.request(
+    rItem('noticias', id, {
+      fields: ['id', 'titulo', 'descricao', 'imagem', 'noticia', 'autor', 'data', 'status'],
+    } as any),
+  ) as Promise<NewsRecord>;
+}
+
+export function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> {
+  return directusService.request(
+    rItems('noticias', {
+      fields: ['id', 'titulo', 'descricao', 'imagem', 'data'],
+      sort: ['-data'],
+      limit,
+    } as any),
+  ) as Promise<NewsRecord[]>;
+}
+
+export function getPublicNewsComments(newsId: number): Promise<NewsCommentRecord[]> {
+  return directusService.request(
+    rItems('noticias_coment', {
+      filter: { id_noticia: { _eq: newsId } },
+      fields: ['id', 'id_noticia', 'comentario', 'autor', 'data', 'status'],
+      sort: ['data'],
+      limit: 200,
+    } as any),
+  ) as Promise<NewsCommentRecord[]>;
 }
 
 export type { NewsRecord, NewsCommentRecord };

@@ -1,6 +1,6 @@
-import { readItems } from '@directus/sdk';
+import 'server-only';
 
-import { directus } from './client';
+import { directusService, rItems } from './client';
 
 type LikeRow = { id_comentario: number | string };
 
@@ -8,7 +8,7 @@ type LikesTable = 'noticias_coment_curtidas' | 'forum_coment_curtidas';
 
 /**
  * Generic function to get likes count for comments
- * Eliminates duplication between news and forum modules
+ * Uses the authenticated directusService (replaces the old lib/directus/likes.ts)
  */
 export async function getLikesMapForComments(
     table: LikesTable,
@@ -16,12 +16,12 @@ export async function getLikesMapForComments(
 ): Promise<Record<number, number>> {
     if (!commentIds?.length) return {};
 
-    const likes = (await directus.request(
-        readItems(table as any, {
+    const likes = (await directusService.request(
+        rItems(table as any, {
             filter: { id_comentario: { _in: commentIds } },
             fields: ['id_comentario'],
             limit: 5000,
-        })
+        } as any)
     )) as LikeRow[];
 
     return likes.reduce((acc: Record<number, number>, row: LikeRow) => {

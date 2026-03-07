@@ -1,3 +1,11 @@
+export type Dateish = string | number | Date | null | undefined;
+
+/** Generic Directus collection response shape (used for raw fetch calls) */
+export type CollectionResponse<T> = {
+  data?: T[];
+  meta?: { total_count?: number };
+};
+
 export type HabboVerificationStatus = 'pending' | 'ok' | 'failed' | 'locked';
 
 export type DirectusUserLite = {
@@ -93,11 +101,13 @@ export type ForumCategoryRecord = {
   descricao?: string | null;
   status?: string | null;
   imagem?: string | null;
+  slug?: string | null;
+  ordem?: number | null;
 };
 
 export type StoryRecord = {
   id: number;
-  autor: string;
+  autor?: string | null;
   image?: string | null;
   imagem?: string | null;
   titulo?: string | null;

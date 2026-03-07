@@ -12,7 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeIcon } from "./modules/BadgeIcon";
 import Link from "next/link";
-import { mediaUrl } from "@/lib/directus/media";
+import { mediaUrl } from "@/lib/media-url";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
 import { useHabboProfile } from "@/lib/use-habbo-profile";
 import { formatDateTime } from "@/lib/date-utils";

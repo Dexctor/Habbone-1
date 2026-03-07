@@ -25,7 +25,7 @@ export default function Navbar() {
     { href: "/", label: "Home" },
     { href: "/habbone", label: "Habbone" },
     { href: "/habbo", label: "Habbo" },
-    { href: "/fa-center", label: "Fã-center" },
+    { href: "/fa-center", label: "EXTRAS" },
     { href: "/forum", label: "Forum" },
   ]
 

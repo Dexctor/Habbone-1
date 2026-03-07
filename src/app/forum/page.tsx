@@ -5,7 +5,7 @@ import {
   listForumCategoriesService,
   listForumTopicsWithCategories,
 } from '@/server/directus/forum'
-import { mediaUrl } from '@/lib/directus/media'
+import { mediaUrl } from '@/lib/media-url'
 import { formatDateShortFr, parseTimestamp } from '@/lib/date-utils'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
 
@@ -115,37 +115,37 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
   const fetchedCategories = Array.isArray(rawCategories)
     ? (rawCategories as ForumCategory[])
     : Array.isArray((rawCategories as { data?: ForumCategory[] } | undefined)?.data)
-    ? ((rawCategories as { data?: ForumCategory[] }).data as ForumCategory[])
-    : []
+      ? ((rawCategories as { data?: ForumCategory[] }).data as ForumCategory[])
+      : []
 
   const categories: ForumCategory[] =
     fetchedCategories.length > 0
       ? fetchedCategories
-          .filter(
-            (category) =>
-              TARGET_CATEGORY_IDS.includes(String(category?.id ?? '')) &&
-              isActiveCategory(category),
-          )
-          .map((category) => ({ ...category }))
+        .filter(
+          (category) =>
+            TARGET_CATEGORY_IDS.includes(String(category?.id ?? '')) &&
+            isActiveCategory(category),
+        )
+        .map((category) => ({ ...category }))
       : (TARGET_CATEGORY_IDS.map((id) => ({
-          id,
-          nome:
-            id === '1'
-              ? 'Habbo'
-              : id === '2'
+        id,
+        nome:
+          id === '1'
+            ? 'Habbo'
+            : id === '2'
               ? 'Wired'
               : id === '3'
-              ? 'General'
-              : 'Videos',
-          descricao: null,
-          status: null,
-        })) as ForumCategory[])
+                ? 'General'
+                : 'Videos',
+        descricao: null,
+        status: null,
+      })) as ForumCategory[])
 
   const topics = Array.isArray(rawTopics)
     ? (rawTopics as ForumTopic[])
     : Array.isArray((rawTopics as { data?: ForumTopic[] } | undefined)?.data)
-    ? ((rawTopics as { data?: ForumTopic[] }).data as ForumTopic[])
-    : []
+      ? ((rawTopics as { data?: ForumTopic[] }).data as ForumTopic[])
+      : []
 
   const filteredTopics = topics.filter((topic) => {
     if (!isActiveTopic(topic)) return false

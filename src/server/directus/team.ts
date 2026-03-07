@@ -80,12 +80,7 @@ export async function listTeamMembersByRoles(roleNames: string[]): Promise<Recor
     else if (typeof raw?.created_at === 'string') joined = raw.created_at;
     else if (typeof raw?.joined_at === 'string') joined = raw.joined_at;
 
-    const loweredNick = nick.toLowerCase();
-    if (loweredNick === 'decrypt') {
-      joined = '2022-10-18T11:10:00';
-    } else if (loweredNick === '-jiren' || loweredNick === 'jiren') {
-      joined = '2023-06-16T10:06:00';
-    }
+    // TODO: Store joined_at dates in the database instead of hardcoding
 
     const twitterRaw =
       typeof raw?.twitter === 'string'
@@ -100,11 +95,11 @@ export async function listTeamMembersByRoles(roleNames: string[]): Promise<Recor
       raw?.id != null && !Number.isNaN(Number(raw.id))
         ? Number(raw.id)
         : Math.abs(
-            nick
-              .toLowerCase()
-              .split('')
-              .reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0),
-          );
+          nick
+            .toLowerCase()
+            .split('')
+            .reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0),
+        );
 
     result[canonicalRole].push({
       id: computedId,

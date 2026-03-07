@@ -4,28 +4,13 @@ import {
   directusService,
   directusUrl,
   serviceToken,
-  USERS_TABLE,
   rItems,
   rItem,
   uItem,
   dItem,
 } from './client';
-import type { DirectusUserLite } from './types';
+import type { DirectusUserLite, CollectionResponse } from './types';
 
-type CollectionResponse<T> = {
-  data?: T[];
-  meta?: { total_count?: number };
-};
-
-export async function adminListUsers(limit = 500) {
-  return directusService.request(
-    rItems(USERS_TABLE as any, {
-      limit,
-      sort: ['-data_criacao'],
-      fields: ['id', 'nick', 'email', 'ativado', 'banido', 'status', 'data_criacao'],
-    } as any),
-  );
-}
 
 export async function getDirectusUserById(userId: string): Promise<DirectusUserLite | null> {
   const row = await directusService
@@ -100,7 +85,7 @@ export async function searchUsers(
         total = json.meta.total_count;
       }
     }
-  } catch {}
+  } catch { }
 
   return { items, total };
 }

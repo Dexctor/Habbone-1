@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { assertAdmin } from "@/server/authz";
-import { directus } from "@/lib/directus/client";
-import { readItems, aggregate } from "@directus/sdk";
+import { directusService, rItems } from "@/server/directus/client";
+import { aggregate } from "@directus/sdk";
 
 interface DayCount {
     date: string;
@@ -41,8 +41,8 @@ async function getCountByDay(
     try {
         // Fetch all items without date filter (Directus may not support date filtering on this field)
         // Then filter in memory
-        const rows = await directus.request(
-            readItems(collection, {
+        const rows = await directusService.request(
+            rItems(collection, {
                 fields: [dateField],
                 limit: 5000,
                 sort: [`-${dateField}`],
@@ -96,8 +96,8 @@ async function getCountByDay(
 
 async function getTotal(collection: string): Promise<number> {
     try {
-        const result = await directus.request(
-            aggregate(collection, { aggregate: { count: "*" } })
+        const result = await (directusService as any).request(
+            aggregate(collection as any, { aggregate: { count: "*" } } as any)
         );
         return Number((result as Record<string, unknown>[])?.[0]?.count ?? 0);
     } catch {

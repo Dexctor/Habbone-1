@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { assertAdmin } from "@/server/authz";
-import { directus } from "@/lib/directus/client";
-import { readItems } from "@directus/sdk";
+import { directusService, rItems } from "@/server/directus/client";
 
 interface UserHistoryData {
     topics: { id: number; titulo: string; data: string }[];
@@ -32,53 +31,53 @@ export async function GET(
         // Fetch user activity in parallel
         const [topics, articles, forumComments, newsComments, adminLogs] = await Promise.all([
             // Topics created by user
-            directus.request(
-                readItems("forum_topicos", {
+            directusService.request(
+                rItems("forum_topicos" as any, {
                     filter: { autor: { _eq: userId } },
                     fields: ["id", "titulo", "data"],
                     sort: ["-data"],
                     limit: 50,
-                })
+                } as any)
             ).catch(() => []) as Promise<UserHistoryData["topics"]>,
 
             // Articles by user (if autor field matches)
-            directus.request(
-                readItems("noticias", {
+            directusService.request(
+                rItems("noticias" as any, {
                     filter: { autor: { _eq: userId } },
                     fields: ["id", "titulo", "data"],
                     sort: ["-data"],
                     limit: 50,
-                })
+                } as any)
             ).catch(() => []) as Promise<UserHistoryData["articles"]>,
 
             // Forum comments by user
-            directus.request(
-                readItems("forum_coment", {
+            directusService.request(
+                rItems("forum_coment" as any, {
                     filter: { autor: { _eq: userId } },
                     fields: ["id", "id_forum", "data"],
                     sort: ["-data"],
                     limit: 50,
-                })
+                } as any)
             ).catch(() => []) as Promise<UserHistoryData["forumComments"]>,
 
             // News comments by user
-            directus.request(
-                readItems("noticias_coment", {
+            directusService.request(
+                rItems("noticias_coment" as any, {
                     filter: { autor: { _eq: userId } },
                     fields: ["id", "id_noticia", "data"],
                     sort: ["-data"],
                     limit: 50,
-                })
+                } as any)
             ).catch(() => []) as Promise<UserHistoryData["newsComments"]>,
 
             // Admin actions targeting this user
-            directus.request(
-                readItems("admin_logs", {
+            directusService.request(
+                rItems("admin_logs" as any, {
                     filter: { target_id: { _eq: userId }, target_type: { _eq: "user" } },
                     fields: ["id", "action", "date_created", "admin_name"],
                     sort: ["-date_created"],
                     limit: 20,
-                })
+                } as any)
             ).catch(() => []) as Promise<{ id: number; action: string; date_created: string; admin_name: string }[]>,
         ]);
 

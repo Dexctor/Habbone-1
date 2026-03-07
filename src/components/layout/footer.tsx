@@ -7,10 +7,10 @@ export default function Footer() {
       <div className="container max-w-[1200px] mx-auto px-6 py-12 sm:px-8">
         {/* Desktop / Tablet info bar */}
         <div className="info hidden md:flex items-center justify-between w-full min-h-[41vh] gap-10">
-          {/* Contact */}
+          {/* Réseaux sociaux */}
           <div className="group min-h-[150px]">
             <div className="title mb-[23px]">
-              <label className="font-bold text-[var(--text-lg)] leading-[22px] flex items-center text-[var(--text-100)]">Contact</label>
+              <label className="font-bold text-[var(--text-lg)] leading-[22px] flex items-center text-[var(--text-100)]">Réseaux sociaux</label>
             </div>
             <div className="menu social flex flex-col space-y-2">
               <a href="https://twitter.com/Habb_One" target="_blank" rel="noreferrer" className="font-bold text-[var(--text-sm)] leading-[17px] text-blue-300 text-left hover:text-[var(--text-100)] transition-all duration-200 ease-out hover:pl-2">Twitter</a>
@@ -42,14 +42,26 @@ export default function Footer() {
               <a href="https://www.habbo.fr/shop" target="_blank" rel="noreferrer" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Boutique</a>
             </div>
           </div>
-          {/* Extras */}
+          {/* EXTRAS */}
           <div className="group min-h-[150px]">
             <div className="title mb-[23px]">
-              <label className="font-bold text-[var(--text-lg)] leading-[22px] flex items-center text-[var(--text-100)]">Extras</label>
+              <label className="font-bold text-[var(--text-lg)] leading-[22px] flex items-center text-[var(--text-100)]">EXTRAS</label>
             </div>
             <div className="menu flex flex-col space-y-2">
-              <Link href="/imager" prefetch={false} className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Générateur d'avatar</Link>
-              <Link href="/pseudohabbo" prefetch={false} className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Changements de pseudo Habbo</Link>
+              <Link href="/forum" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Poster un sujet</Link>
+              <Link href="/imager" prefetch={false} className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Habbo Imager</Link>
+              <Link href="/pseudohabbo" prefetch={false} className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Rechercher utilisateurs</Link>
+              <Link href="/mobis" prefetch={false} className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Rechercher mobis</Link>
+            </div>
+          </div>
+          {/* Développeurs */}
+          <div className="group min-h-[150px]">
+            <div className="title mb-[23px]">
+              <label className="font-bold text-[var(--text-lg)] leading-[22px] flex items-center text-[var(--text-100)]">Développeurs</label>
+            </div>
+            <div className="menu flex flex-col space-y-2">
+              <span className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left">Kael Felipe</span>
+              <span className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left">Wesley Snap</span>
             </div>
           </div>
           {/* Logo tile */}
@@ -64,7 +76,7 @@ export default function Footer() {
         <div className="footer-responsivo md:hidden flex flex-col items-center justify-center text-center space-y-10 min-h-[49vh] w-full my-[10px] px-6 py-6">
           {/* Contact */}
           <section className="w-full">
-            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">Contact</div>
+            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">Réseaux sociaux</div>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <a href="https://twitter.com/Habb_One" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-bold text-[var(--text-sm)] text-blue-300 hover:bg-[var(--blue-500)] hover:text-white transition-all">Twitter</a>
               <a href="https://instagram.com" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-bold text-[var(--text-sm)] text-blue-700 hover:bg-[var(--blue-500)] hover:text-white transition-all">Instagram</a>
@@ -96,10 +108,21 @@ export default function Footer() {
 
           {/* Extras */}
           <section className="w-full">
-            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">Extras</div>
+            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">EXTRAS</div>
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link href="/imager" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Générateur d'avatar</Link>
-              <Link href="/pseudohabbo" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Changements de pseudo Habbo</Link>
+              <Link href="/forum" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Poster un sujet</Link>
+              <Link href="/imager" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Habbo Imager</Link>
+              <Link href="/pseudohabbo" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Rechercher utilisateurs</Link>
+              <Link href="/mobis" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Rechercher mobis</Link>
+            </div>
+          </section>
+
+          {/* Développeurs */}
+          <section className="w-full">
+            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">Développeurs</div>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <span className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5">Kael Felipe</span>
+              <span className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5">Wesley Snap</span>
             </div>
           </section>
 
@@ -122,7 +145,7 @@ export default function Footer() {
       </div>
       {/* Back to top */}
       <div className="back-top w-full min-h-[8vh] bg-[var(--bg-800)] grid place-items-center">
-        <a href="#top" className="font-bold text-[var(--text-sm)] leading-[17px] uppercase text-[var(--text-100)] hover:text-[var(--blue-500)] transition-transform duration-200 ease-out hover:-translate-y-0.5">Remonter</a>
+        <a href="#top" className="font-bold text-[var(--text-sm)] leading-[17px] uppercase text-[var(--text-100)] hover:text-[var(--blue-500)] transition-transform duration-200 ease-out hover:-translate-y-0.5">REMONTER</a>
       </div>
     </footer>
   )

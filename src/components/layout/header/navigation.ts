@@ -11,11 +11,11 @@ export const navigation: NavEntry[] = [
   {
     label: 'HabbOne',
     children: [
+      { label: 'Archive de notícias', href: '/news' },
       { label: 'Equipe', href: '/team' },
-      { label: 'Boutique', href: '/boutique' },
-      { label: 'Tous les articles', href: '/news' },
+      { label: 'A propos', href: '/about' },
       { label: 'Partenaires', href: '/partenaires' },
-      { label: 'Contact', href: '/contact'},
+      { label: 'Communauté Discord', href: 'https://discord.gg/s4NpDcgcWe', external: true },
     ],
   },
   {
@@ -27,10 +27,11 @@ export const navigation: NavEntry[] = [
     ],
   },
   {
-    label: 'Extras',
+    label: 'EXTRAS',
     children: [
-      { label: "Generateur d'avatar", href: '/imager', prefetch: false },
-      { label: 'Changements de pseudo Habbo', href: '/pseudohabbo', prefetch: false },
+      { label: "Habbo Imager", href: '/imager', prefetch: false },
+      { label: 'Rechercher utilisateurs', href: '/pseudohabbo', prefetch: false },
+      { label: 'Rechercher mobis', href: '/mobis', prefetch: false },
     ],
   },
   { label: 'Forum', href: '/forum' },

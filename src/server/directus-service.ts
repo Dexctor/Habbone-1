@@ -1,6 +1,7 @@
 export { directusService, USERS_TABLE, STORIES_TABLE } from './directus/client';
 
 export type {
+  Dateish,
   HabboVerificationStatus,
   DirectusUserLite,
   DirectusRoleLite,
@@ -12,6 +13,7 @@ export type {
   ForumPostRecord,
   ForumCommentRecord,
   ForumCategoryRecord,
+  StoryRecord,
 } from './directus/types';
 
 export { listRoles, createRole, updateRole, getRoleById, setUserRole } from './directus/roles';
@@ -40,7 +42,6 @@ export {
   getDirectusUserById,
   setDirectusUserStatus,
   deleteDirectusUser,
-  adminListUsers,
 } from './directus/admin-users';
 
 export {
@@ -49,6 +50,7 @@ export {
   setLegacyUserRole,
   setLegacyUserBanStatus,
   deleteLegacyUser,
+  adminListUsers,
 } from './directus/legacy-users';
 
 export { listTeamMembersByRoles } from './directus/team';
@@ -63,6 +65,10 @@ export {
   adminUpdateNewsComment,
   adminDeleteNewsComment,
   createNewsComment,
+  getPublicNews,
+  getPublicNewsById,
+  listPublicNewsForCards,
+  getPublicNewsComments,
 } from './directus/news';
 
 export {
@@ -83,8 +89,19 @@ export {
   getTopicVoteSummary,
   adminUpdateForumTopic,
   adminDeleteForumTopic,
+  getPublicTopics,
+  getPublicTopicById,
+  getPublicPostById,
+  getPublicTopicComments,
+  listPublicForumCategories,
 } from './directus/forum';
+
+export {
+  getLikesMapForComments,
+  getLikesMapForNewsComments,
+  getLikesMapForTopicComments,
+} from './directus/likes';
 
 export { adminCount, adminCountUsers } from './directus/admin';
 
-export { uploadFileToDirectus, createStoryRow, countStoriesThisMonthByAuthor, listStoriesService } from './directus/stories';
+export { uploadFileToDirectus, createStoryRow, countStoriesThisMonthByAuthor, listStoriesService, adminListStories, adminUpdateStory, adminDeleteStory } from './directus/stories';

@@ -333,7 +333,7 @@ export default function ImagerClient() {
     <div className="space-y-6">
       <section className="rounded-md border border-[color:var(--bg-700)]/55 bg-[color:var(--bg-900)]/35 px-6 py-6 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.9)]">
         <div className="mb-5 text-[color:var(--foreground)]">
-          <h2 className="text-base font-semibold uppercase tracking-[0.08em]">Generateur d avatar Habbo</h2>
+          <h2 className="text-base font-semibold uppercase tracking-[0.08em]">Habbo Imager</h2>
           <p className="text-xs text-[color:var(--foreground)]/60">
             Renseigne un pseudo puis ajuste: la preview se met a jour instantanement.
           </p>
@@ -393,11 +393,10 @@ export default function ImagerClient() {
                   key={preset.id}
                   type="button"
                   onClick={() => applyPreset(preset)}
-                  className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-                    isActive
+                  className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition ${isActive
                       ? 'border-[color:var(--blue-500)]/80 bg-[color:var(--blue-500)]/15 text-white'
                       : 'border-[color:var(--bg-600)]/70 bg-[color:var(--bg-900)]/55 text-[color:var(--foreground)]/85 hover:border-[color:var(--bg-500)]/70 hover:text-white'
-                  }`}
+                    }`}
                   title={preset.description}
                 >
                   {preset.label}
@@ -407,19 +406,27 @@ export default function ImagerClient() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-8 lg:grid-cols-[360px_minmax(0,1fr)]">
           <div className="grid gap-4 md:grid-cols-2">
             <SectionTitle className="md:col-span-2">Vue</SectionTitle>
             <Field label="Taille">
-              <select
-                value={size}
-                onChange={(event) => setSize(event.target.value as AvatarSize)}
-                className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
-              >
-                <option value="s">Petite (s)</option>
-                <option value="m">Moyenne (m)</option>
-                <option value="l">Grande (l)</option>
-              </select>
+              <div className="flex gap-4">
+                {(['l', 'm', 's'] as const).map((v) => (
+                  <label key={v} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="avatar-size"
+                      value={v}
+                      checked={size === v}
+                      onChange={() => setSize(v)}
+                      className="accent-[#0FD52F]"
+                    />
+                    <span className={`text-sm font-medium ${size === v ? 'text-white' : 'text-[color:var(--foreground)]/65'}`}>
+                      {v === 'l' ? 'Grande' : v === 'm' ? 'Normal' : 'Pequeno'}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </Field>
 
             <Field label="Direction">
@@ -538,82 +545,76 @@ export default function ImagerClient() {
             </div>
 
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/45 px-4 py-3">
+              <label className="flex items-center gap-3 rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/45 px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={headOnly}
+                  onChange={(e) => setHeadOnly(e.target.checked)}
+                  className="accent-[#0FD52F] h-4 w-4"
+                />
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--foreground)]/70">
                     Head only
                   </div>
                   <div className="text-xs text-[color:var(--foreground)]/55">Afficher uniquement la tete</div>
                 </div>
-                <Switch checked={headOnly} onCheckedChange={setHeadOnly} aria-label="Head only" />
-              </div>
+              </label>
             </div>
 
-            <div className="md:col-span-2">
-              <Accordion
-                type="single"
-                collapsible
-                className="rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/45 px-4"
+            <SectionTitle className="md:col-span-2">Options supplémentaires</SectionTitle>
+            <Field label="Effet">
+              <select
+                value={effect}
+                onChange={(event) => setEffect(event.target.value)}
+                className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
               >
-                <AccordionItem value="advanced" className="border-none">
-                  <AccordionTrigger className="py-3 text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--foreground)]/70 hover:no-underline">
-                    Options avancees
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-2">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Field label="Format">
-                        <select
-                          value={format}
-                          onChange={(event) => setFormat(event.target.value as AvatarFormat)}
-                          className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
-                        >
-                          <option value="png">PNG</option>
-                          <option value="gif">GIF</option>
-                          <option value="jpg">JPG</option>
-                        </select>
-                      </Field>
-                      <Field label="Effet">
-                        <input
-                          value={effect}
-                          onChange={(event) => setEffect(event.target.value)}
-                          placeholder="Ex: 33"
-                          className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
-                        />
-                      </Field>
-                      <Field label="Danse">
-                        <select
-                          value={dance}
-                          onChange={(event) => setDance(Number(event.target.value))}
-                          className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
-                        >
-                          {[0, 1, 2, 3, 4].map((value) => (
-                            <option key={value} value={value}>
-                              {value}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Frame">
-                        <select
-                          value={frameNum}
-                          onChange={(event) => setFrameNum(Number(event.target.value))}
-                          className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
-                        >
-                          {[0, 1, 2, 3, 4, 5].map((value) => (
-                            <option key={value} value={value}>
-                              {value}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
+                <option value="">Aucun</option>
+                <option value="33">Effet 33</option>
+                <option value="70">Effet 70</option>
+                <option value="29">Effet 29</option>
+                <option value="1">Effet 1</option>
+              </select>
+            </Field>
+            <Field label="Danse">
+              <select
+                value={dance}
+                onChange={(event) => setDance(Number(event.target.value))}
+                className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
+              >
+                {[0, 1, 2, 3, 4].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Format">
+              <select
+                value={format}
+                onChange={(event) => setFormat(event.target.value as AvatarFormat)}
+                className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
+              >
+                <option value="png">PNG</option>
+                <option value="gif">GIF</option>
+                <option value="jpg">JPG</option>
+              </select>
+            </Field>
+            <Field label="Frame">
+              <select
+                value={frameNum}
+                onChange={(event) => setFrameNum(Number(event.target.value))}
+                className="h-11 w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30"
+              >
+                {[0, 1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
 
-          <aside className="space-y-4 rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-800)]/55 p-4 shadow-[0_18px_55px_-45px_rgba(0,0,0,0.75)]">
+          <aside className="order-first space-y-4 rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-800)]/55 p-4 shadow-[0_18px_55px_-45px_rgba(0,0,0,0.75)]">
             <div className="flex items-center justify-between">
               <div className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--foreground)]/60">
                 Preview
@@ -636,45 +637,17 @@ export default function ImagerClient() {
               </p>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <a
-                href={canAct ? previewUrl : undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled={!canAct}
-                className={`inline-flex h-10 items-center justify-center rounded-md border px-4 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-                  canAct
-                    ? 'border-[color:var(--bg-600)]/70 bg-[color:var(--bg-900)]/55 text-[color:var(--foreground)] hover:border-[color:var(--bg-500)]/70 hover:text-white'
-                    : 'pointer-events-none border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/40 text-[color:var(--foreground)]/40'
+            <button
+              type="button"
+              onClick={handleCopyUrl}
+              disabled={!canAct}
+              className={`flex w-full items-center justify-center gap-2 rounded-md h-12 text-sm font-bold uppercase tracking-[0.08em] transition ${canAct
+                  ? 'bg-[#0FD52F] text-white hover:bg-[#0CBF28] shadow-lg'
+                  : 'pointer-events-none bg-[color:var(--bg-600)]/60 text-[color:var(--foreground)]/45'
                 }`}
-              >
-                Ouvrir image
-              </a>
-              <a
-                href={canAct ? downloadUrl : undefined}
-                download={downloadName}
-                aria-disabled={!canAct}
-                className={`inline-flex h-10 items-center justify-center rounded-md px-4 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                  canAct
-                    ? 'bg-[color:var(--blue-500)] text-white hover:bg-[color:var(--blue-700)]'
-                    : 'pointer-events-none bg-[color:var(--bg-600)]/60 text-[color:var(--foreground)]/45'
-                }`}
-              >
-                Telecharger
-              </a>
-              <button
-                type="button"
-                onClick={handleCopyUrl}
-                disabled={!canAct}
-                className={`inline-flex h-10 items-center justify-center rounded-md border px-4 text-xs font-semibold uppercase tracking-[0.08em] transition ${
-                  canAct
-                    ? 'border-[color:var(--bg-600)]/70 bg-[color:var(--bg-900)]/55 text-[color:var(--foreground)] hover:border-[color:var(--bg-500)]/70 hover:text-white'
-                    : 'pointer-events-none border-[color:var(--bg-700)]/60 bg-[color:var(--bg-900)]/40 text-[color:var(--foreground)]/40'
-                }`}
-              >
-                Copier URL
-              </button>
-            </div>
+            >
+              🔗 COPIAR URL
+            </button>
 
             <div className="rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 p-3">
               <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--foreground)]/55">

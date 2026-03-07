@@ -4,9 +4,9 @@ import type { Session } from "next-auth"
 import { authOptions } from "@/auth"
 import NewsCommentForm from "@/components/news/NewsCommentForm"
 import { PageSection } from "@/components/shared/page-section"
-import { mediaUrl } from "@/lib/directus/media"
-import { getOneNews, getNewsComments } from "@/lib/directus/news"
-import type { NewsCommentRecord, NewsRecord } from "@/lib/directus/news"
+import { mediaUrl } from "@/lib/media-url"
+import { getPublicNewsById, getPublicNewsComments } from "@/server/directus/news"
+import type { NewsCommentRecord, NewsRecord } from "@/server/directus/types"
 import { stripHtml } from "@/lib/text-utils"
 import { formatDateTimeFromAny } from "@/lib/date-utils"
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
@@ -32,8 +32,8 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   }
 
   const [newsItem, commentsRaw, session]: [NewsRecord | null, unknown, Session | null] = await Promise.all([
-    getOneNews(newsId).catch(() => null),
-    getNewsComments(newsId).catch(() => []),
+    getPublicNewsById(newsId).catch(() => null),
+    getPublicNewsComments(newsId).catch(() => []),
     getServerSession(authOptions),
   ])
 
@@ -53,13 +53,13 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   const isAuthenticated = Boolean(session?.user)
   const avatarUrl = author
     ? buildHabboAvatarUrl(author, {
-        direction: 2,
-        head_direction: 2,
-        img_format: "png",
-        gesture: "sml",
-        headonly: 1,
-        size: "m",
-      })
+      direction: 2,
+      head_direction: 2,
+      img_format: "png",
+      gesture: "sml",
+      headonly: 1,
+      size: "m",
+    })
     : "/img/avatar_empty.png"
 
   const commentLabel = `${comments.length} commentaire${comments.length > 1 ? "s" : ""}`

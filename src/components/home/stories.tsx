@@ -1,4 +1,4 @@
-import { mediaUrl } from '@/lib/directus/media'
+import { mediaUrl } from '@/lib/media-url'
 import { parseTimestamp } from '@/lib/date-utils'
 
 import { listStoriesService } from '@/server/directus/stories'
@@ -35,26 +35,26 @@ export default async function Stories() {
   const rows = (await listStoriesService(30).catch(() => [])) as any[]
   const items = Array.isArray(rows)
     ? rows
-        .map((r: any) => {
-          const src = mediaUrl(r.image ?? r.imagem ?? r.Image ?? r.Imagem ?? '')
-          const author = String(r.autor ?? r.Autor ?? '')?.trim() || null
-          const timestamp = resolveStoryTimestamp(r)
-          const fallbackDate = r.published_at ?? r.data ?? r.dta ?? r.date_created ?? r.dateCreated ?? null
-          const date = timestamp || fallbackDate || null
-          const alt = author ? author : `Story #${r.id ?? ''}`
-          return { id: String(r.id ?? ''), src, alt, author, date, timestamp }
-        })
-        .filter((x) => x.src)
+      .map((r: any) => {
+        const src = mediaUrl(r.image ?? r.imagem ?? r.Image ?? r.Imagem ?? '')
+        const author = String(r.autor ?? r.Autor ?? '')?.trim() || null
+        const timestamp = resolveStoryTimestamp(r)
+        const fallbackDate = r.published_at ?? r.data ?? r.dta ?? r.date_created ?? r.dateCreated ?? null
+        const date = timestamp || fallbackDate || null
+        const alt = author ? author : `Story #${r.id ?? ''}`
+        return { id: String(r.id ?? ''), src, alt, author, date, timestamp }
+      })
+      .filter((x) => x.src)
     : []
 
   // Ensure chronological order: newest on the left
   const sorted = Array.isArray(items)
     ? [...items].sort((a: any, b: any) => {
-        const diff = toTimestamp(b.timestamp ?? b.date) - toTimestamp(a.timestamp ?? a.date)
-        if (diff !== 0) return diff
-        // fallback to id desc if same/unknown date
-        return (Number(b.id) || 0) - (Number(a.id) || 0)
-      })
+      const diff = toTimestamp(b.timestamp ?? b.date) - toTimestamp(a.timestamp ?? a.date)
+      if (diff !== 0) return diff
+      // fallback to id desc if same/unknown date
+      return (Number(b.id) || 0) - (Number(a.id) || 0)
+    })
     : []
 
   return (

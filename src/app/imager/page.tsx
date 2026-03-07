@@ -10,11 +10,8 @@ export default function ImagerPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/img/photo.png" alt="" className="h-10 w-10 image-pixelated" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--foreground)]/55">
-              Extras
-            </p>
             <h1 className="text-lg font-bold uppercase tracking-[0.08em] text-[color:var(--foreground)]">
-              Generateur d avatar Habbo
+              Habbo Imager
             </h1>
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   directusUrl,
   serviceToken,
   rItems,
+  rItem,
   cItem,
   uItem,
   dItem,
@@ -48,7 +49,7 @@ export async function listForumCategoriesService(): Promise<ForumCategoryRecord[
     rItems('forum_cat', {
       limit: 100 as any,
       sort: ['nome'] as any,
-      fields: ['id', 'nome', 'descricao', 'status', 'imagem'] as any,
+      fields: ['id', 'nome', 'descricao', 'status', 'imagem', 'slug', 'ordem'] as any,
     } as any),
   ) as Promise<ForumCategoryRecord[]>;
 }
@@ -269,6 +270,56 @@ export async function adminUpdateForumTopic(
 
 export async function adminDeleteForumTopic(id: number) {
   return directusService.request(dItem('forum_topicos', id));
+}
+
+// ============ PUBLIC FETCHER FUNCTIONS ============
+// Replace the old lib/directus/forum.ts (which had no auth token)
+
+export function getPublicTopics(limit = 50): Promise<ForumTopicRecord[]> {
+  return directusService.request(
+    rItems('forum_topicos', {
+      fields: ['id', 'titulo', 'conteudo', 'imagem', 'autor', 'data', 'views', 'fixo', 'fechado', 'status', 'cat_id'],
+      sort: ['-data'],
+      limit,
+    } as any),
+  ) as Promise<ForumTopicRecord[]>;
+}
+
+export function getPublicTopicById(id: number): Promise<ForumTopicRecord> {
+  return directusService.request(
+    rItem('forum_topicos', id, {
+      fields: ['id', 'titulo', 'conteudo', 'imagem', 'autor', 'data', 'views', 'fixo', 'fechado', 'status', 'cat_id'],
+    } as any),
+  ) as Promise<ForumTopicRecord>;
+}
+
+export function getPublicPostById(id: number): Promise<ForumPostRecord> {
+  return directusService.request(
+    rItem('forum_posts', id, {
+      fields: ['id', 'id_topico', 'conteudo', 'autor', 'data', 'status'],
+    } as any),
+  ) as Promise<ForumPostRecord>;
+}
+
+export function getPublicTopicComments(topicId: number): Promise<ForumCommentRecord[]> {
+  return directusService.request(
+    rItems('forum_coment', {
+      filter: { id_forum: { _eq: topicId } },
+      fields: ['id', 'id_forum', 'comentario', 'autor', 'data', 'status'],
+      sort: ['data'],
+      limit: 500,
+    } as any),
+  ) as Promise<ForumCommentRecord[]>;
+}
+
+export function listPublicForumCategories(): Promise<ForumCategoryRecord[]> {
+  return directusService.request(
+    rItems('forum_cat', {
+      fields: ['id', 'nome', 'descricao', 'status', 'imagem', 'slug', 'ordem'],
+      sort: ['nome'],
+      limit: 100,
+    } as any),
+  ) as Promise<ForumCategoryRecord[]>;
 }
 
 export type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCategoryRecord };

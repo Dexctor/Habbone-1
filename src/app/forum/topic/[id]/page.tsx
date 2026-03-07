@@ -4,13 +4,13 @@ import CommentBubble from "@/components/forum/CommentBubble";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
-import { mediaUrl } from "@/lib/directus/media";
+import { mediaUrl } from "@/lib/media-url";
 import {
-  getLikesMapForTopicComments,
-  getOneTopic,
-  getTopicComments,
-} from "@/lib/directus/forum";
-import type { ForumCommentRecord, ForumTopicRecord } from "@/lib/directus/forum";
+  getPublicTopicById,
+  getPublicTopicComments,
+} from '@/server/directus/forum';
+import { getLikesMapForTopicComments } from '@/server/directus/likes';
+import type { ForumCommentRecord, ForumTopicRecord } from '@/server/directus/types';
 import { formatDateTimeSmart } from "@/lib/date-utils";
 import ForumCommentForm from "@/components/forum/ForumCommentForm";
 import CommentsActionButton from "@/components/forum/CommentsActionButton";
@@ -37,8 +37,8 @@ export default async function TopicPage(props: TopicPageProps) {
   }
 
   const [topic, commentsRaw]: [ForumTopicRecord | null, unknown] = await Promise.all([
-    getOneTopic(topicId).catch(() => null),
-    getTopicComments(topicId).catch(() => []),
+    getPublicTopicById(topicId).catch(() => null),
+    getPublicTopicComments(topicId).catch(() => []),
   ]);
 
   if (!topic) {
@@ -62,13 +62,13 @@ export default async function TopicPage(props: TopicPageProps) {
   const imageUrl = topic.imagem ? mediaUrl(topic.imagem) : null;
   const avatarUrl = author
     ? buildHabboAvatarUrl(author, {
-        direction: 2,
-        head_direction: 2,
-        img_format: "png",
-        gesture: "sml",
-        headonly: 1,
-        size: "m",
-      })
+      direction: 2,
+      head_direction: 2,
+      img_format: "png",
+      gesture: "sml",
+      headonly: 1,
+      size: "m",
+    })
     : "/img/avatar_empty.png";
 
   const commentsLabel = `${comments.length} commentaire${comments.length > 1 ? "s" : ""}`;
