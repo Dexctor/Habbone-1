@@ -23,16 +23,14 @@ export const navigation: NavEntry[] = [
     children: [
       { label: 'Habbo Attitude', href: 'https://www.habbo.fr/playing-habbo/habbo-way', external: true },
       { label: 'Service Client', href: 'https://help.habbo.fr/hc/fr', external: true },
-      { label: 'Boutique', href: 'https://www.habbo.fr/shop', external: true },
+      { label: 'Boutique', href: 'https://www.habbo.fr/boutique', external: true },
     ],
   },
   {
-    label: 'Centre fan',
+    label: 'EXTRAS',
     children: [
       { label: 'Poster un sujet', href: '/forum' },
       { label: 'Habbo Imager', href: '/imager', prefetch: false },
-      { label: 'Rechercher utilisateurs', href: '/pseudohabbo', prefetch: false },
-      { label: 'Rechercher mobis', href: '/mobis', prefetch: false },
     ],
   },
   { label: 'Forum', href: '/forum' },

@@ -18,7 +18,7 @@ type ForumPageProps = {
   searchParams?: Promise<Record<string, string | string[]>>
 }
 
-type SectionId = 'habbone' | 'fan-center' | 'habbo'
+type SectionId = 'habbone' | 'EXTRAS' | 'habbo'
 
 type SectionConfig = {
   id: SectionId
@@ -28,7 +28,7 @@ type SectionConfig = {
 
 const SECTION_CONFIG: SectionConfig[] = [
   { id: 'habbone', label: 'HABBONE', icon: '/img/public.png' },
-  { id: 'fan-center', label: 'CENTRE FAN', icon: '/img/fa-center.png' },
+  { id: 'EXTRAS', label: 'EXTRAS', icon: '/img/fa-center.png' },
   { id: 'habbo', label: 'HABBO', icon: '/img/hotel.png' },
 ]
 
@@ -100,7 +100,7 @@ function resolveSectionId(categoryId: string, categoryName: string): SectionId {
     normalizedName.includes('pixel') ||
     normalizedName.includes('fan')
   ) {
-    return 'fan-center'
+    return 'EXTRAS'
   }
   return 'habbone'
 }

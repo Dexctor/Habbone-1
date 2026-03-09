@@ -77,7 +77,7 @@ export default function UserBarLeft({
   }, [coins])
 
   return (
-    <div className="login-bar flex items-center w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] border-r border-[#141433] px-4 md:px-5">
+    <div className="login-bar flex items-center w-full min-h-[92px] border-[#141433] px-4 md:px-5 lg:border-r">
       {isLoading && (
         <div className="flex items-center w-full">
           <Skeleton className="min-w-[60px] h-[60px] rounded-full bg-white/10 mr-[12px]" />

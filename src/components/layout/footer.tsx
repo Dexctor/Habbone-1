@@ -113,7 +113,7 @@ export default function Footer() {
               <Link href="/forum" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Poster un sujet</Link>
               <Link href="/imager" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Habbo Imager</Link>
               <Link href="/pseudohabbo" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Rechercher utilisateurs</Link>
-              <Link href="/mobis" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Rechercher mobis</Link>
+              <Link href="/mobis" prefetch={false} className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Rechercher Meubles</Link>
             </div>
           </section>
 

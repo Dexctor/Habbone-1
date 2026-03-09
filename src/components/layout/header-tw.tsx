@@ -217,7 +217,7 @@ export default function HeaderTW() {
 
       <motion.section
         layout
-        className="userbar w-full min-h-[100px] md:min-h-[120px] lg:min-h-[140px] bg-[#25254D] shadow-[0_-1px_0_rgba(255,255,255,.1),_0_1px_0_#141433]"
+        className="userbar w-full min-h-[92px] bg-[#25254D] shadow-[0_-1px_0_rgba(255,255,255,.1),_0_1px_0_#141433]"
         initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10 }}
         whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-10% 0px -10% 0px' }}

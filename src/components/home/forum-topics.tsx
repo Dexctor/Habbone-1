@@ -2,7 +2,7 @@ import { getPublicTopics } from '@/server/directus/forum'
 import ForumTopicsClient from './forum-topics-client'
 
 export default async function ForumTopics() {
-    const topics = await getPublicTopics(6).catch(() => []) as any[]
+    const topics = await getPublicTopics(7).catch(() => []) as any[]
     const data = Array.isArray(topics)
         ? topics.map((t: any) => ({
             id: Number(t.id),

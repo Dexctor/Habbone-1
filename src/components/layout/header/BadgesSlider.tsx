@@ -39,7 +39,7 @@ export default function BadgesSlider() {
 
   return (
     <div id="badges-free" className="col-4 pl-0 w-full lg:w-1/3 hidden lg:block">
-      <div className="badges-free flex items-center w-full min-h-[16vh] pl-[20px]">
+      <div className="badges-free flex h-[92px] items-center w-full pl-[20px]">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
