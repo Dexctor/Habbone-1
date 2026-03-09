@@ -23,7 +23,7 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
         <div className="mb-12 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/box.png" alt="" className="h-[30px] w-[30px] image-pixelated" />
+            <img src="/img/box.png" alt="" className="h-[32px] w-auto image-pixelated" />
             <h2 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
               Forum Habbone
             </h2>

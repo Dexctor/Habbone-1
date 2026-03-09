@@ -1,23 +1,33 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function ProfileSection({ title, onPrev, onNext, children }: { title: string; onPrev?: () => void; onNext?: () => void; children: React.ReactNode }) {
+export function ProfileSection({
+  title,
+  onPrev,
+  onNext,
+  children,
+}: {
+  title: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <Card className="bg-[color:var(--bg-600)] border-[color:var(--bg-800)]">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-base">{title}</CardTitle>
+    <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
+      <div className="flex items-center justify-between gap-3 px-5 py-4">
+        <h2 className="text-[16px] font-bold text-white">{title}</h2>
         {(onPrev || onNext) && (
           <div className="flex items-center gap-2">
             {onPrev && (
               <Button
+                type="button"
                 variant="secondary"
                 size="icon"
-                className="h-10 w-10"
-                title="Précédent"
-                aria-label="Précédent"
+                className="h-[40px] w-[40px] border border-transparent bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]"
+                title="Precedent"
+                aria-label="Precedent"
                 onClick={onPrev}
               >
                 <ChevronLeft className="size-5" />
@@ -25,9 +35,10 @@ export function ProfileSection({ title, onPrev, onNext, children }: { title: str
             )}
             {onNext && (
               <Button
+                type="button"
                 variant="secondary"
                 size="icon"
-                className="h-10 w-10"
+                className="h-[40px] w-[40px] border border-transparent bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]"
                 title="Suivant"
                 aria-label="Suivant"
                 onClick={onNext}
@@ -37,11 +48,8 @@ export function ProfileSection({ title, onPrev, onNext, children }: { title: str
             )}
           </div>
         )}
-      </CardHeader>
-      <CardContent>
-        {children}
-      </CardContent>
-    </Card>
+      </div>
+      <div className="border-t border-[#1F1F3E] px-5 py-4">{children}</div>
+    </section>
   );
 }
-

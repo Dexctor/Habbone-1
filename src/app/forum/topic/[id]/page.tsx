@@ -112,7 +112,7 @@ export default async function TopicPage(props: TopicPageProps) {
       <section>
         <div className="flex h-[76px] items-center rounded-t-[4px] border border-[#141433] bg-[#1F1F3E] px-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/forum.png" alt="" className="h-[46px] w-[35px] image-pixelated object-contain" />
+          <img src="/img/forum.png" alt="" className="h-[49px] w-auto image-pixelated object-contain" />
           <h1 className="ml-3 line-clamp-1 text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">
             {title}
           </h1>
@@ -156,7 +156,7 @@ export default async function TopicPage(props: TopicPageProps) {
         <div className="flex h-[76px] items-center justify-between rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/public.png" alt="" className="h-[49px] w-[36px] image-pixelated object-contain" />
+            <img src="/img/public.png" alt="" className="h-[50px] w-auto image-pixelated object-contain" />
             <h2 className="text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">Commentaires</h2>
           </div>
 

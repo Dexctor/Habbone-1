@@ -85,7 +85,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
         <div className="mx-3 rounded-[8px] bg-[#141433] p-4">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/news.png" alt="" className="h-[45px] w-[41px] image-pixelated" />
+            <img src="/img/news.png" alt="" className="h-[49px] w-auto image-pixelated" />
             <span className="text-lg font-bold uppercase tracking-[0.12em] text-[#DDD]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
               {title}
             </span>
@@ -133,7 +133,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
         <div className="flex items-center justify-between rounded-[4px] border border-[rgba(0,0,0,0.6)] bg-[#1F1F3E] px-5 py-4 shadow-[0_0_0_0_rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/public.png" alt="" className="h-12 w-auto image-pixelated" />
+            <img src="/img/public.png" alt="" className="h-[50px] w-auto image-pixelated" />
             <span className="text-lg font-bold uppercase tracking-[0.12em] text-[#DDD]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
               Commentaires
             </span>

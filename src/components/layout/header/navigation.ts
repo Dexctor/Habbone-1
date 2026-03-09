@@ -23,7 +23,7 @@ export const navigation: NavEntry[] = [
     children: [
       { label: 'Habbo Attitude', href: 'https://www.habbo.fr/playing-habbo/habbo-way', external: true },
       { label: 'Service Client', href: 'https://help.habbo.fr/hc/fr', external: true },
-      { label: 'Boutique', href: 'https://www.habbo.fr/boutique', external: true },
+      { label: 'Boutique Habbo', href: 'https://www.habbo.fr/shop', external: true },
     ],
   },
   {

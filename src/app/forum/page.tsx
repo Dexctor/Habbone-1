@@ -180,7 +180,7 @@ function SectionBlock({
     <section className="space-y-2">
       <div className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0px_0px_0px_0px_rgba(255,255,255,0.05)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={icon} alt="" className="h-[34px] w-[34px] image-pixelated object-contain" />
+        <img src={icon} alt="" className="h-[38px] w-auto image-pixelated object-contain" />
         <h2 className="ml-3 text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">{label}</h2>
       </div>
 

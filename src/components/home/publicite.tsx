@@ -42,7 +42,7 @@ export default function Publicite() {
         <header className="flex h-[50px] items-center justify-between px-0">
           <div className="flex items-center gap-3 pl-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/contact.png" alt="" className="h-[32px] w-[32px] image-pixelated" />
+            <img src="/img/contact.png" alt="" className="h-[34px] w-auto image-pixelated" />
             <h2 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
               Publicite
             </h2>

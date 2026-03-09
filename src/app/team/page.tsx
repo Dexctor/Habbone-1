@@ -54,7 +54,7 @@ export default async function TeamPage() {
           <img
             src="/img/member-team.png"
             alt=""
-            className="h-[46px] w-[35px] image-pixelated"
+            className="h-[49px] w-auto image-pixelated"
           />
           <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
             Equipe Habbone

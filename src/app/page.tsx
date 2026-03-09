@@ -1,5 +1,6 @@
 
 import LatestArticles from "@/components/home/latest-articles";
+import Stories from "@/components/home/stories";
 import ForumTopics from "@/components/home/forum-topics";
 import LatestMobis from "@/components/home/latest-mobis";
 import Publicite from "@/components/home/publicite";
@@ -7,6 +8,7 @@ import Publicite from "@/components/home/publicite";
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-[1200px] space-y-[70px] px-4 py-10 sm:px-6">
+      <Stories />
       <LatestArticles />
       <ForumTopics />
 

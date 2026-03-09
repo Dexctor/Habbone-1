@@ -68,7 +68,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
         <div className="flex flex-col gap-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/news.png" alt="" className="h-[22px] w-[22px] image-pixelated" />
+            <img src="/img/news.png" alt="" className="h-[27px] w-auto image-pixelated" />
             <h1 className="text-[14px] font-bold uppercase tracking-[0.08em] text-[#DDD]">
               Archive des actualites
             </h1>

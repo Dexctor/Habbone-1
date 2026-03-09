@@ -42,7 +42,7 @@ export default function BoutiquePage() {
       <header className="rounded-[8px] border border-[#1F1F3E] bg-[#272746] p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/store.png" alt="Boutique" className="h-14 w-14 image-pixelated" />
+          <img src="/img/store.png" alt="Boutique" className="h-[56px] w-auto image-pixelated" />
           <div className="space-y-1">
             <h1 className="text-[20px] font-bold uppercase tracking-[0.08em] text-[#DDD]">Boutique HabbOne</h1>
             <p className="text-[14px] text-[#BEBECE]">Achete des packs, badges et bonus pour ton compte.</p>

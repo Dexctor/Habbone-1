@@ -1,49 +1,83 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { ProfileHeaderCard } from "./modules/ProfileHeaderCard";
 import { ProfileInfoList } from "./modules/ProfileInfoList";
 import { ProfileSection } from "./modules/ProfileSection";
 import { ProfileTabs } from "./modules/ProfileTabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeIcon } from "./modules/BadgeIcon";
-import Link from "next/link";
+
 import { mediaUrl } from "@/lib/media-url";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
 import { useHabboProfile } from "@/lib/use-habbo-profile";
 import { formatDateTime } from "@/lib/date-utils";
+import { stripHtml } from "@/lib/text-utils";
 import { usePaginatedList } from "./hooks/usePaginatedList";
+
 import type { HabboFriend, HabboGroup, HabboRoom, HabboBadge } from "@/lib/habbo";
 import type { HabboProfileResponse } from "@/types/habbo";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import "./profile.tailwind.css";
 
 const PAGE_SIZE = 100;
+const PER_TOPICS = 4;
+const PER_ARTICLES = 4;
+
+type TopicCard = {
+  id: number | string;
+  imagem?: string;
+  titulo?: string;
+  autor?: string;
+  data?: string | number | null;
+};
+
+type ArticleCard = {
+  id: number | string;
+  imagem?: string;
+  titulo?: string;
+  autor?: string;
+  data?: string | number | null;
+};
+
+function badgeImageFromCode(code: string) {
+  if (!code) return "";
+  return `https://images.habbo.com/c_images/album1584/${code}.gif`;
+}
+
+function badgeCodeFromEntry(b: HabboBadge): string {
+  return (
+    (b?.code || b?.badgeCode || b?.badge_code || b?.badge?.code || "")
+      .toString()
+      .trim()
+  );
+}
 
 export default function ProfileClient({ nick }: { nick: string }) {
-  const { data, error, loading, refresh } = useHabboProfile(nick, {
-    fallbackMessage: "Erreur de récupération du profil",
+  const { data, error, loading } = useHabboProfile(nick, {
+    fallbackMessage: "Erreur de recuperation du profil",
   });
 
-  // Articles state (different pagination pattern - carousel style)
-  type ArticleCard = { id: number | string; imagem?: string; titulo?: string; autor?: string; data?: string | number | null };
+  const [topics, setTopics] = useState<TopicCard[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [topicsPage, setTopicsPage] = useState(0);
+  const [topicsDir, setTopicsDir] = useState<1 | -1>(1);
   const [articles, setArticles] = useState<ArticleCard[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [articlesPage, setArticlesPage] = useState(0);
   const [articlesDir, setArticlesDir] = useState<1 | -1>(1);
   const reduce = useReducedMotion();
 
-  // Use paginated list hook for friends, groups, badges, rooms
   const friendsPagination = usePaginatedList(data?.friends ?? [], PAGE_SIZE);
   const groupsPagination = usePaginatedList(data?.groups ?? [], PAGE_SIZE);
   const badgesPagination = usePaginatedList(data?.badges ?? [], PAGE_SIZE);
   const roomsPagination = usePaginatedList(data?.rooms ?? [], PAGE_SIZE);
 
-  // Broadcast profile data to the header (mutualize on /profile)
   useEffect(() => {
     if (typeof window === "undefined" || !data) return;
     try {
@@ -51,10 +85,50 @@ export default function ProfileClient({ nick }: { nick: string }) {
       const lvl = typeof data.user?.currentLevel === "number" ? data.user.currentLevel : null;
       window.__habboLevel = lvl;
       window.dispatchEvent(new CustomEvent<HabboProfileResponse>("habbo:profile", { detail: data }));
-    } catch { }
+    } catch {
+      // noop
+    }
   }, [data]);
 
-  // Fetch articles by logged user nick
+  useEffect(() => {
+    const author = data?.user?.name || nick;
+    if (!author) return;
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setTopicsLoading(true);
+
+    const load = async () => {
+      try {
+        const response = await fetch(`/api/profile/topics?author=${encodeURIComponent(author)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = (await response.json().catch(() => null)) as unknown;
+        if (cancelled) return;
+        if (!response.ok) {
+          const maybeErr = (payload as { error?: unknown } | null)?.error;
+          const msg = typeof maybeErr === "string" ? maybeErr : "Erreur de recuperation des sujets";
+          throw new Error(msg);
+        }
+
+        const rows = (payload as { data?: unknown } | null)?.data;
+        setTopics(Array.isArray(rows) ? (rows as TopicCard[]) : []);
+      } catch {
+        if (!cancelled) setTopics([]);
+      } finally {
+        if (!cancelled) setTopicsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [nick, data?.user?.name]);
+
   useEffect(() => {
     const author = data?.user?.name || nick;
     if (!author) return;
@@ -65,17 +139,18 @@ export default function ProfileClient({ nick }: { nick: string }) {
 
     const load = async () => {
       try {
-        const response = await fetch(
-          `/api/profile/articles?author=${encodeURIComponent(author)}`,
-          { cache: "no-store", signal: controller.signal }
-        );
+        const response = await fetch(`/api/profile/articles?author=${encodeURIComponent(author)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const payload = (await response.json().catch(() => null)) as unknown;
         if (cancelled) return;
         if (!response.ok) {
           const maybeErr = (payload as { error?: unknown } | null)?.error;
-          const msg = typeof maybeErr === "string" ? maybeErr : "Erreur de récupération des articles";
+          const msg = typeof maybeErr === "string" ? maybeErr : "Erreur de recuperation des articles";
           throw new Error(msg);
         }
+
         const rows = (payload as { data?: unknown } | null)?.data;
         setArticles(Array.isArray(rows) ? (rows as ArticleCard[]) : []);
       } catch {
@@ -85,7 +160,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
       }
     };
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
@@ -93,45 +168,48 @@ export default function ProfileClient({ nick }: { nick: string }) {
     };
   }, [nick, data?.user?.name]);
 
-  // Reset page when data changes
+  useEffect(() => {
+    setTopicsPage(0);
+  }, [topics.length]);
+
   useEffect(() => {
     setArticlesPage(0);
   }, [articles.length]);
 
-  const PER_ARTICLES = 4;
+  const topicsPageCount = Math.max(1, Math.ceil(topics.length / PER_TOPICS));
+  const visibleTopics = useMemo(
+    () => topics.slice(topicsPage * PER_TOPICS, topicsPage * PER_TOPICS + PER_TOPICS),
+    [topics, topicsPage],
+  );
+
   const articlesPageCount = Math.max(1, Math.ceil(articles.length / PER_ARTICLES));
   const visibleArticles = useMemo(
-    () =>
-      articles.slice(
-        articlesPage * PER_ARTICLES,
-        articlesPage * PER_ARTICLES + PER_ARTICLES
-      ),
-    [articles, articlesPage]
+    () => articles.slice(articlesPage * PER_ARTICLES, articlesPage * PER_ARTICLES + PER_ARTICLES),
+    [articles, articlesPage],
   );
 
   const counts = useMemo(() => {
-    const achCount = typeof data?.achievementsCount === "number"
-      ? data.achievementsCount
-      : Array.isArray(data?.achievements)
-        ? data.achievements.length
-        : 0;
-    const achTotal = typeof data?.achievementsTotalCount === "number" ? data.achievementsTotalCount : undefined;
+    const achievementsCount =
+      typeof data?.achievementsCount === "number"
+        ? data.achievementsCount
+        : Array.isArray(data?.achievements)
+          ? data.achievements.length
+          : 0;
+
     return {
       friends: data?.friends?.length ?? 0,
       groups: data?.groups?.length ?? 0,
       badges: data?.badges?.length ?? 0,
       rooms: data?.rooms?.length ?? 0,
-      achievements: achCount,
-      achievementsTotal: achTotal,
+      achievements: achievementsCount,
     } as const;
   }, [data]);
 
   function fmtMemberSince(v?: string) {
     if (!v) return "";
-    // Normalize timezone like +0000 -> +00:00 for Date parsing
     const norm = v.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
     const d = new Date(norm);
-    return isNaN(+d) ? v : d.toLocaleDateString();
+    return Number.isNaN(+d) ? v : d.toLocaleDateString();
   }
 
   function resolveProfileCurrentLevel(profile: HabboProfileResponse["profile"]): number | undefined {
@@ -154,124 +232,198 @@ export default function ProfileClient({ nick }: { nick: string }) {
     size: "l",
   });
 
+  const summaryStats = useMemo(
+    () => ({
+      topics: topics.length,
+      comments: 0,
+      articles: articles.length,
+      coins: typeof headerUser?.starGemCount === "number" ? headerUser.starGemCount : 0,
+      friends: counts.friends,
+      groups: counts.groups,
+      badges: counts.badges,
+    }),
+    [topics.length, articles.length, counts.badges, counts.friends, counts.groups, headerUser?.starGemCount],
+  );
+
+  const favoriteBadges = useMemo(() => {
+    const fromProfile = (data?.badges ?? []).slice(0, 10);
+    return fromProfile
+      .map((badge) => {
+        const direct =
+          (badge as any)?.imageUrl ||
+          (badge as any)?.badgeImageUrl ||
+          (badge as any)?.image ||
+          (badge as any)?.url ||
+          "";
+        if (typeof direct === "string" && direct.trim()) return direct;
+
+        const code = badgeCodeFromEntry(badge);
+        return code ? badgeImageFromCode(code) : "";
+      })
+      .filter(Boolean);
+  }, [data?.badges]);
+
   return (
-    <div className="profile-page">
-      <div className="profile-container space-y-6" aria-busy={loading} aria-live="polite">
-        {loading && (
+    <div className="w-full space-y-6" aria-busy={loading} aria-live="polite">
+      {loading && !data ? (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[350px_minmax(0,818px)]">
           <div className="space-y-4">
-            <Skeleton className="h-36 w-full" />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-            </div>
+            <Skeleton className="h-[180px] w-full" />
+            <Skeleton className="h-[320px] w-full" />
           </div>
-        )}
-
-        {error && (
-          <div className="text-sm text-red-600 border border-red-600/30 rounded p-3 bg-red-600/10">
-            {error}
+          <div className="space-y-4">
+            <Skeleton className="h-[180px] w-full" />
+            <Skeleton className="h-[100px] w-full" />
           </div>
-        )}
+        </div>
+      ) : null}
 
-        {/* Header */}
-        {data && (
-          <ProfileHeaderCard
-            nick={headerUser?.name || nick}
-            memberSince={fmtMemberSince(headerUser?.memberSince)}
-            level={headerUser?.currentLevel ?? resolveProfileCurrentLevel(data.profile)}
-            starGems={headerUser?.starGemCount}
-            avatarUrl={headerAvatarUrl}
-            motto={headerUser?.motto}
-            ariaBusy={loading}
-          />
-        )}
+      {error ? (
+        <div className="rounded-[4px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </div>
+      ) : null}
 
-        {/* Counters */}
-        <Card className="bg-[color:var(--bg-600)] border-[color:var(--bg-800)]">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-4">
-            {([
-              { label: "Amis", value: counts.friends },
-              { label: "Groupes", value: counts.groups },
-              { label: "Badges", value: counts.badges },
-              { label: "Salles", value: counts.rooms },
-              {
-                label: "Succès",
-                value: typeof counts.achievementsTotal === "number" ? counts.achievementsTotal : counts.achievements,
-              },
-            ] as const).map((it) => (
-              <div key={it.label} className="text-center border rounded p-3 border-[color:var(--border)]">
-                <div className="text-xs opacity-70">{it.label}</div>
-                <div className="text-xl font-semibold">{it.value}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
+      {data ? (
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[350px_minmax(0,818px)]">
+          <aside className="space-y-4">
+            <ProfileHeaderCard
+              nick={headerUser?.name || nick}
+              memberSince={fmtMemberSince(headerUser?.memberSince)}
+              level={headerUser?.currentLevel ?? resolveProfileCurrentLevel(data.profile)}
+              starGems={headerUser?.starGemCount}
+              avatarUrl={headerAvatarUrl}
+              motto={headerUser?.motto}
+              ariaBusy={loading}
+            />
 
-        {/* Body */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-4">
-            <ProfileSection title="Infos de profil">
-              <div className="rounded-md bg-muted/40 p-4 text-center font-semibold text-destructive">Pas d'informations</div>
+            <ProfileInfoList
+              stats={summaryStats}
+              favoritesBadges={favoriteBadges}
+            />
+          </aside>
+
+          <div className="space-y-6">
+            <ProfileSection
+              title="Sujets postes"
+              onPrev={() => {
+                setTopicsDir(-1);
+                setTopicsPage((p) => Math.max(0, p - 1));
+              }}
+              onNext={() => {
+                setTopicsDir(1);
+                setTopicsPage((p) => Math.min(topicsPageCount - 1, p + 1));
+              }}
+            >
+              {topicsLoading ? (
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <Skeleton className="h-[155px]" />
+                  <Skeleton className="h-[155px]" />
+                </div>
+              ) : topics.length ? (
+                <div className="space-y-3" aria-live="polite">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.ul
+                      key={topicsPage}
+                      initial={reduce ? {} : { opacity: 0, x: topicsDir * 20 }}
+                      animate={reduce ? {} : { opacity: 1, x: 0 }}
+                      exit={reduce ? {} : { opacity: 0, x: -topicsDir * 20 }}
+                      transition={{ duration: 0.2 }}
+                      className="grid grid-cols-1 gap-3 lg:grid-cols-2"
+                    >
+                      {visibleTopics.map((topic) => {
+                        const title = stripHtml(topic.titulo ?? "") || `Sujet #${topic.id}`;
+                        const author = stripHtml(topic.autor ?? "") || "Anonyme";
+                        return (
+                          <li key={`topic-${topic.id}`} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                            <Link href={`/forum/topic/${topic.id}`} className="group flex h-full gap-3">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={topic.imagem ? mediaUrl(topic.imagem) : "/img/thumbnail.png"}
+                                alt={title ? `Miniature de ${title}` : "Miniature du sujet"}
+                                className="h-[84px] w-[84px] shrink-0 rounded-[3px] object-cover"
+                                loading="lazy"
+                              />
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <h3 className="line-clamp-2 text-[16px] font-bold leading-[1.2] text-[#DDD] group-hover:text-white">
+                                  {title}
+                                </h3>
+                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[4px] border border-[rgba(255,255,255,0.18)] px-3 text-[14px] font-bold text-[#F0F0F0]">
+                                  {author}
+                                </span>
+                              </div>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </motion.ul>
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="rounded-[4px] bg-[rgba(255,255,255,0.05)] px-4 py-3 text-center text-sm font-bold text-[#FF4B6C]">
+                  Pas d&apos;articles
+                </div>
+              )}
             </ProfileSection>
 
             <ProfileSection
-              title="Articles postés"
-              onPrev={articlesPage > 0 ? () => { setArticlesDir(-1); setArticlesPage((p) => Math.max(0, p - 1)); } : undefined}
-              onNext={articlesPage < articlesPageCount - 1 ? () => { setArticlesDir(1); setArticlesPage((p) => Math.min(articlesPageCount - 1, p + 1)); } : undefined}
+              title="Articles postes"
+              onPrev={() => {
+                setArticlesDir(-1);
+                setArticlesPage((p) => Math.max(0, p - 1));
+              }}
+              onNext={() => {
+                setArticlesDir(1);
+                setArticlesPage((p) => Math.min(articlesPageCount - 1, p + 1));
+              }}
             >
               {articlesLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16" />
-                  <Skeleton className="h-16" />
-                  <Skeleton className="h-16" />
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <Skeleton className="h-[155px]" />
+                  <Skeleton className="h-[155px]" />
                 </div>
               ) : articles.length ? (
                 <div className="space-y-3" aria-live="polite">
                   <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
+                    <motion.ul
                       key={articlesPage}
-                      initial={reduce ? {} : { opacity: 0, x: articlesDir * 30 }}
+                      initial={reduce ? {} : { opacity: 0, x: articlesDir * 20 }}
                       animate={reduce ? {} : { opacity: 1, x: 0 }}
-                      exit={reduce ? {} : { opacity: 0, x: -articlesDir * 30 }}
+                      exit={reduce ? {} : { opacity: 0, x: -articlesDir * 20 }}
                       transition={{ duration: 0.2 }}
+                      className="grid grid-cols-1 gap-3 lg:grid-cols-2"
                     >
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {visibleArticles.map((a: ArticleCard) => (
-                          <li key={a.id} className="border rounded p-3 border-[color:var(--border)]">
-                            <div className="flex gap-3">
+                      {visibleArticles.map((a) => {
+                        const title = stripHtml(a.titulo ?? "") || `Article #${a.id}`;
+                        const author = stripHtml(a.autor ?? "") || "Anonyme";
+                        return (
+                          <li key={`article-${a.id}`} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                            <Link href={`/news/${a.id}`} className="group flex h-full gap-3">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={a.imagem ? mediaUrl(a.imagem) : "/img/thumbnail.png"}
-                                alt={a.titulo ? `Miniature de ${a.titulo}` : "Miniature d'article"}
-                                className="w-16 h-16 rounded object-cover"
+                                alt={title ? `Miniature de ${title}` : "Miniature d'article"}
+                                className="h-[84px] w-[84px] shrink-0 rounded-[3px] object-cover"
                                 loading="lazy"
                               />
-                              <div className="min-w-0 flex-1">
-                                <Link href={`/news/${a.id}`} className="font-medium hover:underline truncate block">
-                                  {a.titulo ?? `Article #${a.id}`}
-                                </Link>
-                                <div className="text-xs opacity-70 mt-1 truncate">
-                                  Par {a.autor ?? '—'} · {formatDateTime(a.data)}
-                                </div>
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <h3 className="line-clamp-2 text-[16px] font-bold leading-[1.2] text-[#DDD] group-hover:text-white">
+                                  {title}
+                                </h3>
+                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[4px] border border-[rgba(255,255,255,0.18)] px-3 text-[14px] font-bold text-[#F0F0F0]">
+                                  {author}
+                                </span>
                               </div>
-                            </div>
+                            </Link>
                           </li>
-                        ))}
-                      </ul>
-                    </motion.div>
+                        );
+                      })}
+                    </motion.ul>
                   </AnimatePresence>
-
-                  <div className="flex items-center justify-center gap-2 text-xs opacity-70">
-                    <span>
-                      Page {articlesPage + 1} / {articlesPageCount}
-                    </span>
-                  </div>
                 </div>
               ) : (
-                <div className="rounded-md bg-muted/40 p-4 text-center font-semibold text-muted-foreground">
-                  Aucun article publié
+                <div className="rounded-[4px] bg-[rgba(255,255,255,0.05)] px-4 py-3 text-center text-sm font-bold text-[#FF4B6C]">
+                  Aucun article publie
                 </div>
               )}
             </ProfileSection>
@@ -281,13 +433,13 @@ export default function ProfileClient({ nick }: { nick: string }) {
               friendsSlot={(
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
-                    <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 overflow-x-hidden">
+                    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {friendsPagination.visible.map((f: HabboFriend, idx: number) => (
                         <li
                           key={f?.uniqueId || f?.name || idx}
-                          className="group flex flex-col items-center text-center gap-3 border rounded p-2 border-[color:var(--border)] bg-[color:var(--bg-700)] hover:bg-[color:var(--bg-600)] transition min-w-0"
+                          className="flex min-w-0 flex-col items-center gap-2 rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-2 text-center"
                         >
-                          <div className="relative w-16 h-16 rounded-full bg-[color:var(--bg-800)] flex items-center justify-center overflow-hidden ring-1 ring-[color:var(--border)]">
+                          <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[#1F1F3E]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={buildHabboAvatarUrl(f?.name || f?.habbo || "", {
@@ -299,98 +451,74 @@ export default function ProfileClient({ nick }: { nick: string }) {
                               })}
                               alt={`Avatar de ${f?.name || "inconnu"}`}
                               loading="lazy"
-                              className="w-14 h-14 rounded"
+                              className="h-12 w-12 rounded image-pixelated"
                             />
-                            {f?.online && (
-                              <span
-                                className="absolute right-0.5 bottom-0.5 w-3 h-3 rounded-full bg-green-500 ring-2 ring-[color:var(--bg-700)]"
-                                aria-label="En ligne"
-                                title="En ligne"
-                              />
-                            )}
+                            {f?.online ? (
+                              <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-green-500" aria-label="En ligne" title="En ligne" />
+                            ) : null}
                           </div>
-                          <div className="min-w-0 w-full">
-                            <div className="font-medium truncate">{f?.name || "—"}</div>
-                            {f?.motto && (
+                          <div className="w-full min-w-0">
+                            <div className="truncate text-[13px] font-bold text-white">{f?.name || "-"}</div>
+                            {f?.motto ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <div className="text-xs opacity-70 truncate w-full" aria-label={`Devise: ${f.motto}`}>
+                                  <div className="truncate text-[11px] text-[#BEBECE]" aria-label={`Devise: ${f.motto}`}>
                                     {f.motto}
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent sideOffset={6}>{f.motto}</TooltipContent>
                               </Tooltip>
-                            )}
+                            ) : null}
                           </div>
                         </li>
                       ))}
                     </ul>
                   </ScrollArea>
-                  {friendsPagination.hasMore && (
-                    <Button
-                      variant="secondary"
-                      className="mt-2"
-                      onClick={friendsPagination.loadMore}
-                      aria-label="Charger plus d'amis"
-                    >
+                  {friendsPagination.hasMore ? (
+                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={friendsPagination.loadMore}>
                       Charger +{friendsPagination.remaining}
                     </Button>
-                  )}
+                  ) : null}
                 </>
               )}
-              groupsSlot={
+              groupsSlot={(
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
-                    <ul className="space-y-3">
+                    <ul className="space-y-2">
                       {groupsPagination.visible.map((g: HabboGroup, idx: number) => (
-                        <li key={g?.id || g?.groupId || idx} className="border rounded p-2 border-[color:var(--border)]">
-                          <div className="font-medium">{g?.name || "—"}</div>
-                          {g?.description && <div className="text-xs opacity-70">{g.description}</div>}
+                        <li key={g?.id || g?.groupId || idx} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                          <div className="text-sm font-bold text-white">{g?.name || "-"}</div>
+                          {g?.description ? <div className="text-xs text-[#BEBECE]">{g.description}</div> : null}
                         </li>
                       ))}
                     </ul>
                   </ScrollArea>
-                  {groupsPagination.hasMore && (
-                    <Button
-                      variant="secondary"
-                      className="mt-2"
-                      onClick={groupsPagination.loadMore}
-                      aria-label="Charger plus de groupes"
-                    >
+                  {groupsPagination.hasMore ? (
+                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={groupsPagination.loadMore}>
                       Charger +{groupsPagination.remaining}
                     </Button>
-                  )}
+                  ) : null}
                 </>
-              }
-              badgesSlot={
+              )}
+              badgesSlot={(
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
-                    <ul className="grid grid-cols-6 sm:grid-cols-10 gap-2">
+                    <ul className="grid grid-cols-6 gap-2 sm:grid-cols-10">
                       {badgesPagination.visible.map((b: HabboBadge, idx: number) => {
-                        const rawCode = (b?.code || b?.badgeCode || b?.badge_code || b?.badge?.code || '').toString();
-                        // Preserve original case; CDN filenames for ACH_* are case-sensitive (e.g., ACH_Tutorial3)
-                        const code = rawCode.trim();
+                        const code = badgeCodeFromEntry(b);
+                        const imageUrl =
+                          (b as any)?.imageUrl ||
+                          (b as any)?.badgeImageUrl ||
+                          (b as any)?.image ||
+                          (b as any)?.url ||
+                          (b as any)?.iconUrl ||
+                          (b as any)?.icon_url ||
+                          "";
 
-                        // Collect potential image url hints from API
-                        const imageUrl = (
-                          b?.imageUrl || b?.badgeImageUrl || b?.image || b?.url || b?.iconUrl || b?.icon_url || b?.smallImageUrl || b?.small_image_url || ''
-                        ) as string | undefined;
+                        let album: string | undefined =
+                          (b as any)?.album || (b as any)?.badgeAlbum || (b as any)?.category || (b as any)?.badgeCategory;
+                        if (!album && code.startsWith("ACH_")) album = "album1584";
 
-                        // Album from payload or derived from URL or code/category
-                        let album: string | undefined = (b?.album || b?.badgeAlbum || b?.category || b?.badgeCategory) as string | undefined;
-                        if (!album && imageUrl) {
-                          try {
-                            const u = new URL(imageUrl);
-                            const m = u.pathname.match(/\/(?:c_images|C_IMAGES)\/([^/]+)\//);
-                            if (m && m[1]) album = m[1];
-                          } catch {
-                            const m = String(imageUrl).match(/\/(?:c_images|C_IMAGES)\/([^/]+)\//);
-                            if (m && m[1]) album = m[1];
-                          }
-                        }
-                        if (!album) {
-                          if (code.startsWith('ACH_')) album = 'album1584';
-                        }
                         return (
                           <li key={code || idx} className="flex flex-col items-center text-center">
                             <Tooltip>
@@ -406,79 +534,36 @@ export default function ProfileClient({ nick }: { nick: string }) {
                       })}
                     </ul>
                   </ScrollArea>
-                  {badgesPagination.hasMore && (
-                    <Button
-                      variant="secondary"
-                      className="mt-2"
-                      onClick={badgesPagination.loadMore}
-                      aria-label="Charger plus de badges"
-                    >
+                  {badgesPagination.hasMore ? (
+                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={badgesPagination.loadMore}>
                       Charger +{badgesPagination.remaining}
                     </Button>
-                  )}
+                  ) : null}
                 </>
-              }
+              )}
             />
 
             <ProfileSection title="Salles">
               <ScrollArea className="max-h-72 scroll-area">
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {roomsPagination.visible.map((r: HabboRoom, idx: number) => (
-                    <li key={r?.id || idx} className="border rounded p-2 border-[color:var(--border)]">
-                      <div className="font-medium">{r?.name || "—"}</div>
-                      {r?.description && <div className="text-xs opacity-70">{r.description}</div>}
-                      {r?.creationTime && (
-                        <div className="text-xs opacity-60 mt-1">
-                          {formatDateTime(r.creationTime)}
-                        </div>
-                      )}
+                    <li key={r?.id || idx} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                      <div className="text-sm font-bold text-white">{r?.name || "-"}</div>
+                      {r?.description ? <div className="text-xs text-[#BEBECE]">{r.description}</div> : null}
+                      {r?.creationTime ? <div className="mt-1 text-xs text-[#BEBECE]/70">{formatDateTime(r.creationTime)}</div> : null}
                     </li>
                   ))}
                 </ul>
               </ScrollArea>
-              {roomsPagination.hasMore && (
-                <Button
-                  variant="secondary"
-                  className="mt-2"
-                  onClick={roomsPagination.loadMore}
-                  aria-label="Charger plus de salles"
-                >
+              {roomsPagination.hasMore ? (
+                <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={roomsPagination.loadMore}>
                   Charger +{roomsPagination.remaining}
                 </Button>
-              )}
+              ) : null}
             </ProfileSection>
           </div>
-
-          {/* Right column */}
-          <div className="space-y-4">
-            <ProfileInfoList
-              stats={{
-                topics: 0,
-                comments: 0,
-                articles: 0,
-                coins: 0,
-                friends: counts.friends,
-                groups: counts.groups,
-                badges: counts.badges,
-              }}
-              rankings={[]}
-              favoritesBadges={[]}
-              onRefresh={() => {
-                // Reset pagination and refetch
-                friendsPagination.reset();
-                groupsPagination.reset();
-                badgesPagination.reset();
-                roomsPagination.reset();
-                setTimeout(() => {
-                  // trigger effect by changing nick dependency pattern if needed
-                  // here just re-run current fetch
-                  void refresh();
-                }, 0);
-              }}
-            />
-          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

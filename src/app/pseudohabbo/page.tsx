@@ -6,7 +6,7 @@ export default function PseudoHabboPage() {
       <header className="rounded-md border border-[color:var(--bg-700)]/65 bg-[color:var(--bg-900)]/45 px-6 py-5 shadow-[0_24px_60px_-45px_rgba(0,0,0,0.85)]">
         <div className="flex items-center gap-3 text-[color:var(--foreground)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/info.png" alt="" className="h-10 w-10 image-pixelated" />
+          <img src="/img/info.png" alt="" className="h-[43px] w-auto image-pixelated" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--foreground)]/55">
               Habbo
@@ -46,4 +46,3 @@ export default function PseudoHabboPage() {
     </main>
   )
 }
-

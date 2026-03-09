@@ -62,7 +62,7 @@ export default async function Stories() {
       <div className="bar-default flex items-center justify-between w-full min-h-[50px] mb-[20px]">
         <div className="title flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/photo.png" alt="stories" className="mr-[12px] image-pixelated w-[28px] h-[28px]" />
+          <img src="/img/photo.png" alt="stories" className="mr-[12px] h-[26px] w-auto image-pixelated" />
           <label className="font-bold text-[var(--text-lg)] leading-[22px] text-[var(--text-100)] uppercase [text-shadow:0_1px_2px_var(--text-shadow)]">
             Stories
           </label>

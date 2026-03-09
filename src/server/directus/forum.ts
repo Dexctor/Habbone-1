@@ -76,6 +76,33 @@ export async function listForumTopicsWithCategories(limit = 50): Promise<ForumTo
   ) as Promise<ForumTopicRecord[]>;
 }
 
+export async function listForumTopicsByAuthorService(author: string, limit = 30): Promise<ForumTopicRecord[]> {
+  if (!author) return [];
+  const rows = await directusService
+    .request(
+      rItems('forum_topicos', {
+        filter: { autor: { _eq: author } } as any,
+        fields: [
+          'id',
+          'titulo',
+          'conteudo',
+          'imagem',
+          'autor',
+          'data',
+          'views',
+          'fixo',
+          'fechado',
+          'status',
+          'cat_id',
+        ] as any,
+        sort: ['-data'] as any,
+        limit: limit as any,
+      } as any),
+    )
+    .catch(() => [] as ForumTopicRecord[]);
+  return Array.isArray(rows) ? (rows as ForumTopicRecord[]) : [];
+}
+
 export async function adminCreateForumPost(data: {
   id_topico: number;
   conteudo: string;

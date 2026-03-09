@@ -50,7 +50,7 @@ export default function LatestArticlesClient({ items }: { items: Item[] }) {
       <div className="mb-[30px] flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/news.png" alt="" className="h-[36px] w-[36px] image-pixelated" />
+          <img src="/img/news.png" alt="" className="h-[38px] w-auto image-pixelated" />
           <h2 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
             Dernieres actualites
           </h2>
