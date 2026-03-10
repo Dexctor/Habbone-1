@@ -237,20 +237,9 @@ export default async function AdminPage() {
   }, {});
 
   return (
-    <main className="admin-skin mx-auto max-w-6xl space-y-8 p-6">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Espace administration</h1>
-          <p className="text-sm opacity-70">
-            Gérez les contenus, les rôles et les utilisateurs depuis un espace unique.
-          </p>
-        </div>
-        <div className="text-sm opacity-70">
-          Connecté en tant que {(session.user as any).nick}
-        </div>
-      </header>
-
+    <main className="admin-skin mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
       <AdminDashboard
+        currentAdminName={(session.user as any).nick}
         stats={summaryStats}
         topics={topicsArray}
         posts={postsArray}
