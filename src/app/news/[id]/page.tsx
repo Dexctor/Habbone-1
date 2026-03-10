@@ -6,6 +6,7 @@ import NewsCommentForm from "@/components/news/NewsCommentForm"
 import { PageSection } from "@/components/shared/page-section"
 import { mediaUrl } from "@/lib/media-url"
 import { getPublicNewsById, getPublicNewsComments } from "@/server/directus/news"
+import { getLikesMapForNewsComments } from "@/server/directus/likes"
 import type { NewsCommentRecord, NewsRecord } from "@/server/directus/types"
 import { stripHtml } from "@/lib/text-utils"
 import { formatDateTimeFromAny } from "@/lib/date-utils"
@@ -46,6 +47,10 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   }
 
   const comments: NewsCommentRecord[] = Array.isArray(commentsRaw) ? (commentsRaw as NewsCommentRecord[]) : []
+  const commentIds = comments
+    .map((comment) => Number(comment?.id))
+    .filter((value) => Number.isFinite(value) && value > 0)
+  const likesMap = await getLikesMapForNewsComments(commentIds).catch(() => ({} as Record<number, number>))
   const title = stripHtml(newsItem.titulo || `Article #${newsItem.id}`) || `Article #${newsItem.id}`
   const publishedAt = formatDateTimeFromAny(newsItem.data)
   const author = stripHtml(newsItem.autor || "")
@@ -172,11 +177,15 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
               return (
                 <CommentBubble
                   key={comment.id}
+                  id={Number(comment.id)}
                   author={commentAuthor}
                   date={commentDate}
                   html={comment.comentario || ""}
+                  likes={likesMap[Number(comment.id)] ?? 0}
                   avatarNick={commentAuthor}
                   canInteract={isAuthenticated}
+                  likeEndpoint={`/api/news/comments/${comment.id}/like`}
+                  reportEndpoint={null}
                   showActions={true}
                 />
               )

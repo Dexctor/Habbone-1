@@ -170,12 +170,15 @@ export async function createForumComment(input: {
 }
 
 export async function toggleForumCommentLike(commentId: number, author: string) {
+  const safeAuthor = String(author || '').trim();
+  if (!safeAuthor) throw new Error('AUTHOR_REQUIRED');
+
   const byAuthor = (await directusService
     .request(
       rItems('forum_coment_curtidas' as any, {
         filter: {
           id_comentario: { _eq: commentId } as any,
-          ...(author ? ({ autor: { _eq: author } } as any) : {}),
+          autor: { _eq: safeAuthor } as any,
         } as any,
         limit: 1 as any,
         fields: ['id'] as any,
@@ -191,29 +194,14 @@ export async function toggleForumCommentLike(commentId: number, author: string) 
     }
   }
 
-  const payload: any = { id_comentario: commentId };
-  if (author) payload.autor = author;
-  try {
-    await directusService.request(cItem('forum_coment_curtidas' as any, payload));
-    return { liked: true };
-  } catch {
-    const anyRow = (await directusService
-      .request(
-        rItems('forum_coment_curtidas' as any, {
-          filter: { id_comentario: { _eq: commentId } } as any,
-          limit: 1 as any,
-          fields: ['id'] as any,
-        } as any),
-      )
-      .catch(() => [])) as any[];
-    const existingId = Array.isArray(anyRow) && anyRow.length ? (anyRow[0] as any)?.id : null;
-    if (existingId != null) {
-      await directusService.request(dItem('forum_coment_curtidas' as any, existingId as any));
-      return { liked: false };
-    }
-    await directusService.request(cItem('forum_coment_curtidas' as any, { id_comentario: commentId } as any));
-    return { liked: true };
-  }
+  const payload: any = {
+    id_comentario: commentId,
+    autor: safeAuthor,
+    data: Math.floor(Date.now() / 1000),
+    status: 'ativo',
+  };
+  await directusService.request(cItem('forum_coment_curtidas' as any, payload));
+  return { liked: true };
 }
 
 export async function reportForumComment(commentId: number, author: string) {

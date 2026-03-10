@@ -12,6 +12,8 @@ type CommentBubbleProps = {
   avatarNick?: string
   canInteract?: boolean
   showActions?: boolean
+  likeEndpoint?: string
+  reportEndpoint?: string | null
 }
 
 function habboHeadUrl(nick?: string) {
@@ -35,17 +37,21 @@ export default function CommentBubble({
   avatarNick,
   canInteract = false,
   showActions = true,
+  likeEndpoint,
+  reportEndpoint,
 }: CommentBubbleProps) {
   const imgSrc = habboHeadUrl(avatarNick || author)
   const [likeCount, setLikeCount] = useState(likes)
   const [liking, setLiking] = useState(false)
   const likeLabel = liking ? "..." : likeCount > 0 ? `Aimer (${likeCount})` : "Aimer"
+  const resolvedLikeEndpoint = likeEndpoint ?? (id ? `/api/forum/comments/${id}/like` : null)
+  const resolvedReportEndpoint = reportEndpoint === undefined ? (id ? `/api/forum/comments/${id}/report` : null) : reportEndpoint
 
   const onLike = async () => {
-    if (!canInteract || !id || liking) return
+    if (!canInteract || !id || liking || !resolvedLikeEndpoint) return
     setLiking(true)
     try {
-      const res = await fetch(`/api/forum/comments/${id}/like`, { method: "POST" })
+      const res = await fetch(resolvedLikeEndpoint, { method: "POST" })
       const json = await res.json().catch(() => ({} as any))
       if (!res.ok) throw new Error(json?.error || "LIKE_FAILED")
       setLikeCount((count) => (json?.liked ? count + 1 : Math.max(0, count - 1)))
@@ -57,9 +63,9 @@ export default function CommentBubble({
   }
 
   const onReport = async () => {
-    if (!canInteract || !id) return
+    if (!canInteract || !id || !resolvedReportEndpoint) return
     try {
-      const res = await fetch(`/api/forum/comments/${id}/report`, { method: "POST" })
+      const res = await fetch(resolvedReportEndpoint, { method: "POST" })
       if (!res.ok) throw new Error("REPORT_FAILED")
       toast.success("Merci pour le signalement")
     } catch (error: any) {
@@ -99,14 +105,16 @@ export default function CommentBubble({
                 >
                   {likeLabel}
                 </button>
-                <button
-                  type="button"
-                  onClick={onReport}
-                  className="text-[#BEBECE] hover:underline"
-                  aria-label="Signaler ce commentaire"
-                >
-                  Signaler
-                </button>
+                {resolvedReportEndpoint ? (
+                  <button
+                    type="button"
+                    onClick={onReport}
+                    className="text-[#BEBECE] hover:underline"
+                    aria-label="Signaler ce commentaire"
+                  >
+                    Signaler
+                  </button>
+                ) : null}
               </span>
             ) : null}
           </div>

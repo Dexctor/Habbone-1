@@ -12,6 +12,7 @@ import {
   getPublicTopicComments,
   getTopicVoteSummary,
 } from "@/server/directus/forum";
+import { getLikesMapForTopicComments } from "@/server/directus/likes";
 import type { ForumCommentRecord, ForumTopicRecord } from "@/server/directus/types";
 import { stripHtml } from "@/lib/text-utils";
 import styles from "@/components/forum/forum-content.module.css";
@@ -80,6 +81,10 @@ export default async function TopicPage(props: TopicPageProps) {
   const comments = (Array.isArray(commentsRaw) ? (commentsRaw as ForumCommentRecord[]) : []).filter((comment) =>
     isVisibleStatus(comment?.status),
   );
+  const commentIds = comments
+    .map((comment) => Number(comment?.id))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const likesMap = await getLikesMapForTopicComments(commentIds).catch(() => ({} as Record<number, number>));
 
   const commentPageSize = 5;
   const commentPageCount = Math.max(1, Math.ceil(comments.length / commentPageSize));
@@ -193,6 +198,7 @@ export default async function TopicPage(props: TopicPageProps) {
                   author={commentAuthor}
                   avatarNick={commentAuthor}
                   html={comment.comentario || ""}
+                  likes={likesMap[Number(comment.id)] ?? 0}
                   canInteract={isAuthenticated}
                 />
               );

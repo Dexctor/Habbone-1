@@ -120,6 +120,41 @@ export async function createNewsComment(input: {
   return directusService.request(cItem('noticias_coment', payload as any)) as Promise<NewsCommentRecord>;
 }
 
+export async function toggleNewsCommentLike(commentId: number, author: string) {
+  const safeAuthor = String(author || '').trim();
+  if (!safeAuthor) throw new Error('AUTHOR_REQUIRED');
+
+  const rows = (await directusService
+    .request(
+      rItems('noticias_coment_curtidas' as any, {
+        filter: {
+          id_comentario: { _eq: commentId } as any,
+          autor: { _eq: safeAuthor } as any,
+        } as any,
+        limit: 1 as any,
+        fields: ['id'] as any,
+      } as any),
+    )
+    .catch(() => [])) as any[];
+
+  if (Array.isArray(rows) && rows.length > 0) {
+    const id = (rows[0] as any)?.id;
+    if (id != null) {
+      await directusService.request(dItem('noticias_coment_curtidas' as any, id as any));
+      return { liked: false };
+    }
+  }
+
+  const payload: any = {
+    id_comentario: commentId,
+    autor: safeAuthor,
+    data: Math.floor(Date.now() / 1000),
+    status: 'ativo',
+  };
+  await directusService.request(cItem('noticias_coment_curtidas' as any, payload));
+  return { liked: true };
+}
+
 // ============ PUBLIC FETCHER FUNCTIONS ============
 // Replace the old lib/directus/news.ts (which had no auth token)
 
