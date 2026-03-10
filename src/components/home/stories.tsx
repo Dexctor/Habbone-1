@@ -58,7 +58,7 @@ export default async function Stories() {
     : []
 
   return (
-    <section className="w-full stories mb-8 md:mb-10">
+    <section className="w-full stories mb-8 md:mb-25">
       <div className="bar-default flex items-center justify-between w-full min-h-[50px] mb-[20px]">
         <div className="title flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -12,7 +12,7 @@ export default function AppShell({ topbar, footer, children, className }: AppShe
   return (
     <div className={cn("min-h-dvh bg-background text-foreground", className)}>
       {topbar}
-      <main className="mx-auto w-full   py-6 max-w-[1420px]">{children}</main>
+      <main className="mx-auto w-full max-w-[1420px] py-6">{children}</main>
       {footer}
     </div>
   )

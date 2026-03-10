@@ -211,7 +211,7 @@ export default function HeaderTW() {
   }, [])
 
   return (
-    <header className="header w-full min-h-[90vh]" suppressHydrationWarning>
+    <header className="header w-full min-h-[60vh]" suppressHydrationWarning>
       <TopBar reduce={reduce} fast={fast} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <Banner slow={slow} />
 
