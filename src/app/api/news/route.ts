@@ -46,9 +46,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     const id = article && typeof article === 'object' ? (article as any).id : null
     return NextResponse.json({ ok: true, id: id != null ? Number(id) : null })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
+    let message: string
+    if (error instanceof Error) {
+      message = error.message
+    } else if (error && typeof error === 'object') {
+      const e = error as Record<string, any>
+      message = e?.errors?.[0]?.message || e?.message || JSON.stringify(e)
+    } else {
+      message = String(error)
+    }
     return NextResponse.json(
-      { error: 'Erreur serveur', ...(process.env.NODE_ENV !== 'production' ? { detail: message } : {}) },
+      { error: 'Erreur serveur', detail: message },
       { status: 500 }
     )
   }
