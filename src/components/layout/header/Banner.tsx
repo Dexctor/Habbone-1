@@ -6,10 +6,11 @@ import { DEFAULT_THEME_SETTINGS, normalizeThemeSettings, type SiteThemeSettings 
 
 type BannerProps = {
   slow: any
+  initialTheme?: SiteThemeSettings
 }
 
-export default function Banner({ slow }: BannerProps) {
-  const [theme, setTheme] = useState<SiteThemeSettings>(DEFAULT_THEME_SETTINGS)
+export default function Banner({ slow, initialTheme }: BannerProps) {
+  const [theme, setTheme] = useState<SiteThemeSettings>(initialTheme ?? DEFAULT_THEME_SETTINGS)
 
   useEffect(() => {
     let cancelled = false

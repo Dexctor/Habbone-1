@@ -6,6 +6,7 @@ import Providers from '@/components/Providers';
 import AppShell from '@/components/layout/app-shell';
 import Footer from '@/components/layout/footer';
 import HeaderTW from '@/components/layout/header-tw';
+import { readThemeSettings } from '@/server/theme-settings-store';
 import SonnerClient from '@/components/ui/sonner-client';
 import MotionProvider from '@/components/motion/motion-provider';
 import LayoutClient from './layout-client';
@@ -52,7 +53,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialTheme = await readThemeSettings().catch(() => undefined);
+
   return (
     <html lang="fr" className="dark">
       <head>
@@ -62,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <MotionProvider>
             <LayoutClient>
-              <AppShell topbar={<HeaderTW/>} footer={<Footer />}>{children}</AppShell>
+              <AppShell topbar={<HeaderTW initialTheme={initialTheme} />} footer={<Footer />}>{children}</AppShell>
             </LayoutClient>
           </MotionProvider>
           <SonnerClient />

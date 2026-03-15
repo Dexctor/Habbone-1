@@ -50,6 +50,11 @@ function badgeImageFromCode(code: string) {
   return `https://images.habbo.com/c_images/album1584/${code}.gif`;
 }
 
+function buildGroupBadgeUrl(badgeCode: string) {
+  const base = process.env.NEXT_PUBLIC_HABBO_BASE || "https://www.habbo.fr";
+  return `${base}/habbo-imaging/badge/${badgeCode}.gif`;
+}
+
 function badgeCodeFromEntry(b: HabboBadge): string {
   return (
     (b?.code || b?.badgeCode || b?.badge_code || b?.badge?.code || "")
@@ -77,6 +82,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
   const groupsPagination = usePaginatedList(data?.groups ?? [], PAGE_SIZE);
   const badgesPagination = usePaginatedList(data?.badges ?? [], PAGE_SIZE);
   const roomsPagination = usePaginatedList(data?.rooms ?? [], PAGE_SIZE);
+  const achievementsPagination = usePaginatedList(data?.achievements ?? [], PAGE_SIZE);
 
   useEffect(() => {
     if (typeof window === "undefined" || !data) return;
@@ -241,13 +247,26 @@ export default function ProfileClient({ nick }: { nick: string }) {
       friends: counts.friends,
       groups: counts.groups,
       badges: counts.badges,
+      achievements: counts.achievements,
+      achievementsTotal: typeof data?.achievementsTotalCount === "number" ? data.achievementsTotalCount : undefined,
     }),
-    [topics.length, articles.length, counts.badges, counts.friends, counts.groups, headerUser?.starGemCount],
+    [topics.length, articles.length, counts.badges, counts.friends, counts.groups, counts.achievements, data?.achievementsTotalCount, headerUser?.starGemCount],
   );
 
   const favoriteBadges = useMemo(() => {
-    const fromProfile = (data?.badges ?? []).slice(0, 10);
-    return fromProfile
+    // Prefer the official selectedBadges (manually chosen by the player in-game)
+    const selected = headerUser?.selectedBadges ?? [];
+    if (selected.length > 0) {
+      return selected
+        .map((b) => {
+          const code = (b?.badgeCode || "").trim();
+          return code ? badgeImageFromCode(code) : "";
+        })
+        .filter(Boolean);
+    }
+    // Fallback: first 10 badges from the full list
+    return (data?.badges ?? [])
+      .slice(0, 10)
       .map((badge) => {
         const direct =
           (badge as any)?.imageUrl ||
@@ -256,12 +275,11 @@ export default function ProfileClient({ nick }: { nick: string }) {
           (badge as any)?.url ||
           "";
         if (typeof direct === "string" && direct.trim()) return direct;
-
         const code = badgeCodeFromEntry(badge);
         return code ? badgeImageFromCode(code) : "";
       })
       .filter(Boolean);
-  }, [data?.badges]);
+  }, [headerUser?.selectedBadges, data?.badges]);
 
   return (
     <div className="w-full space-y-6" aria-busy={loading} aria-live="polite">
@@ -291,9 +309,12 @@ export default function ProfileClient({ nick }: { nick: string }) {
               nick={headerUser?.name || nick}
               memberSince={fmtMemberSince(headerUser?.memberSince)}
               level={headerUser?.currentLevel ?? resolveProfileCurrentLevel(data.profile)}
+              levelPercent={headerUser?.currentLevelCompletePercent}
               starGems={headerUser?.starGemCount}
               avatarUrl={headerAvatarUrl}
               motto={headerUser?.motto}
+              online={headerUser?.online}
+              lastAccessTime={headerUser?.lastAccessTime}
               ariaBusy={loading}
             />
 
@@ -484,11 +505,28 @@ export default function ProfileClient({ nick }: { nick: string }) {
               groupsSlot={(
                 <>
                   <ScrollArea className="max-h-72 scroll-area">
-                    <ul className="space-y-2">
+                    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {groupsPagination.visible.map((g: HabboGroup, idx: number) => (
-                        <li key={g?.id || g?.groupId || idx} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
-                          <div className="text-sm font-bold text-white">{g?.name || "-"}</div>
-                          {g?.description ? <div className="text-xs text-[#BEBECE]">{g.description}</div> : null}
+                        <li
+                          key={g?.id || g?.groupId || idx}
+                          className="flex min-w-0 flex-col items-center gap-2 rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-2 text-center"
+                        >
+                          <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[#1F1F3E]">
+                            {g?.badgeCode ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={buildGroupBadgeUrl(g.badgeCode)}
+                                alt={`Insigne ${g.name || ""}`}
+                                className="h-12 w-12 image-pixelated"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="text-[10px] text-[#BEBECE]">?</span>
+                            )}
+                          </div>
+                          <div className="w-full min-w-0">
+                            <div className="truncate text-[13px] font-bold text-white">{g?.name || "-"}</div>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -527,7 +565,9 @@ export default function ProfileClient({ nick }: { nick: string }) {
                                   <BadgeIcon code={code} album={album} imageUrl={imageUrl} />
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent sideOffset={6}>{code || "Badge"}</TooltipContent>
+                              <TooltipContent sideOffset={6}>
+                                {(b as any)?.name || (b as any)?.description || code || "Badge"}
+                              </TooltipContent>
                             </Tooltip>
                           </li>
                         );
@@ -548,7 +588,12 @@ export default function ProfileClient({ nick }: { nick: string }) {
                 <ul className="space-y-2">
                   {roomsPagination.visible.map((r: HabboRoom, idx: number) => (
                     <li key={r?.id || idx} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
-                      <div className="text-sm font-bold text-white">{r?.name || "-"}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-bold text-white">{r?.name || "-"}</div>
+                        {typeof r?.usersMax === "number" ? (
+                          <span className="shrink-0 text-[11px] text-[#BEBECE]">max {r.usersMax}</span>
+                        ) : null}
+                      </div>
                       {r?.description ? <div className="text-xs text-[#BEBECE]">{r.description}</div> : null}
                       {r?.creationTime ? <div className="mt-1 text-xs text-[#BEBECE]/70">{formatDateTime(r.creationTime)}</div> : null}
                     </li>
@@ -561,6 +606,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
                 </Button>
               ) : null}
             </ProfileSection>
+
           </div>
         </div>
       ) : null}

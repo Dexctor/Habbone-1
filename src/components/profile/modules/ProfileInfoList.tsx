@@ -10,6 +10,8 @@ export type ProfileStats = {
   friends: number;
   groups: number;
   badges: number;
+  achievements?: number;
+  achievementsTotal?: number;
 };
 
 export function ProfileInfoList(props: {
@@ -27,6 +29,17 @@ export function ProfileInfoList(props: {
       <ProfileInfoRow icon="/img/coin-mini.png" label="Achats:" value={stats.coins} />
       <ProfileInfoRow icon="/img/friends.png" label="Amis:" value={stats.friends} />
       <ProfileInfoRow icon="/img/groups.png" label="Groupes:" value={stats.groups} />
+      {typeof stats.achievements === "number" ? (
+        <ProfileInfoRow
+          icon="/img/badges.gif"
+          label="Succès:"
+          value={
+            typeof stats.achievementsTotal === "number"
+              ? `${stats.achievements} / ${stats.achievementsTotal}`
+              : stats.achievements
+          }
+        />
+      ) : null}
 
       <div className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
         <h3 className="mb-2 text-[14px] font-bold text-white">Badges du fan-site</h3>

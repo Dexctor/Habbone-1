@@ -9,6 +9,7 @@ import { toastError, toastSuccess } from '@/lib/sonner'
 import { cachedValue } from '@/lib/client-cache'
 import { useHabboProfile } from '@/lib/use-habbo-profile'
 import type { HabboProfileResponse } from '@/types/habbo'
+import type { SiteThemeSettings } from '@/lib/theme-settings'
 import TopBar from './header/TopBar'
 import Banner from './header/Banner'
 import UserBarLeft from './header/UserBarLeft'
@@ -31,7 +32,7 @@ function resolveHabboLevel(payload?: HabboProfileResponse | null) {
   return typeof profileLevel === 'number' ? profileLevel : null
 }
 
-export default function HeaderTW() {
+export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSettings }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [registerOpen, setRegisterOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
@@ -213,7 +214,7 @@ export default function HeaderTW() {
   return (
     <header className="header w-full min-h-[60vh]" suppressHydrationWarning>
       <TopBar reduce={reduce} fast={fast} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <Banner slow={slow} />
+      <Banner slow={slow} initialTheme={initialTheme} />
 
       <motion.section
         layout
