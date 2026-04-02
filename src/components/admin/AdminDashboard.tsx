@@ -12,6 +12,7 @@ import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminRolesPanel from "@/components/admin/AdminRolesPanel";
 import AdminThemePanel from "@/components/admin/AdminThemePanel";
 import AdminUsersPanel from "@/components/admin/AdminUsersPanel";
+import AdminPubPanel from "@/components/admin/AdminPubPanel";
 import type {
   ForumCommentRecord as AdminForumComment,
   ForumPostRecord as AdminPost,
@@ -189,37 +190,37 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 }
 
 function SettingsView() {
-  const [tab, setTab] = useState<"theme" | "roles">("theme");
+  const [tab, setTab] = useState<"theme" | "roles" | "pub">("theme");
+
+  const tabs: { id: typeof tab; label: string }[] = [
+    { id: "theme", label: "Theme" },
+    { id: "roles", label: "Roles" },
+    { id: "pub", label: "Publicite" },
+  ];
 
   return (
     <div className="space-y-4">
       <div className="flex gap-1 rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-1.5">
-        <button
-          type="button"
-          onClick={() => setTab("theme")}
-          className={`rounded-[4px] px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
-            tab === "theme"
-              ? "bg-[#2596FF] text-white"
-              : "text-[color:var(--foreground)]/65 hover:bg-[#25254D] hover:text-white"
-          }`}
-        >
-          Theme
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("roles")}
-          className={`rounded-[4px] px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
-            tab === "roles"
-              ? "bg-[#2596FF] text-white"
-              : "text-[color:var(--foreground)]/65 hover:bg-[#25254D] hover:text-white"
-          }`}
-        >
-          Roles
-        </button>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`rounded-[4px] px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
+              tab === t.id
+                ? "bg-[#2596FF] text-white"
+                : "text-[color:var(--foreground)]/65 hover:bg-[#25254D] hover:text-white"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-5">
-        {tab === "theme" ? <AdminThemePanel /> : <AdminRolesPanel />}
+        {tab === "theme" && <AdminThemePanel />}
+        {tab === "roles" && <AdminRolesPanel />}
+        {tab === "pub" && <AdminPubPanel />}
       </div>
     </div>
   );
