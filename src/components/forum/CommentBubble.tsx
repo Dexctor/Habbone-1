@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from "react"
 import { toast } from "sonner"
+import { Heart, Flag } from "lucide-react"
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
 
 type CommentBubbleProps = {
@@ -43,7 +44,7 @@ export default function CommentBubble({
   const imgSrc = habboHeadUrl(avatarNick || author)
   const [likeCount, setLikeCount] = useState(likes)
   const [liking, setLiking] = useState(false)
-  const likeLabel = liking ? "..." : likeCount > 0 ? `Liker (${likeCount})` : "Liker"
+  const [liked, setLiked] = useState(false)
   const resolvedLikeEndpoint = likeEndpoint ?? (id ? `/api/forum/comments/${id}/like` : null)
   const resolvedReportEndpoint = reportEndpoint === undefined ? (id ? `/api/forum/comments/${id}/report` : null) : reportEndpoint
 
@@ -54,7 +55,9 @@ export default function CommentBubble({
       const res = await fetch(resolvedLikeEndpoint, { method: "POST" })
       const json = await res.json().catch(() => ({} as any))
       if (!res.ok) throw new Error(json?.error || "LIKE_FAILED")
-      setLikeCount((count) => (json?.liked ? count + 1 : Math.max(0, count - 1)))
+      const isLiked = !!json?.liked
+      setLiked(isLiked)
+      setLikeCount((count) => (isLiked ? count + 1 : Math.max(0, count - 1)))
     } catch (error: any) {
       toast.error(error?.message || "Action impossible")
     } finally {
@@ -101,22 +104,29 @@ export default function CommentBubble({
             </div>
 
             {showActions ? (
-              <span className="inline-flex items-center gap-3">
+              <span className="inline-flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onLike}
-                  className="text-[#2596FF] hover:underline"
+                  disabled={liking}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium transition-all duration-200 ${
+                    liked
+                      ? "bg-[#E11D48]/15 text-[#FB7185] hover:bg-[#E11D48]/25"
+                      : "bg-[rgba(255,255,255,0.06)] text-[#BEBECE] hover:bg-[rgba(255,255,255,0.12)] hover:text-white"
+                  } ${liking ? "opacity-60" : ""}`}
                   aria-label="Liker ce commentaire"
                 >
-                  {likeLabel}
+                  <Heart className={`h-3.5 w-3.5 transition-all duration-200 ${liked ? "fill-[#FB7185] text-[#FB7185] scale-110" : ""}`} />
+                  {likeCount > 0 ? likeCount : "Liker"}
                 </button>
                 {resolvedReportEndpoint ? (
                   <button
                     type="button"
                     onClick={onReport}
-                    className="text-[#BEBECE] hover:underline"
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium text-[#BEBECE]/60 transition-all duration-200 hover:bg-[rgba(255,255,255,0.06)] hover:text-[#BEBECE]"
                     aria-label="Signaler ce commentaire"
                   >
+                    <Flag className="h-3 w-3" />
                     Signaler
                   </button>
                 ) : null}
