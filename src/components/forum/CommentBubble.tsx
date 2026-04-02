@@ -43,7 +43,7 @@ export default function CommentBubble({
   const imgSrc = habboHeadUrl(avatarNick || author)
   const [likeCount, setLikeCount] = useState(likes)
   const [liking, setLiking] = useState(false)
-  const likeLabel = liking ? "..." : likeCount > 0 ? `Aimer (${likeCount})` : "Aimer"
+  const likeLabel = liking ? "..." : likeCount > 0 ? `Liker (${likeCount})` : "Liker"
   const resolvedLikeEndpoint = likeEndpoint ?? (id ? `/api/forum/comments/${id}/like` : null)
   const resolvedReportEndpoint = reportEndpoint === undefined ? (id ? `/api/forum/comments/${id}/report` : null) : reportEndpoint
 
@@ -101,7 +101,7 @@ export default function CommentBubble({
                   type="button"
                   onClick={onLike}
                   className="text-[#2596FF] hover:underline"
-                  aria-label="Aimer ce commentaire"
+                  aria-label="Liker ce commentaire"
                 >
                   {likeLabel}
                 </button>

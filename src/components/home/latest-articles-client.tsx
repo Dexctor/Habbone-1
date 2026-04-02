@@ -69,7 +69,7 @@ export default function LatestArticlesClient({ items }: { items: Item[] }) {
                 setQuery(event.target.value)
               }}
               placeholder="Rechercher une actualite"
-              className="h-[50px] w-full rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] pl-10 pr-3 text-[12px] text-[#DDD] placeholder:text-[#BEBECE]/80 focus-visible:border-[#2596FF] focus-visible:outline-none"
+              className="h-[50px] w-full rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] pl-10 pr-3 text-[13px] text-[#DDD] placeholder:text-[#BEBECE]/80 focus-visible:border-[#2596FF] focus-visible:outline-none"
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function LatestArticlesClient({ items }: { items: Item[] }) {
                       {!isHighlighted ? <div className="absolute inset-0 bg-black/20" /> : null}
 
                       <div className="absolute bottom-[10px] left-[10px] right-[10px] flex items-center justify-between">
-                        <span className="rounded-[4px] bg-[rgba(20,20,51,0.8)] px-[10px] py-[7px] text-[11px] font-bold uppercase text-[#BEBECE] backdrop-blur-[2.5px]">
+                        <span className="rounded-[4px] bg-[rgba(20,20,51,0.8)] px-[10px] py-[7px] text-[12px] font-bold uppercase text-[#BEBECE] backdrop-blur-[2.5px]">
                           {category}
                         </span>
                         <span
@@ -152,7 +152,7 @@ export default function LatestArticlesClient({ items }: { items: Item[] }) {
                       </div>
                     </div>
 
-                    <p className="absolute bottom-[15px] left-[15px] right-[15px] line-clamp-2 text-[12px] leading-[1.35] text-[#BEBECE] transition group-hover:text-white">
+                    <p className="absolute bottom-[15px] left-[15px] right-[15px] line-clamp-2 text-[14px] leading-[1.35] text-[#BEBECE] transition group-hover:text-white">
                       {title}
                     </p>
                   </Link>

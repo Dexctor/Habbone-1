@@ -31,7 +31,7 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
 
           <Link
             href="/forum"
-            className="inline-flex h-[50px] items-center rounded-[4px] bg-[rgba(255,255,255,0.1)] px-[20px] text-[11px] font-bold uppercase tracking-[0.04em] text-[#DDD] transition hover:bg-[rgba(255,255,255,0.16)]"
+            className="inline-flex h-[50px] items-center rounded-[4px] bg-[rgba(255,255,255,0.1)] px-[20px] text-[12px] font-bold uppercase tracking-[0.04em] text-[#DDD] transition hover:bg-[rgba(255,255,255,0.16)]"
           >
             Voir plus
           </Link>
@@ -62,12 +62,12 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
                     </div>
 
                     <div className="flex min-w-0 flex-1 flex-col py-1">
-                      <h3 className="line-clamp-2 text-[13px] font-bold leading-[1.3] text-[#DDD] group-hover:text-white">
+                      <h3 className="line-clamp-2 text-[14px] font-bold leading-[1.3] text-[#DDD] group-hover:text-white">
                         {title}
                       </h3>
 
                       <div className="mt-auto flex items-center gap-[6px]">
-                        <span className="inline-flex h-[32px] items-center rounded-[3px] bg-[rgba(255,255,255,0.1)] px-[10px] text-[11px] font-bold text-[#BEBECE]">
+                        <span className="inline-flex h-[32px] items-center rounded-[3px] bg-[rgba(255,255,255,0.1)] px-[10px] text-[12px] font-bold text-[#BEBECE]">
                           {author}
                         </span>
                         <span className="inline-flex h-[32px] w-[32px] items-center justify-center rounded-[3px] bg-[rgba(255,255,255,0.1)]">

@@ -43,7 +43,7 @@ export default function TopicVoteButtons({ topicId, initial, canVote = false }: 
         type="button"
         onClick={() => vote(1)}
         className={`inline-flex items-center gap-2 rounded-[4px] bg-[#16B254] px-3 py-2 text-[14px] font-bold text-white transition ${busy === 1 ? "opacity-80" : "hover:brightness-110"} ${!canVote ? "cursor-default" : ""}`}
-        aria-label="Aimer le sujet"
+        aria-label="Liker le sujet"
       >
         <ThumbsUp className="h-4 w-4" /> {counts.up}
       </button>
@@ -51,7 +51,7 @@ export default function TopicVoteButtons({ topicId, initial, canVote = false }: 
         type="button"
         onClick={() => vote(-1)}
         className={`inline-flex items-center gap-2 rounded-[4px] bg-[#E11036] px-3 py-2 text-[14px] font-bold text-white transition ${busy === -1 ? "opacity-80" : "hover:brightness-110"} ${!canVote ? "cursor-default" : ""}`}
-        aria-label="Ne pas aimer le sujet"
+        aria-label="Disliker le sujet"
       >
         <ThumbsDown className="h-4 w-4" /> {counts.down}
       </button>
