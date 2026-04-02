@@ -11,10 +11,14 @@ export async function GET() {
     const { message, status, code } = resolveHttpError(error, 'FORBIDDEN', 403);
     return NextResponse.json({ error: message, code: code ?? 'FORBIDDEN' }, { status });
   }
+  // Roles hidden from the admin panel (internal/service roles)
+  const HIDDEN_ROLES = new Set(['frontend service']);
+
   try {
     const rows = await listRoles();
     if (Array.isArray(rows) && rows.length) {
-      return NextResponse.json({ data: rows, meta: { virtual: false } });
+      const filtered = rows.filter((r) => !HIDDEN_ROLES.has(String(r.name || '').toLowerCase()));
+      return NextResponse.json({ data: filtered, meta: { virtual: false } });
     }
   } catch {}
   // Fallback virtual roles (no Directus system access)

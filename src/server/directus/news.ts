@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { directusService, rItems, rItem, cItem, uItem, dItem } from './client';
+import { directusService, directusUrl, serviceToken, rItems, rItem, cItem, uItem, dItem } from './client';
 import type { NewsRecord, NewsCommentRecord } from './types';
 import { stripHtml } from '@/lib/text-utils';
 
@@ -42,7 +42,7 @@ export async function adminCreateNews(data: {
     imagem: data.imagem ?? null,
     noticia: data.noticia,
     autor: data.autor ?? null,
-    data: data.data ?? new Date().toISOString(),
+    data: data.data ?? Math.floor(Date.now() / 1000),
     status: data.status ?? 'published',
   };
   return directusService.request(cItem('noticias', payload)) as Promise<NewsRecord>;
@@ -83,14 +83,18 @@ export async function listNewsByAuthorService(author: string, limit = 30): Promi
 }
 
 export async function adminListNewsComments(limit = 500, newsId?: number): Promise<NewsCommentRecord[]> {
-  return directusService.request(
-    rItems('noticias_coment', {
-      limit,
-      sort: ['-data'],
-      filter: newsId ? { id_noticia: { _eq: newsId } } : undefined,
-      fields: ['id', 'id_noticia', 'comentario', 'autor', 'data', 'status'],
-    } as any),
-  ) as Promise<NewsCommentRecord[]>;
+  const url = new URL(`${directusUrl}/items/noticias_coment`);
+  url.searchParams.set('limit', String(limit));
+  url.searchParams.set('sort', '-data');
+  url.searchParams.set('fields', 'id,id_noticia,comentario,autor,data,status');
+  if (newsId) url.searchParams.set('filter[id_noticia][_eq]', String(newsId));
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${serviceToken}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
 }
 
 export async function adminUpdateNewsComment(
@@ -114,7 +118,7 @@ export async function createNewsComment(input: {
     id_noticia: input.newsId,
     comentario: input.content,
     autor: input.author || 'Anonyme',
-    data: new Date().toISOString(),
+    data: Math.floor(Date.now() / 1000),
     status: input.status ?? 'public',
   };
   return directusService.request(cItem('noticias_coment', payload as any)) as Promise<NewsCommentRecord>;

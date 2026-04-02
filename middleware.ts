@@ -16,7 +16,7 @@ const CSP_CONFIG: CSPDirectives = {
   'img-src': ["'self'", 'data:', 'https:'],
   'font-src': ["'self'", 'https:', 'data:'],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-  'script-src': (isProd) => (isProd ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
+  'script-src': (isProd) => (isProd ? ["'self'", "'strict-dynamic'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
   'connect-src': (isProd) => (isProd ? ["'self'", 'https:'] : ["'self'", 'https:', 'ws:']),
 };
 
@@ -34,7 +34,7 @@ function applySecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set('Content-Security-Policy', buildCSP(isProd));
   res.headers.set('X-Frame-Options', 'DENY');
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  res.headers.set('Referrer-Policy', 'no-referrer-when-downgrade');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('X-XSS-Protection', '0');
   return res;

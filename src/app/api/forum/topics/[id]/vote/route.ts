@@ -3,8 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { setTopicVote, getTopicVoteSummary } from '@/server/directus/forum'
 import { buildError } from '@/types/api'
+import { checkRateLimit } from '@/server/rate-limit'
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(req, { key: 'forum:vote', limit: 30, windowMs: 60 * 1000 })
+  if (!rl.ok) {
+    return NextResponse.json(buildError('Trop de requêtes', { code: 'RATE_LIMITED' }), { status: 429, headers: rl.headers })
+  }
   const { id } = await ctx.params
   const topicId = Number(id || 0)
   if (!Number.isFinite(topicId) || topicId <= 0) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assertAdmin } from '@/server/authz';
 import { banAdminUser } from '@/server/services/admin-users';
+import { checkRateLimit } from '@/server/rate-limit';
 
 const BodySchema = z.object({
   userId: z.string().min(1),
@@ -9,6 +10,10 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const rl = checkRateLimit(req, { key: 'admin:users:ban', limit: 20, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'RATE_LIMITED', code: 'RATE_LIMITED' }, { status: 429, headers: rl.headers });
+  }
   try {
     await assertAdmin();
   } catch (error: any) {

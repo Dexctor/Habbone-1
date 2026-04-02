@@ -11,7 +11,7 @@ import {
   asFalse,
   tryUpdateHabboSnapshotForUser,
 } from '@/server/directus/users';
-import { listRoles } from '@/server/directus/roles';
+import { getRoleById } from '@/server/directus/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
 
 export const authOptions: NextAuthOptions = {
@@ -43,16 +43,13 @@ export const authOptions: NextAuthOptions = {
 
         const hotelCode = normalizeHotelCode((user as any)?.habbo_hotel);
 
-        // Dans ta base, ativado/banido sont 's' / 'n'
         if (asTrue(user.banido)) throw new Error('Compte banni.');
         if (asFalse(user.ativado)) throw new Error('Compte non activé.');
 
         if (!isBcrypt(user.senha)) {
           try {
             await upgradePasswordToBcrypt(Number(user.id), password);
-          } catch {
-            // on ignore en cas d'échec d'upgrade silencieux
-          }
+          } catch {}
         }
 
         try {
@@ -60,30 +57,29 @@ export const authOptions: NextAuthOptions = {
           void tryUpdateHabboSnapshotForUser(Number(user.id), core);
         } catch {}
 
-        const rawRoleValue = String((user as any).role || '');
-        const rawRole = rawRoleValue.toLowerCase();
-        const status = String((user as any).status || '').toLowerCase();
+        // ── Unified role system: read directus_role_id from usuarios ──
+        const directusRoleId: string | null = (user as any).directus_role_id || null;
+        let directusRoleName: string | null = null;
+        let directusAdminAccess = false;
+
+        if (directusRoleId) {
+          try {
+            const roleRow = await getRoleById(directusRoleId);
+            if (roleRow) {
+              directusRoleName = roleRow.name ?? null;
+              directusAdminAccess = roleRow.admin_access === true;
+            }
+          } catch {}
+        }
+
+        // Fallback: ADMIN_NICKS env var for bootstrapping
         const adminNicks = (process.env.ADMIN_NICKS || '')
           .split(',')
           .map((s) => s.trim().toLowerCase())
           .filter(Boolean);
-        const isAdminByStatus = ['admin', 'adm', 'owner', 'staff'].includes(status);
         const isAdminByNick = adminNicks.includes(String(user.nick || '').toLowerCase());
-        const adminRoles = new Set(['admin', 'adm', 'owner', 'staff', 'fondateur', 'responsable', 'responsables']);
-        let directusRoleId: string | null = null;
-        let directusRoleName: string | null = rawRoleValue || null;
-        let directusAdminAccess = false;
-        try {
-          const roles = await listRoles();
-          const match = roles.find((r) => String(r?.name || '').toLowerCase() === rawRole);
-          if (match) {
-            directusRoleId = String(match.id);
-            directusRoleName = match.name ?? directusRoleName;
-            directusAdminAccess = match.admin_access === true;
-          }
-        } catch {}
-        const fallbackAdmin = !directusRoleId && adminRoles.has(rawRole);
-        const computedAdminAccess = directusAdminAccess || isAdminByStatus || isAdminByNick || fallbackAdmin;
+
+        const computedAdminAccess = directusAdminAccess || isAdminByNick;
         const role = computedAdminAccess ? 'admin' : 'member';
 
         return {

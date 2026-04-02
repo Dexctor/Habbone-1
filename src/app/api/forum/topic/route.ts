@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { z } from 'zod'
 import { authOptions } from '@/auth'
 import { createForumTopic } from '@/server/directus/forum'
 import { checkRateLimit } from '@/server/rate-limit'
+import { sanitizeRichContentHtml, sanitizePlainText } from '@/server/comment-sanitize'
+
+const TopicBodySchema = z.object({
+  titulo: z.string().min(3, 'Titre trop court (min. 3 caractères)').max(200, 'Titre trop long'),
+  conteudo: z.string().min(10, 'Contenu trop court (min. 10 caractères)').max(50000, 'Contenu trop long'),
+  cat_id: z.union([z.number(), z.string(), z.null()]).optional().default(null),
+})
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
@@ -19,19 +27,18 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
 
     const body = await req.json().catch(() => null)
-    if (!body || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Corps requis' }, { status: 400 })
+    const parsed = TopicBodySchema.safeParse(body)
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message || 'Données invalides'
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    const titulo = String(body.titulo || '').trim()
-    const conteudo = String(body.conteudo || '').trim()
-    const cat_id = body.cat_id ?? null
+    const { titulo: rawTitulo, conteudo: rawConteudo, cat_id } = parsed.data
+    const titulo = sanitizePlainText(rawTitulo)
+    const conteudo = sanitizeRichContentHtml(rawConteudo)
 
     if (!titulo || titulo.length < 3) {
       return NextResponse.json({ error: 'Titre trop court (min. 3 caractères)' }, { status: 400 })
-    }
-    if (!conteudo || conteudo.length < 10) {
-      return NextResponse.json({ error: 'Contenu trop court (min. 10 caractères)' }, { status: 400 })
     }
 
     const topic = await createForumTopic({

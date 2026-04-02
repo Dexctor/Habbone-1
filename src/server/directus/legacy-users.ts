@@ -60,7 +60,7 @@ export async function searchLegacyUsuarios(
     const params: Record<string, unknown> = {
       limit,
       page,
-      fields: ['id', 'email', 'nick', 'status', 'role', 'banido', 'ativado'],
+      fields: ['id', 'email', 'nick', 'status', 'role', 'directus_role_id', 'banido', 'ativado'],
     };
     if (q) params.search = q;
     const filter: Record<string, unknown> = {};
@@ -83,7 +83,7 @@ export async function searchLegacyUsuarios(
     const url = new URL(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}`);
     url.searchParams.set('limit', String(limit));
     url.searchParams.set('page', String(page));
-    url.searchParams.set('fields', 'id,email,nick,status,role,banido,ativado');
+    url.searchParams.set('fields', 'id,email,nick,status,role,directus_role_id,banido,ativado');
     applyFilters(url.searchParams);
     const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${serviceToken}`, Accept: 'application/json' },
@@ -101,6 +101,12 @@ export async function searchLegacyUsuarios(
 
 export async function setLegacyUserRole(userId: number | string, roleName: string) {
   const payload: Partial<LegacyUserLite> = { role: roleName };
+  return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
+}
+
+export async function setLegacyUserRoleId(userId: number | string, directusRoleId: string, roleName?: string) {
+  const payload: Partial<LegacyUserLite> = { directus_role_id: directusRoleId };
+  if (roleName) payload.role = roleName;
   return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
 }
 

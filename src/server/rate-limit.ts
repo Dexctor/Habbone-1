@@ -4,12 +4,24 @@ type Entry = { count: number; resetAt: number }
 
 const DEFAULT_WINDOW_MS = 10 * 60 * 1000 // 10 minutes
 const DEFAULT_LIMIT = 10
+const MAX_STORE_SIZE = 10_000
+const CLEANUP_INTERVAL_MS = 60 * 1000 // 1 minute
 
 function now() { return Date.now() }
 
 function getStore() {
   const g = globalThis as any
-  if (!g.__rateLimitStore) g.__rateLimitStore = new Map<string, Entry>()
+  if (!g.__rateLimitStore) {
+    g.__rateLimitStore = new Map<string, Entry>()
+    g.__rateLimitCleanup = setInterval(() => {
+      const store = g.__rateLimitStore as Map<string, Entry>
+      const nowMs = now()
+      for (const [key, entry] of store) {
+        if (entry.resetAt <= nowMs) store.delete(key)
+      }
+    }, CLEANUP_INTERVAL_MS)
+    if (g.__rateLimitCleanup?.unref) g.__rateLimitCleanup.unref()
+  }
   return g.__rateLimitStore as Map<string, Entry>
 }
 
@@ -41,6 +53,16 @@ export function checkRateLimit(
   const id = `${opts.key}:${getClientIdentifier(req)}`
 
   const store = getStore()
+
+  // Evict oldest entries if store grows too large (memory safety)
+  if (store.size > MAX_STORE_SIZE) {
+    const nowMs = now()
+    for (const [key, entry] of store) {
+      if (entry.resetAt <= nowMs) store.delete(key)
+      if (store.size <= MAX_STORE_SIZE * 0.8) break
+    }
+  }
+
   const nowMs = now()
   let entry = store.get(id)
   if (!entry || entry.resetAt <= nowMs) {

@@ -56,7 +56,7 @@ export default function NewsCommentForm({ newsId }: { newsId: number }) {
         <RichEditor
           key={editorKey}
           name="comentario"
-          variant="simple"
+          variant="comment"
           placeholder="Partage ton avis sur cet article..."
         />
       </div>

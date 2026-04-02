@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assertAdmin } from '@/server/authz';
 import { setAdminUserRole } from '@/server/services/admin-users';
+import { checkRateLimit } from '@/server/rate-limit';
 
 const Body = z.object({ userId: z.string().min(1), roleId: z.string().min(1) });
 
 export async function POST(req: Request) {
+  const rl = checkRateLimit(req, { key: 'admin:users:set-role', limit: 20, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'RATE_LIMITED', code: 'RATE_LIMITED' }, { status: 429, headers: rl.headers });
+  }
   try {
     await assertAdmin();
   } catch (e: any) {

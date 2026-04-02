@@ -6,7 +6,9 @@ import { parseTimestamp } from '@/lib/date-utils'
 import * as logger from '@/server/logger'
 import { checkRateLimit } from '@/server/rate-limit'
 
-const RETURN_VERIFICATION_CODE = String(process.env.RETURN_VERIFICATION_CODE || 'true').toLowerCase() !== 'false';
+const RETURN_VERIFICATION_CODE =
+  process.env.NODE_ENV !== 'production' &&
+  String(process.env.RETURN_VERIFICATION_CODE || 'false').toLowerCase() !== 'false';
 
 export async function POST(req: Request) {
   try {

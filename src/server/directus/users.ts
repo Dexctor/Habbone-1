@@ -17,6 +17,7 @@ type LegacyUserRecord = {
   banido?: string | null;
   status?: string | null;
   role?: string | null;
+  directus_role_id?: string | null;
   data_criacao?: string | null;
   habbo_hotel?: string | null;
   habbo_unique_id?: string | null;
@@ -40,6 +41,7 @@ const USER_FIELDS = [
   'banido',
   'status',
   'role',
+  'directus_role_id',
   'data_criacao',
   'habbo_hotel',
   'habbo_unique_id',

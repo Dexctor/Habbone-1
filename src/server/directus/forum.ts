@@ -115,12 +115,12 @@ export async function createForumTopic(data: {
     conteudo: data.conteudo,
     autor: data.autor,
     imagem: data.imagem ?? null,
-    cat_id: data.cat_id ?? null,
-    data: new Date().toISOString(),
+    cat_id: data.cat_id ?? 0,
+    data: Math.floor(Date.now() / 1000),
     status: 'ativo',
     views: 0,
-    fixo: false,
-    fechado: false,
+    fixo: 0,
+    fechado: 0,
   };
   return directusService.request(cItem('forum_topicos', payload)) as Promise<ForumTopicRecord>;
 }
@@ -136,7 +136,7 @@ export async function adminCreateForumPost(data: {
     id_topico: data.id_topico,
     conteudo: data.conteudo,
     autor: data.autor ?? null,
-    data: data.data ?? new Date().toISOString(),
+    data: data.data ?? Math.floor(Date.now() / 1000),
     status: data.status ?? null,
   };
   return directusService.request(cItem('forum_posts', payload)) as Promise<ForumPostRecord>;
@@ -154,14 +154,18 @@ export async function adminDeleteForumPost(id: number) {
 }
 
 export async function adminListForumComments(limit = 500, topicId?: number): Promise<ForumCommentRecord[]> {
-  return directusService.request(
-    rItems('forum_coment', {
-      limit,
-      sort: ['-data'],
-      filter: topicId ? { id_forum: { _eq: topicId } } : undefined,
-      fields: ['id', 'id_forum', 'comentario', 'autor', 'data', 'status'],
-    } as any),
-  ) as Promise<ForumCommentRecord[]>;
+  const url = new URL(`${directusUrl}/items/forum_coment`);
+  url.searchParams.set('limit', String(limit));
+  url.searchParams.set('sort', '-data');
+  url.searchParams.set('fields', 'id,id_forum,comentario,autor,data,status');
+  if (topicId) url.searchParams.set('filter[id_forum][_eq]', String(topicId));
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${serviceToken}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
 }
 
 export async function adminUpdateForumComment(
@@ -185,7 +189,7 @@ export async function createForumComment(input: {
     id_forum: input.topicId,
     comentario: input.content,
     autor: input.author || 'Anonyme',
-    data: new Date().toISOString(),
+    data: Math.floor(Date.now() / 1000),
     status: input.status ?? 'public',
   };
   return directusService.request(cItem('forum_coment', payload)) as Promise<ForumCommentRecord>;
@@ -232,7 +236,7 @@ export async function reportForumComment(commentId: number, author: string) {
     alvo_tipo: 'comment',
     alvo_id: commentId,
     autor: author || null,
-    data: new Date().toISOString(),
+    data: Math.floor(Date.now() / 1000),
   };
   try {
     return await directusService.request(cItem('forum_interacoes' as any, payload));

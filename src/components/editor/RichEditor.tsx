@@ -31,12 +31,19 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Smile,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const low = createLowlight(common);
 
-type Variant = "full" | "simple";
+type Variant = "full" | "simple" | "comment";
+
+const EMOJI_LIST = [
+  "😀", "😂", "😍", "🥰", "😎", "🤔", "😢", "😡", "🥳", "🤩",
+  "👍", "👎", "👏", "🙌", "🔥", "❤️", "💯", "✨", "⭐", "🎉",
+  "😱", "🤣", "😏", "🙄", "😴", "🤗", "😇", "🤯", "💀", "👀",
+];
 
 export default function RichEditor({
   name,
@@ -54,13 +61,25 @@ export default function RichEditor({
   const hiddenRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [html, setHtml] = useState<string>(initialHTML || "");
+  const [showEmojis, setShowEmojis] = useState(false);
 
   const extensions: any[] = [
-    StarterKit.configure({ codeBlock: false }),
+    StarterKit.configure({
+      codeBlock: false,
+      bold: variant === "comment" ? false : undefined,
+      italic: variant === "comment" ? false : undefined,
+      strike: variant === "comment" ? false : undefined,
+      blockquote: variant === "comment" ? false : undefined,
+      bulletList: variant === "comment" ? false : undefined,
+      orderedList: variant === "comment" ? false : undefined,
+      heading: variant === "comment" ? false : undefined,
+    }),
     Placeholder.configure({ placeholder }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
-    Underline,
-    Link.configure({ openOnClick: true, autolink: true, linkOnPaste: true }),
+    ...(variant !== "comment" ? [
+      Underline,
+      Link.configure({ openOnClick: true, autolink: true, linkOnPaste: true }),
+    ] : []),
   ];
 
   if (variant === "full") {
@@ -88,7 +107,7 @@ export default function RichEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-invert max-w-none min-h-[200px] rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-600)] p-3 focus:outline-none",
+          `prose prose-invert max-w-none ${variant === "comment" ? "min-h-[100px]" : "min-h-[200px]"} rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-600)] p-3 focus:outline-none`,
       },
     },
   });
@@ -107,12 +126,16 @@ export default function RichEditor({
       <input ref={hiddenRef} type="hidden" name={name} defaultValue={html} />
 
       <div className="flex flex-wrap items-center gap-1 text-xs rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-700)] p-2">
-        <ToolbarButton active={editor?.isActive("bold")} label="Gras (Ctrl+B)" onClick={toggle(() => editor?.chain().focus().toggleBold().run())}>
-          <Bold className="h-3.5 w-3.5" />
-        </ToolbarButton>
-        <ToolbarButton active={editor?.isActive("italic")} label="Italique (Ctrl+I)" onClick={toggle(() => editor?.chain().focus().toggleItalic().run())}>
-          <Italic className="h-3.5 w-3.5" />
-        </ToolbarButton>
+        {variant !== "comment" && (
+          <>
+            <ToolbarButton active={editor?.isActive("bold")} label="Gras (Ctrl+B)" onClick={toggle(() => editor?.chain().focus().toggleBold().run())}>
+              <Bold className="h-3.5 w-3.5" />
+            </ToolbarButton>
+            <ToolbarButton active={editor?.isActive("italic")} label="Italique (Ctrl+I)" onClick={toggle(() => editor?.chain().focus().toggleItalic().run())}>
+              <Italic className="h-3.5 w-3.5" />
+            </ToolbarButton>
+          </>
+        )}
         {variant === "full" && (
           <>
             <ToolbarButton active={editor?.isActive("strike")} label="Barré" onClick={toggle(() => editor?.chain().focus().toggleStrike().run())}>
@@ -186,6 +209,33 @@ export default function RichEditor({
         <ToolbarButton active={editor?.isActive({ textAlign: "right" })} label="Aligner à droite" onClick={toggle(() => editor?.chain().focus().setTextAlign("right").run())}>
           <AlignRight className="h-3.5 w-3.5" />
         </ToolbarButton>
+
+        {/* Emoji picker */}
+        <div className="relative ml-auto">
+          <ToolbarButton active={showEmojis} label="Emoji" onClick={(e) => { e.preventDefault(); setShowEmojis((v) => !v); }}>
+            <Smile className="h-3.5 w-3.5" />
+          </ToolbarButton>
+          {showEmojis && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowEmojis(false)} />
+              <div className="absolute bottom-full right-0 z-50 mb-2 grid w-[280px] grid-cols-10 gap-0.5 rounded-lg border border-[color:var(--bg-600)] bg-[color:var(--bg-900)] p-2.5 shadow-2xl">
+                {EMOJI_LIST.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-lg leading-none transition-colors hover:bg-[color:var(--bg-600)]"
+                    onClick={() => {
+                      editor?.chain().focus().insertContent(emoji).run();
+                      setShowEmojis(false);
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <EditorContent editor={editor} />

@@ -31,6 +31,7 @@ export type LegacyUserLite = {
   nick?: string | null;
   status?: string | null;
   role?: string | null;
+  directus_role_id?: string | null;
   banido?: string | number | boolean | null;
   ativado?: string | number | boolean | null;
 };

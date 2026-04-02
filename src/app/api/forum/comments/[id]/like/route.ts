@@ -3,8 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { toggleForumCommentLike } from '@/server/directus/forum'
 import { buildError } from '@/types/api'
+import { checkRateLimit } from '@/server/rate-limit'
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const rl = checkRateLimit(req, { key: 'forum:comment:like', limit: 30, windowMs: 60 * 1000 })
+  if (!rl.ok) {
+    return NextResponse.json(buildError('Trop de requêtes', { code: 'RATE_LIMITED' }), { status: 429, headers: rl.headers })
+  }
   const { id } = await ctx.params
   const commentId = Number(id || 0)
   if (!Number.isFinite(commentId) || commentId <= 0) {

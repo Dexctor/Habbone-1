@@ -1,8 +1,7 @@
 import 'server-only';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
-import { getDirectusUserById } from '@/server/directus/admin-users';
-import { getRoleById, listRoles } from '@/server/directus/roles';
+import { getRoleById } from '@/server/directus/roles';
 
 export type AdminAssertion = { userId: string | null };
 
@@ -14,12 +13,6 @@ export async function assertAdmin(): Promise<AdminAssertion> {
     throw err;
   }
   const sessionUser = session.user as any;
-  const role = sessionUser?.role;
-  if (role !== 'admin') {
-    const err: any = new Error('FORBIDDEN');
-    err.status = 403;
-    throw err;
-  }
 
   const forbid = () => {
     const err: any = new Error('FORBIDDEN');
@@ -27,51 +20,28 @@ export async function assertAdmin(): Promise<AdminAssertion> {
     throw err;
   };
 
-  const directusAdminAccess = sessionUser?.directusAdminAccess;
-  if (directusAdminAccess === false) {
+  // Quick check: the JWT role must be 'admin'
+  if (sessionUser?.role !== 'admin') {
     forbid();
   }
 
+  // Verify against Directus role (single source of truth: usuarios.directus_role_id)
   const directusRoleId = sessionUser?.directusRoleId;
-  const directusRoleName = typeof sessionUser?.directusRoleName === 'string' ? sessionUser.directusRoleName : null;
-
   if (directusRoleId) {
     try {
       const roleRow = await getRoleById(String(directusRoleId));
-      if (!roleRow) {
-        if (directusAdminAccess !== true) forbid();
-      } else if (roleRow.admin_access !== true) {
-        forbid();
+      if (!roleRow || roleRow.admin_access !== true) {
+        // Role exists but doesn't have admin_access -> deny
+        // (unless ADMIN_NICKS fallback granted access, which is already in the token)
+        if (sessionUser?.directusAdminAccess !== true) forbid();
       }
     } catch {
-      if (directusAdminAccess !== true) forbid();
+      // Directus unreachable -> trust the token if it says admin
+      if (sessionUser?.directusAdminAccess !== true) forbid();
     }
-  } else if (directusRoleName) {
-    try {
-      const roles = await listRoles();
-      const match = roles.find((r) => String(r?.name || '').toLowerCase() === directusRoleName.toLowerCase());
-      if (!match) {
-        if (directusAdminAccess !== true) forbid();
-      } else if (match.admin_access !== true) {
-        forbid();
-      }
-    } catch {
-      if (directusAdminAccess !== true) forbid();
-    }
-  } else if (directusAdminAccess !== true) {
-    forbid();
-  }
-
-  // If we know a directus user id on session, we can double-check admin_access
-  // Not all sessions map to directus_users; tolerate absence.
-  const directusId = sessionUser?.directusId || null;
-  if (directusId) {
-    try {
-      const du = await getDirectusUserById(String(directusId));
-      if (!du?.role || (typeof du.role === 'object' && (du.role as any).admin_access !== true)) {
-        forbid();
-      }
-    } catch {}
+  } else {
+    // No directus_role_id at all -> only ADMIN_NICKS fallback can grant access
+    if (sessionUser?.directusAdminAccess !== true) forbid();
   }
 
   return { userId: sessionUser?.id ?? null };
