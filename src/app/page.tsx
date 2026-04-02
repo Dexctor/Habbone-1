@@ -15,7 +15,7 @@ export default function Home() {
       <LatestArticles />
       <ForumTopics />
 
-      <section className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+      <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <LatestBadges />
         <Publicite />
       </section>

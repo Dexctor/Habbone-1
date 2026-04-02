@@ -26,8 +26,8 @@ export default function PubliciteClient({ partners }: { partners: Partner[] }) {
   }
 
   return (
-    <section className="flex h-full w-full flex-col">
-      <div className="flex flex-1 flex-col overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
+    <section className="w-full">
+      <div className="overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
         <header className="flex h-[50px] shrink-0 items-center justify-between border-b border-[#34345A] bg-[rgba(0,0,0,0.1)] px-5">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -65,23 +65,25 @@ export default function PubliciteClient({ partners }: { partners: Partner[] }) {
           </div>
         </header>
 
-        <Link
-          href={activePartner.href}
-          target="_blank"
-          rel="noreferrer"
-          className="relative flex-1 overflow-hidden"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={activePartner.banner}
-            alt={activePartner.name}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 shadow-[inset_0_0_0_3px_rgba(255,255,255,0.08)]" />
-          <div className="absolute bottom-[14px] right-[14px] rounded-[4px] bg-[rgba(20,20,51,0.85)] px-[10px] py-[10px] text-[13px] font-bold text-white backdrop-blur-[25px]">
-            {activePartner.name}
-          </div>
-        </Link>
+        <div className="p-4">
+          <Link
+            href={activePartner.href}
+            target="_blank"
+            rel="noreferrer"
+            className="relative block overflow-hidden rounded-[4px]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={activePartner.banner}
+              alt={activePartner.name}
+              className="w-full object-cover"
+            />
+            <div className="absolute inset-0 rounded-[4px] shadow-[inset_0_0_0_3px_rgba(255,255,255,0.08)]" />
+            <div className="absolute bottom-[10px] right-[10px] rounded-[4px] bg-[rgba(20,20,51,0.85)] px-[10px] py-[8px] text-[12px] font-bold text-white backdrop-blur-[25px]">
+              {activePartner.name}
+            </div>
+          </Link>
+        </div>
       </div>
     </section>
   )
