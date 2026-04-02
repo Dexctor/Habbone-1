@@ -26,8 +26,8 @@ export default function PubliciteClient({ partners }: { partners: Partner[] }) {
   }
 
   return (
-    <section className="w-full">
-      <div className="overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
+    <section className="flex h-full w-full flex-col">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
         <header className="flex h-[50px] items-center justify-between px-0">
           <div className="flex items-center gap-3 pl-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,7 +76,7 @@ export default function PubliciteClient({ partners }: { partners: Partner[] }) {
           href={activePartner.href}
           target="_blank"
           rel="noreferrer"
-          className="relative block h-[242px] overflow-hidden rounded-[4px] border-t border-white/10"
+          className="relative block min-h-[242px] flex-1 overflow-hidden rounded-[4px] border-t border-white/10"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={activePartner.banner} alt={activePartner.name} className="h-full w-full object-cover" />

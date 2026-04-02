@@ -15,7 +15,7 @@ export default function Home() {
       <LatestArticles />
       <ForumTopics />
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,575px)_minmax(0,575px)] lg:justify-between">
+      <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <LatestBadges />
         <Publicite />
       </section>
