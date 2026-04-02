@@ -28,7 +28,7 @@ export default function BadgesPageClient() {
     setLoading(true)
 
     // Fetch badges for all hotels (mondial)
-    const fetchMondial = fetch(`${BADGE_API_BASE}?limit=1000`)
+    const fetchMondial = fetch(`${BADGE_API_BASE}?limit=2000`)
       .then((r) => r.json())
       .then((json) => {
         const data = Array.isArray(json?.badges)
@@ -45,7 +45,7 @@ export default function BadgesPageClient() {
       .catch(() => setMondialBadges([]))
 
     // Fetch badges specifically from habbo.fr
-    const fetchFr = fetch(`${BADGE_API_BASE}?limit=1000&hotel=fr`)
+    const fetchFr = fetch(`${BADGE_API_BASE}?limit=2000&hotel=fr`)
       .then((r) => r.json())
       .then((json) => {
         const data = Array.isArray(json?.badges)

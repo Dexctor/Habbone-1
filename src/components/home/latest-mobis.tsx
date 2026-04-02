@@ -27,6 +27,7 @@ const BADGE_API_BASE = 'https://www.habboassets.com/api/v1/badges'
 const GRID_COLS = 6
 const GRID_ROWS = 6
 const PAGE_SIZE = GRID_COLS * GRID_ROWS
+const FETCH_LIMIT = 1000
 
 export default function LatestBadges() {
   const [allBadges, setAllBadges] = useState<Badge[]>([])
@@ -36,8 +37,8 @@ export default function LatestBadges() {
 
   useEffect(() => {
     const url = hotel === 'all'
-      ? `${BADGE_API_BASE}?limit=240`
-      : `${BADGE_API_BASE}?limit=240&hotel=${hotel}`
+      ? `${BADGE_API_BASE}?limit=${FETCH_LIMIT}`
+      : `${BADGE_API_BASE}?limit=${FETCH_LIMIT}&hotel=${hotel}`
 
     setLoading(true)
     setPage(0)
@@ -112,6 +113,9 @@ export default function LatestBadges() {
                 chevron_left
               </i>
             </button>
+            <span className="px-1 text-[11px] font-bold text-[#BEBECE]">
+              {clampedPage + 1}/{pageCount}
+            </span>
             <button
               type="button"
               aria-label="Badges suivants"
