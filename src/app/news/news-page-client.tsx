@@ -70,7 +70,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/img/news.png" alt="" className="h-[27px] w-auto image-pixelated" />
             <h1 className="text-[14px] font-bold uppercase tracking-[0.08em] text-[#DDD]">
-              Archive des actualites
+              Tous les articles
             </h1>
           </div>
 
