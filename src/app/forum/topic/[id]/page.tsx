@@ -15,6 +15,7 @@ import {
 import { getLikesMapForTopicComments } from "@/server/directus/likes";
 import type { ForumCommentRecord, ForumTopicRecord } from "@/server/directus/types";
 import { stripHtml } from "@/lib/text-utils";
+import { formatDateTimeFromAny } from "@/lib/date-utils";
 import styles from "@/components/forum/forum-content.module.css";
 
 export const revalidate = 30;
@@ -191,11 +192,13 @@ export default async function TopicPage(props: TopicPageProps) {
           <div className="space-y-3">
             {visibleComments.map((comment) => {
               const commentAuthor = stripHtml(comment.autor || "Anonyme");
+              const commentDate = formatDateTimeFromAny(comment.data);
               return (
                 <CommentBubble
                   key={comment.id}
                   id={Number(comment.id)}
                   author={commentAuthor}
+                  date={commentDate}
                   avatarNick={commentAuthor}
                   html={comment.comentario || ""}
                   likes={likesMap[Number(comment.id)] ?? 0}

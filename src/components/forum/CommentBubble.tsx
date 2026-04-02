@@ -93,7 +93,12 @@ export default function CommentBubble({
           <div className="max-w-none text-[14px] leading-relaxed text-white" dangerouslySetInnerHTML={{ __html: html || "" }} />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.1)] pt-2 text-[13px]">
-            <span className="truncate text-[#BEBECE]">{author || "Anonyme"}</span>
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-[#BEBECE]">{author || "Anonyme"}</span>
+              {date ? (
+                <span className="text-[11px] text-[#BEBECE]/50">{date}</span>
+              ) : null}
+            </div>
 
             {showActions ? (
               <span className="inline-flex items-center gap-3">
