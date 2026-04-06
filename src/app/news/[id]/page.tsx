@@ -13,6 +13,7 @@ import { formatDateTimeFromAny } from "@/lib/date-utils"
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
 import CommentBubble from "@/components/forum/CommentBubble"
 import CommentsActionButton from "@/components/forum/CommentsActionButton"
+import ContentWithLightbox from "@/components/ui/image-lightbox"
 
 export const revalidate = 60
 
@@ -108,9 +109,9 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
           ) : null}
 
           {/* Article HTML content */}
-          <article
+          <ContentWithLightbox
+            html={newsItem.noticia || ""}
             className="article-content w-full max-w-[1152px] text-base font-normal leading-relaxed text-white"
-            dangerouslySetInnerHTML={{ __html: newsItem.noticia || "" }}
           />
         </div>
 

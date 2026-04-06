@@ -5,6 +5,7 @@ import CommentBubble from "@/components/forum/CommentBubble";
 import ForumCommentForm from "@/components/forum/ForumCommentForm";
 import CommentsActionButton from "@/components/forum/CommentsActionButton";
 import TopicVoteButtons from "@/components/forum/TopicVoteButtons";
+import ContentWithLightbox from "@/components/ui/image-lightbox";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
 import { mediaUrl } from "@/lib/media-url";
 import {
@@ -134,9 +135,9 @@ export default async function TopicPage(props: TopicPageProps) {
             ) : null}
 
             {topic.conteudo ? (
-              <article
+              <ContentWithLightbox
+                html={topic.conteudo}
                 className={`${styles.forumContent} w-full text-[16px] text-white`}
-                dangerouslySetInnerHTML={{ __html: topic.conteudo }}
               />
             ) : (
               <p className="text-[15px] text-[#BEBECE]">Aucun contenu detaille pour ce sujet.</p>
