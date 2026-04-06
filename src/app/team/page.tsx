@@ -4,8 +4,7 @@ import { CalendarClock, Twitter } from 'lucide-react'
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 
-export const revalidate = 60
-const TEAM_ROLES = ['Fondateur', 'Administrateur', 'Modérateur', 'Rédacteur', 'Développeur', 'Graphiste']
+export const revalidate = 0 // always fresh - reflects role changes immediately
 
 function habboAvatarUrl(nick: string) {
   return buildHabboAvatarUrl(nick, {
@@ -43,11 +42,11 @@ function resolveTwitterLink(value?: string | null) {
 }
 
 export default async function TeamPage() {
-  const membersByRole = await listTeamMembersByRoles(TEAM_ROLES)
+  const membersByRole = await listTeamMembersByRoles()
 
-  // Filter to only roles that have members
-  const activeRoles = TEAM_ROLES.filter(
-    (role) => (membersByRole[role] ?? []).length > 0
+  // Get roles that have members (order comes from Directus roles sort)
+  const activeRoles = Object.keys(membersByRole).filter(
+    (role) => membersByRole[role].length > 0
   )
 
   return (

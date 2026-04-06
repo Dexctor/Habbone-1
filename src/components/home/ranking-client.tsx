@@ -55,12 +55,12 @@ function PodiumAvatar({ nick, rank, score }: { nick: string; rank: number; score
   return (
     <div className="flex flex-col items-center" style={{ order: rank === 0 ? 1 : rank === 1 ? 0 : 2 }}>
       <div className="relative mb-1">
-        <AvatarImg nick={nick} className="h-[64px] w-auto image-pixelated drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
+        <AvatarImg nick={nick} className="h-[110px] w-auto image-pixelated drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
       </div>
-      <span className="mb-1 max-w-[100px] truncate text-[12px] font-bold text-white">{nick}</span>
-      <span className="mb-2 text-[11px] text-[#BEBECE]">{score.toLocaleString('fr-FR')}</span>
+      <span className="mb-1 max-w-[120px] truncate text-[13px] font-bold text-white">{nick}</span>
+      <span className="mb-2 text-[12px] text-[#BEBECE]">{score.toLocaleString('fr-FR')}</span>
       <div
-        className="relative flex w-[90px] flex-col items-center rounded-t-[6px] border border-b-0 border-white/10 bg-gradient-to-t from-[#1F1F3E] to-[#2C2C5A] pt-2"
+        className="relative flex w-[110px] flex-col items-center rounded-t-[6px] border border-b-0 border-white/10 bg-gradient-to-t from-[#1F1F3E] to-[#2C2C5A] pt-2"
         style={{ height: podiumH }}
       >
         <span className={`inline-flex h-[24px] w-[24px] items-center justify-center rounded-full text-[11px] font-black text-black ${medals[rank]}`}>

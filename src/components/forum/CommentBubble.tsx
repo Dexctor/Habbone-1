@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Heart, Flag } from "lucide-react"
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
@@ -97,7 +98,7 @@ export default function CommentBubble({
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.1)] pt-2 text-[13px]">
             <div className="flex items-center gap-2 truncate">
-              <span className="text-[#BEBECE]">{author || "Anonyme"}</span>
+              <Link href={`/profile?user=${encodeURIComponent(author || "Anonyme")}`} className="text-[#BEBECE] hover:text-[#2596FF] hover:underline transition">{author || "Anonyme"}</Link>
               {date ? (
                 <span className="text-[11px] text-[#BEBECE]/50">{date}</span>
               ) : null}

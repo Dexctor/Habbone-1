@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { directusService, USERS_TABLE, rItems } from './client';
+import { directusUrl, serviceToken, USERS_TABLE } from './client';
 import { parseTimestamp } from '@/lib/date-utils';
 import type { TeamMember } from './types';
 
@@ -8,117 +8,85 @@ type LegacyTeamRow = {
   id?: number | string | null;
   nick?: string | null;
   role?: string | null;
+  directus_role_id?: string | null;
   data_criacao?: string | null;
-  created_at?: string | null;
-  joined_at?: string | null;
+  twitter?: string | null;
   banido?: string | null;
   ativado?: string | null;
-  status?: string | null;
-  twitter?: string | null;
-  social_twitter?: string | null;
-  socials?: { twitter?: string | null } | null;
 };
 
-export async function listTeamMembersByRoles(roleNames: string[]): Promise<Record<string, TeamMember[]>> {
-  if (!Array.isArray(roleNames) || roleNames.length === 0) return {};
+type DirectusRole = {
+  id: string;
+  name: string;
+};
 
-  const normalized = new Map<string, string>();
-  const registerKey = (key: string, canonical: string) => {
-    const clean = key.trim().toLowerCase();
-    if (!clean || normalized.has(clean)) return;
-    normalized.set(clean, canonical);
-  };
-  const stripDiacritics = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+async function fetchRoles(): Promise<DirectusRole[]> {
+  const url = new URL(`${directusUrl}/roles`);
+  url.searchParams.set('fields', 'id,name');
+  url.searchParams.set('sort', 'name');
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${serviceToken}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
+}
+
+async function fetchUsersByRoleId(roleId: string): Promise<LegacyTeamRow[]> {
+  const url = new URL(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}`);
+  url.searchParams.set('fields', 'id,nick,role,directus_role_id,data_criacao,twitter,banido,ativado');
+  url.searchParams.set('filter[directus_role_id][_eq]', roleId);
+  url.searchParams.set('filter[banido][_neq]', 's');
+  url.searchParams.set('filter[ativado][_neq]', 'n');
+  url.searchParams.set('limit', '200');
+  url.searchParams.set('sort', 'nick');
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${serviceToken}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
+}
+
+// Hidden roles that shouldn't appear on the team page
+const HIDDEN_ROLES = new Set(['member', 'frontend service']);
+
+export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Record<string, TeamMember[]>> {
+  // Fetch all Directus roles dynamically
+  const roles = await fetchRoles();
+  const visibleRoles = roles.filter(r => !HIDDEN_ROLES.has(r.name.toLowerCase()));
 
   const result: Record<string, TeamMember[]> = {};
-  for (const name of roleNames) {
-    const trimmed = (name ?? '').toString().trim();
-    if (!trimmed) continue;
-    registerKey(trimmed, trimmed);
-    registerKey(stripDiacritics(trimmed), trimmed);
-    registerKey(trimmed.replace(/\s+/g, ''), trimmed);
-    registerKey(stripDiacritics(trimmed.replace(/\s+/g, '')), trimmed);
-    if (!/\badmin\b/i.test(trimmed) && !trimmed.toLowerCase().endsWith('s')) {
-      registerKey(`${trimmed}s`, trimmed);
-      registerKey(stripDiacritics(`${trimmed}s`), trimmed);
+
+  // Fetch users for each role in parallel
+  const entries = await Promise.all(
+    visibleRoles.map(async (role) => {
+      const users = await fetchUsersByRoleId(role.id);
+      const members: TeamMember[] = users
+        .filter(u => u.nick && String(u.nick).trim())
+        .map(u => ({
+          id: Number(u.id) || 0,
+          nick: String(u.nick).trim(),
+          role: role.name,
+          joinedAt: typeof u.data_criacao === 'string' ? u.data_criacao : String(u.data_criacao ?? ''),
+          twitter: typeof u.twitter === 'string' ? u.twitter.trim() || null : null,
+        }))
+        .sort((a, b) => {
+          const dateA = a.joinedAt ? parseTimestamp(a.joinedAt, { numeric: 'ms', numericString: 'parse' }) : 0;
+          const dateB = b.joinedAt ? parseTimestamp(b.joinedAt, { numeric: 'ms', numericString: 'parse' }) : 0;
+          if (dateA && dateB) return dateA - dateB;
+          return a.nick.localeCompare(b.nick, 'fr', { sensitivity: 'base' });
+        });
+      return { roleName: role.name, members };
+    })
+  );
+
+  for (const { roleName, members } of entries) {
+    if (members.length > 0) {
+      result[roleName] = members;
     }
-    result[trimmed] = [];
-  }
-  if (normalized.size === 0) return result;
-
-  const rows = (await directusService
-    .request(
-      rItems(USERS_TABLE as any, {
-        filter: {
-          role: { _in: Array.from(normalized.values()) } as any,
-          banido: { _neq: 's' } as any,
-          ativado: { _neq: 'n' } as any,
-        } as any,
-        limit: 200 as any,
-        sort: ['role', 'nick'] as any,
-      } as any),
-    )
-    .catch(() => [])) as LegacyTeamRow[];
-
-  const ensureString = (value: unknown): string =>
-    typeof value === 'string' ? value : value == null ? '' : String(value);
-
-  for (const raw of rows) {
-    const roleValueRaw = ensureString(raw?.role).trim();
-    const canonicalRole =
-      normalized.get(roleValueRaw.toLowerCase()) ||
-      normalized.get(stripDiacritics(roleValueRaw).toLowerCase()) ||
-      normalized.get(roleValueRaw.replace(/\s+/g, '').toLowerCase()) ||
-      normalized.get(stripDiacritics(roleValueRaw.replace(/\s+/g, '')).toLowerCase());
-    if (!canonicalRole) continue;
-
-    const nick = ensureString(raw?.nick).trim();
-    if (!nick) continue;
-
-    let joined: string | null = null;
-    if (typeof raw?.data_criacao === 'string') joined = raw.data_criacao;
-    else if (typeof raw?.created_at === 'string') joined = raw.created_at;
-    else if (typeof raw?.joined_at === 'string') joined = raw.joined_at;
-
-    // TODO: Store joined_at dates in the database instead of hardcoding
-
-    const twitterRaw =
-      typeof raw?.twitter === 'string'
-        ? raw.twitter
-        : typeof raw?.social_twitter === 'string'
-          ? raw.social_twitter
-          : typeof raw?.socials === 'object' && raw?.socials && typeof raw.socials.twitter === 'string'
-            ? raw.socials.twitter
-            : null;
-
-    const computedId =
-      raw?.id != null && !Number.isNaN(Number(raw.id))
-        ? Number(raw.id)
-        : Math.abs(
-          nick
-            .toLowerCase()
-            .split('')
-            .reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0),
-        );
-
-    result[canonicalRole].push({
-      id: computedId,
-      nick,
-      role: canonicalRole,
-      joinedAt: joined,
-      twitter: twitterRaw ? twitterRaw.trim() : null,
-    });
-  }
-
-  for (const role of Object.keys(result)) {
-    result[role] = result[role].sort((a, b) => {
-      const dateA = a.joinedAt ? parseTimestamp(a.joinedAt, { numeric: 'ms', numericString: 'parse' }) : 0;
-      const dateB = b.joinedAt ? parseTimestamp(b.joinedAt, { numeric: 'ms', numericString: 'parse' }) : 0;
-      if (dateA && dateB) return dateA - dateB;
-      if (dateA) return -1;
-      if (dateB) return 1;
-      return a.nick.localeCompare(b.nick, 'fr', { sensitivity: 'base' });
-    });
   }
 
   return result;
