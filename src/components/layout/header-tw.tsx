@@ -55,7 +55,6 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
   const { data: habboLite } = useHabboProfile(sessionNick || '', {
     lite: true,
     enabled: status === 'authenticated' && !!sessionNick && !onProfilePage,
-    cacheTtlMs: habboLiteTtlMs,
     fallbackMessage: 'Erreur de récupération du profil',
   })
 

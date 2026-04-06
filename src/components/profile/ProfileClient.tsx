@@ -64,7 +64,7 @@ function badgeCodeFromEntry(b: HabboBadge): string {
 }
 
 export default function ProfileClient({ nick }: { nick: string }) {
-  const { data, error, loading } = useHabboProfile(nick, {
+  const { data, error, loading, refresh } = useHabboProfile(nick, {
     fallbackMessage: "Erreur de recuperation du profil",
   });
 
@@ -382,8 +382,28 @@ export default function ProfileClient({ nick }: { nick: string }) {
       ) : null}
 
       {error ? (
-        <div className="rounded-[4px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
+        <div className="rounded-[4px] border border-red-500/30 bg-red-500/10 px-4 py-4 text-center">
+          <p className="text-sm text-red-300">{error}</p>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="mt-3 inline-flex items-center gap-2 rounded-[4px] bg-[#2596FF] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#2976E8]"
+          >
+            Reessayer
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !error && !data ? (
+        <div className="rounded-[4px] border border-yellow-500/30 bg-yellow-500/10 px-4 py-4 text-center">
+          <p className="text-sm text-yellow-300">Aucune donnee disponible pour ce profil.</p>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="mt-3 inline-flex items-center gap-2 rounded-[4px] bg-[#2596FF] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#2976E8]"
+          >
+            Recharger
+          </button>
         </div>
       ) : null}
 
