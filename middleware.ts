@@ -16,7 +16,7 @@ const CSP_CONFIG: CSPDirectives = {
   'img-src': ["'self'", 'data:', 'https:'],
   'font-src': ["'self'", 'https:', 'data:'],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-  'script-src': (isProd) => (isProd ? ["'self'", "'strict-dynamic'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
+  'script-src': (isProd) => (isProd ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
   'connect-src': (isProd) => (isProd ? ["'self'", 'https:'] : ["'self'", 'https:', 'ws:']),
 };
 
