@@ -15,6 +15,7 @@ import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
 import CommentBubble from "@/components/forum/CommentBubble"
 import CommentsActionButton from "@/components/forum/CommentsActionButton"
 import ContentWithLightbox from "@/components/ui/image-lightbox"
+import ClickableImage from "@/components/ui/clickable-image"
 
 export const revalidate = 60
 
@@ -104,8 +105,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
           {/* Centered image 150×150 */}
           {imageUrl ? (
             <div className="flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="" className="h-[150px] w-[150px] object-cover rounded" />
+              <ClickableImage src={imageUrl} alt={title} className="h-[150px] w-[150px] object-cover rounded" />
             </div>
           ) : null}
 

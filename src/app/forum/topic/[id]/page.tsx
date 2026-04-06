@@ -6,6 +6,7 @@ import ForumCommentForm from "@/components/forum/ForumCommentForm";
 import CommentsActionButton from "@/components/forum/CommentsActionButton";
 import TopicVoteButtons from "@/components/forum/TopicVoteButtons";
 import ContentWithLightbox from "@/components/ui/image-lightbox";
+import ClickableImage from "@/components/ui/clickable-image";
 import { buildHabboAvatarUrl } from "@/lib/habbo-imaging";
 import { mediaUrl } from "@/lib/media-url";
 import {
@@ -128,9 +129,8 @@ export default async function TopicPage(props: TopicPageProps) {
         <div className="rounded-b-[4px] border border-[#141433] bg-[#272746] py-6">
           <div className="mx-auto flex w-full max-w-[1150px] flex-col gap-5 px-4">
             {imageUrl ? (
-              <div className="mx-auto h-[138px] w-full max-w-[563px] overflow-hidden rounded-[3px] bg-[#295A90]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+              <div className="mx-auto w-full max-w-[563px] overflow-hidden rounded-[3px] bg-[#295A90]">
+                <ClickableImage src={imageUrl} alt="" className="h-[138px] w-full object-cover" />
               </div>
             ) : null}
 
