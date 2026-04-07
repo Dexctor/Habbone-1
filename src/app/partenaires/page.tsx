@@ -17,9 +17,9 @@ export default function PartnersPage() {
         <div className="flex items-center gap-3 text-[color:var(--foreground)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.habbo.com/c_images/Top_Stories_promo/Badge_level4.gif"
+            src="/img/star.png"
             alt=""
-            className="h-10 w-10"
+            className="h-10 w-10 image-pixelated"
           />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--foreground)]/55">
