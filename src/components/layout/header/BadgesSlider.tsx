@@ -19,7 +19,7 @@ type NewsBadgeItem = {
 }
 
 const BADGES_CACHE_KEY = 'header:news-badges'
-const BADGES_CACHE_TTL_MS = 5 * 60 * 1000
+const BADGES_CACHE_TTL_MS = 30 * 1000 // 30 seconds
 const MAX_BADGES = 220
 const PAGE_SIZE = 4
 
