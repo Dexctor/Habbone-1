@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { cachedValue } from '@/lib/client-cache'
 
 const C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_C_IMAGES_BASE || 'https://images.habbo.com/c_images'
 const EU_SSL_C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_EUSSL_C_IMAGES_BASE || 'https://images-eussl.habbo.com/c_images'
@@ -18,8 +17,6 @@ type NewsBadgeItem = {
   publishedAt: string | null
 }
 
-const BADGES_CACHE_KEY = 'header:news-badges'
-const BADGES_CACHE_TTL_MS = 30 * 1000 // 30 seconds
 const MAX_BADGES = 220
 const PAGE_SIZE = 4
 
@@ -177,19 +174,17 @@ export default function BadgesSlider() {
   useEffect(() => {
     let cancelled = false
 
-    ; (async () => {
+    const load = async () => {
       try {
-        const data = await cachedValue(BADGES_CACHE_KEY, BADGES_CACHE_TTL_MS, async () => {
-          const response = await fetch('/api/news/badges', { cache: 'force-cache' })
-          if (!response.ok) return [] as NewsBadgeItem[]
-          const json = await response.json().catch(() => ({}))
-          return Array.isArray(json?.data) ? (json.data as NewsBadgeItem[]) : []
-        })
+        const response = await fetch('/api/news/badges', { cache: 'no-store' })
+        if (!response.ok) return
+        const json = await response.json().catch(() => ({}))
+        const data = Array.isArray(json?.data) ? (json.data as NewsBadgeItem[]) : []
         if (!cancelled) setItems(data)
-      } catch {
-        if (!cancelled) setItems([])
-      }
-    })()
+      } catch {}
+    }
+
+    void load()
 
     return () => {
       cancelled = true
