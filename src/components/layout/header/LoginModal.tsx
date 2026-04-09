@@ -1,11 +1,14 @@
 'use client'
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react'
+import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
+
+const DEFAULT_AVATAR_NICK = 'Decrypt'
 
 type StatusState = { type: 'info' | 'error' | 'success'; message: string } | null
 
@@ -50,6 +53,27 @@ export default function LoginModal({ open, onClose, onLogin, onSwitchToRegister 
     const [password, setPassword] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [status, setStatus] = useState<StatusState>(null)
+    const [avatarNick, setAvatarNick] = useState(DEFAULT_AVATAR_NICK)
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+    // Update avatar with debounce when nick changes
+    const handleNickChange = useCallback((value: string) => {
+        setNick(value)
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+            const trimmed = value.trim()
+            setAvatarNick(trimmed.length >= 2 ? trimmed : DEFAULT_AVATAR_NICK)
+        }, 400)
+    }, [])
+
+    const avatarUrl = buildHabboAvatarUrl(avatarNick, {
+        direction: 2,
+        head_direction: 3,
+        img_format: 'png',
+        gesture: 'sml',
+        headonly: 1,
+        size: 'l',
+    })
 
     const handleSubmit = useCallback(
         async (event: React.FormEvent<HTMLFormElement>) => {
@@ -81,12 +105,13 @@ export default function LoginModal({ open, onClose, onLogin, onSwitchToRegister 
     }, [onClose, onSwitchToRegister])
 
     // Reset form when modal closes
-    React.useEffect(() => {
+    useEffect(() => {
         if (!open) {
             setNick('')
             setPassword('')
             setStatus(null)
             setSubmitting(false)
+            setAvatarNick(DEFAULT_AVATAR_NICK)
         }
     }, [open])
 
@@ -94,6 +119,25 @@ export default function LoginModal({ open, onClose, onLogin, onSwitchToRegister 
         <Dialog open={open} onOpenChange={(value) => { if (!value) onClose() }}>
             <DialogContent className="bg-[#0E0E22] text-white border border-white/10 rounded-[12px] sm:max-w-md p-0 shadow-[0_20px_60px_rgba(6,7,18,0.45)]">
                 <div className="p-6 sm:p-8 space-y-6">
+                    {/* Avatar preview */}
+                    <div className="flex justify-center">
+                        <div className="grid h-[80px] w-[80px] place-items-center rounded-full border-2 border-[#2596FF]/30 bg-[#141433]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={avatarUrl}
+                                alt=""
+                                className="h-[60px] w-auto image-pixelated transition-all duration-300"
+                                onError={(e) => {
+                                    const img = e.target as HTMLImageElement
+                                    if (!img.dataset.fallback) {
+                                        img.dataset.fallback = '1'
+                                        img.src = buildHabboAvatarUrl(DEFAULT_AVATAR_NICK, { direction: 2, head_direction: 3, img_format: 'png', gesture: 'sml', headonly: 1, size: 'l' })
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+
                     <DialogHeader className="space-y-2 text-center">
                         <DialogTitle className="text-2xl font-semibold text-white">Connexion</DialogTitle>
                         <DialogDescription className="text-sm leading-relaxed text-white/70">
@@ -115,7 +159,7 @@ export default function LoginModal({ open, onClose, onLogin, onSwitchToRegister 
                                 name="nick"
                                 placeholder="Ex : MonPseudo"
                                 value={nick}
-                                onChange={(e) => setNick(e.target.value)}
+                                onChange={(e) => handleNickChange(e.target.value)}
                                 required
                                 minLength={3}
                                 maxLength={20}
