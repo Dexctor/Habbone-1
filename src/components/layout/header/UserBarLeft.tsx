@@ -161,7 +161,7 @@ export default function UserBarLeft({
             <img
               src={loginAvatarUrl}
               alt=""
-              className="h-[55px] w-auto image-pixelated transition-all duration-300"
+              className="h-[65px] w-auto image-pixelated transition-all duration-300"
               onError={(e) => {
                 const img = e.target as HTMLImageElement
                 if (!img.dataset.fallback) {
