@@ -195,36 +195,43 @@ export default function UserBarLeft({
           </div>
 
           <div className="box-buttons flex items-center gap-[10px]">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="submit"
-                    className="uppercase rounded-[4px] m-[2px] h-[50px] px-[14px] py-[14px] font-bold text-[0.875rem] leading-[22px] text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="Connexion"
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Connexion...' : 'Connexion'}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Connexion</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={onRequestRegister}
-                    className="uppercase rounded-[4px] m-[2px] h-[50px] px-[14px] py-[14px] font-bold text-[0.875rem] leading-[22px] text-white bg-[#0FD52F] hover:brightness-75 transition-all"
-                    aria-label="Inscription"
-                  >
-                    Inscription
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Inscription</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex flex-col items-start gap-0.5">
+              <div className="flex items-center gap-[10px]">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="submit"
+                        className="uppercase rounded-[4px] m-[2px] h-[50px] px-[14px] py-[14px] font-bold text-[0.875rem] leading-[22px] text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="Connexion"
+                        disabled={submitting}
+                      >
+                        {submitting ? 'Connexion...' : 'Connexion'}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Connexion</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={onRequestRegister}
+                        className="uppercase rounded-[4px] m-[2px] h-[50px] px-[14px] py-[14px] font-bold text-[0.875rem] leading-[22px] text-white bg-[#0FD52F] hover:brightness-75 transition-all"
+                        aria-label="Inscription"
+                      >
+                        Inscription
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Inscription</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Link href="/forgot-password" className="text-[10px] text-[#BEBECE]/40 hover:text-[#2596FF] transition pl-1">
+                Mot de passe oublie ?
+              </Link>
+            </div>
           </div>
         </form>
       )}
