@@ -1,4 +1,5 @@
 import { listTeamMembersByRoles } from '@/server/directus/team'
+import { getRoleBadgeImage } from '@/server/directus/badges'
 import { CalendarClock, Twitter } from 'lucide-react'
 
 import { parseTimestamp } from '@/lib/date-utils'
@@ -98,7 +99,13 @@ export default async function TeamPage() {
 
                         <div className="flex min-w-0 flex-1 flex-col gap-3">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-[16px] font-bold text-[#2596FF]">{member.nick}</p>
+                            <div className="flex items-center gap-2">
+                              {getRoleBadgeImage(role) && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={getRoleBadgeImage(role)!} alt={role} title={`Badge ${role}`} className="h-[28px] w-[28px] image-pixelated shrink-0" />
+                              )}
+                              <p className="truncate text-[16px] font-bold text-[#2596FF]">{member.nick}</p>
+                            </div>
                             {twitter ? (
                               <a
                                 href={twitter}

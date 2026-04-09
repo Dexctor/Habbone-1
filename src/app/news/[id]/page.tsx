@@ -15,6 +15,7 @@ import { buildHabboAvatarUrl } from "@/lib/habbo-imaging"
 import CommentBubble from "@/components/forum/CommentBubble"
 import CommentsActionButton from "@/components/forum/CommentsActionButton"
 import ContentWithLightbox from "@/components/ui/image-lightbox"
+import { getRoleBadgesForNicks } from "@/server/directus/badges"
 import ClickableImage from "@/components/ui/clickable-image"
 
 export const revalidate = 60
@@ -53,7 +54,13 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   const commentIds = comments
     .map((comment) => Number(comment?.id))
     .filter((value) => Number.isFinite(value) && value > 0)
-  const likesMap = await getLikesMapForNewsComments(commentIds).catch(() => ({} as Record<number, number>))
+  const [likesMap, roleBadgesMap] = await Promise.all([
+    getLikesMapForNewsComments(commentIds).catch(() => ({} as Record<number, number>)),
+    getRoleBadgesForNicks([
+      ...(newsItem.autor ? [stripHtml(newsItem.autor)] : []),
+      ...comments.map((c) => stripHtml(c.autor || '')).filter(Boolean),
+    ]).catch(() => ({} as Record<string, string | null>)),
+  ])
   const title = stripHtml(newsItem.titulo || `Article #${newsItem.id}`) || `Article #${newsItem.id}`
   const publishedAt = formatDateTimeFromAny(newsItem.data)
   const author = stripHtml(newsItem.autor || "")
@@ -188,6 +195,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
                   canInteract={isAuthenticated}
                   likeEndpoint={`/api/news/comments/${comment.id}/like`}
                   reportEndpoint={null}
+                  roleBadge={roleBadgesMap[commentAuthor] ?? null}
                   showActions={true}
                 />
               )

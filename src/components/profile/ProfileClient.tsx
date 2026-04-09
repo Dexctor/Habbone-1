@@ -426,6 +426,7 @@ export default function ProfileClient({ nick }: { nick: string }) {
             <ProfileInfoList
               stats={summaryStats}
               favoritesBadges={favoriteBadges}
+              nick={headerUser?.name || nick}
             />
           </aside>
 

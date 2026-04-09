@@ -16,6 +16,7 @@ import {
 } from "@/server/directus/forum";
 import { getLikesMapForTopicComments } from "@/server/directus/likes";
 import type { ForumCommentRecord, ForumTopicRecord } from "@/server/directus/types";
+import { getRoleBadgesForNicks } from "@/server/directus/badges";
 import { stripHtml } from "@/lib/text-utils";
 import { formatDateTimeFromAny } from "@/lib/date-utils";
 import styles from "@/components/forum/forum-content.module.css";
@@ -87,7 +88,13 @@ export default async function TopicPage(props: TopicPageProps) {
   const commentIds = comments
     .map((comment) => Number(comment?.id))
     .filter((value) => Number.isFinite(value) && value > 0);
-  const likesMap = await getLikesMapForTopicComments(commentIds).catch(() => ({} as Record<number, number>));
+  const [likesMap, roleBadgesMap] = await Promise.all([
+    getLikesMapForTopicComments(commentIds).catch(() => ({} as Record<number, number>)),
+    getRoleBadgesForNicks([
+      ...(topic?.autor ? [stripHtml(topic.autor)] : []),
+      ...comments.map((c) => stripHtml(c.autor || '')).filter(Boolean),
+    ]).catch(() => ({} as Record<string, string | null>)),
+  ]);
 
   const commentPageSize = 5;
   const commentPageCount = Math.max(1, Math.ceil(comments.length / commentPageSize));
@@ -203,6 +210,7 @@ export default async function TopicPage(props: TopicPageProps) {
                   avatarNick={commentAuthor}
                   html={comment.comentario || ""}
                   likes={likesMap[Number(comment.id)] ?? 0}
+                  roleBadge={roleBadgesMap[commentAuthor] ?? null}
                   canInteract={isAuthenticated}
                 />
               );

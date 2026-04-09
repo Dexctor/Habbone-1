@@ -45,6 +45,99 @@ async function grantBadge(userId: number, badgeId: number): Promise<void> {
   });
 }
 
+// Mapping: role name (lowercase) -> badge image path
+export const ROLE_BADGE_IMAGE: Record<string, string> = {
+  'fondateur': '/badges-roles/HOFONDA.gif',
+  'responsable': '/badges-roles/HORESP.gif',
+  'animateurs': '/badges-roles/HOANIM.gif',
+  'journaliste': '/badges-roles/HOJOURNA.gif',
+  'correcteur': '/badges-roles/HOCORRE.gif',
+  'configurateur wired': '/badges-roles/HOWIRED.gif',
+  'constructeur': '/badges-roles/HOCONST.gif',
+  'graphiste': '/badges-roles/HOGRAPH.gif',
+  'member': '/badges-roles/HOUSER.gif',
+};
+
+export type UserBadge = {
+  id: number;
+  nome: string;
+  imagem: string;
+};
+
+/** Get all badges owned by a user */
+export async function getUserBadges(userId: number): Promise<UserBadge[]> {
+  try {
+    // Get user's badge IDs
+    const url = new URL(`${directusUrl}/items/emblemas_usuario`);
+    url.searchParams.set('filter[id_usuario][_eq]', String(userId));
+    url.searchParams.set('filter[status][_eq]', 'ativo');
+    url.searchParams.set('fields', 'id_emblema');
+    url.searchParams.set('limit', '50');
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${serviceToken}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const rows = json?.data ?? [];
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+
+    const badgeIds = rows.map((r: any) => Number(r.id_emblema)).filter((id: number) => id > 0);
+    if (badgeIds.length === 0) return [];
+
+    // Get badge details
+    const bUrl = new URL(`${directusUrl}/items/emblemas`);
+    bUrl.searchParams.set('filter[id][_in]', badgeIds.join(','));
+    bUrl.searchParams.set('filter[status][_eq]', 'ativo');
+    bUrl.searchParams.set('fields', 'id,nome,imagem');
+    bUrl.searchParams.set('limit', '50');
+    const bRes = await fetch(bUrl.toString(), {
+      headers: { Authorization: `Bearer ${serviceToken}` },
+      cache: 'no-store',
+    });
+    if (!bRes.ok) return [];
+    const bJson = await bRes.json();
+    return (bJson?.data ?? []).map((b: any) => ({
+      id: Number(b.id),
+      nome: String(b.nome || ''),
+      imagem: String(b.imagem || ''),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Get badge image for a role name */
+export function getRoleBadgeImage(roleName: string): string | null {
+  return ROLE_BADGE_IMAGE[roleName.toLowerCase().trim()] ?? null;
+}
+
+/** Get role badge images for a list of nicks (batch) */
+export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<string, string | null>> {
+  const result: Record<string, string | null> = {};
+  if (!nicks.length) return result;
+
+  try {
+    const url = new URL(`${directusUrl}/items/${USERS_TABLE}`);
+    url.searchParams.set('filter[nick][_in]', nicks.join(','));
+    url.searchParams.set('fields', 'nick,role');
+    url.searchParams.set('limit', String(nicks.length));
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${serviceToken}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return result;
+    const json = await res.json();
+    for (const u of json?.data ?? []) {
+      const nick = String(u?.nick || '');
+      const role = String(u?.role || '');
+      if (nick) result[nick] = getRoleBadgeImage(role);
+    }
+  } catch {}
+
+  return result;
+}
+
 /**
  * Ensure a user has the badge corresponding to their role.
  * Also ensures they have the "member" badge.

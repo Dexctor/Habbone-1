@@ -16,6 +16,7 @@ type CommentBubbleProps = {
   showActions?: boolean
   likeEndpoint?: string
   reportEndpoint?: string | null
+  roleBadge?: string | null
 }
 
 function habboHeadUrl(nick?: string) {
@@ -41,6 +42,7 @@ export default function CommentBubble({
   showActions = true,
   likeEndpoint,
   reportEndpoint,
+  roleBadge,
 }: CommentBubbleProps) {
   const imgSrc = habboHeadUrl(avatarNick || author)
   const [likeCount, setLikeCount] = useState(likes)
@@ -98,6 +100,10 @@ export default function CommentBubble({
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.1)] pt-2 text-[13px]">
             <div className="flex items-center gap-2 truncate">
+              {roleBadge && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={roleBadge} alt="" className="h-[22px] w-[22px] image-pixelated shrink-0" />
+              )}
               <Link href={`/profile?user=${encodeURIComponent(author || "Anonyme")}`} className="text-[#BEBECE] hover:text-[#2596FF] hover:underline transition">{author || "Anonyme"}</Link>
               {date ? (
                 <span className="text-[11px] text-[#BEBECE]/50">{date}</span>
