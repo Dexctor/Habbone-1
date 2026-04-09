@@ -1,7 +1,8 @@
 import 'server-only'
 
 // Server-side micro cache wrappers for Habbo API with TTLs
-// Respect RULES.md: caching only on server, no secrets leaked
+// Redis (VPS) as L1 cache, in-memory as L2 fallback
+import { cached as redisCached } from '@/server/redis';
 
 import {
   getHabboUserByName as rawGetHabboUserByName,
@@ -69,23 +70,33 @@ function getInflightStore() {
 
 async function getOrSet<T>(key: string, ttl: number, fn: () => Promise<T>, options?: CacheOptions): Promise<T> {
   if (options?.cache === false) return fn()
+
+  // L2: in-memory cache (fast but ephemeral on Vercel)
   const store = getStore()
   const hit = store.get(key) as Entry<T> | undefined
   if (hit && hit.exp > now()) return hit.v
+
+  // Deduplicate in-flight requests
   const inflight = getInflightStore()
   const existing = inflight.get(key) as Promise<T> | undefined
   if (existing) return existing
-  const pending = Promise.resolve()
-    .then(fn)
-    .then((value) => {
-      store.set(key, { v: value, exp: now() + ttl })
-      inflight.delete(key)
-      return value
-    })
-    .catch((err) => {
-      inflight.delete(key)
-      throw err
-    })
+
+  // L1: Redis cache (persistent across Vercel workers)
+  const redisTtlSeconds = Math.max(1, Math.floor(ttl / 1000))
+  const pending = redisCached<T>(
+    `habbo:${key}`,
+    redisTtlSeconds,
+    fn,
+  ).then((value) => {
+    // Store in L2 memory cache too
+    store.set(key, { v: value, exp: now() + ttl })
+    inflight.delete(key)
+    return value
+  }).catch((err) => {
+    inflight.delete(key)
+    throw err
+  })
+
   inflight.set(key, pending)
   return pending
 }
