@@ -101,8 +101,10 @@ export default function CommentBubble({
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.1)] pt-2 text-[13px]">
             <div className="flex items-center gap-2 truncate">
               {roleBadge && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={roleBadge} alt="" className="h-[46px] w-[46px] shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] [image-rendering:auto]" />
+                <span className="grid h-[40px] w-[40px] shrink-0 place-items-center rounded-[4px] border border-[#2a2a5a] bg-[#141433]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={roleBadge} alt="" className="h-[32px] w-[32px] object-contain [image-rendering:auto]" />
+                </span>
               )}
               <Link href={`/profile?user=${encodeURIComponent(author || "Anonyme")}`} className="text-[#BEBECE] hover:text-[#2596FF] hover:underline transition">{author || "Anonyme"}</Link>
               {date ? (
