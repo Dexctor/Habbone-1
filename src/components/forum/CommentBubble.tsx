@@ -102,7 +102,7 @@ export default function CommentBubble({
             <div className="flex items-center gap-2 truncate">
               {roleBadge && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={roleBadge} alt="" className="h-[22px] w-[22px] image-pixelated shrink-0" />
+                <img src={roleBadge} alt="" className="h-[30px] w-[30px] image-pixelated shrink-0" />
               )}
               <Link href={`/profile?user=${encodeURIComponent(author || "Anonyme")}`} className="text-[#BEBECE] hover:text-[#2596FF] hover:underline transition">{author || "Anonyme"}</Link>
               {date ? (

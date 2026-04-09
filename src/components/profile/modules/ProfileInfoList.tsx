@@ -60,9 +60,9 @@ export function ProfileInfoList(props: {
         <div className="flex flex-wrap gap-2">
           {siteBadges.length ? (
             siteBadges.map((badge) => (
-              <div key={badge.id} title={badge.nome} className="grid h-[42px] w-[42px] place-items-center rounded-[4px] border border-black/20 bg-[#1F1F3E] transition hover:bg-[#303060]">
+              <div key={badge.id} title={badge.nome} className="grid h-[52px] w-[52px] place-items-center rounded-[4px] border border-black/20 bg-[#1F1F3E] transition hover:bg-[#303060]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={badge.imagem} alt={badge.nome} className="h-[32px] w-[32px] image-pixelated object-contain" />
+                <img src={badge.imagem} alt={badge.nome} className="h-[40px] w-[40px] image-pixelated object-contain" />
               </div>
             ))
           ) : (
@@ -77,9 +77,9 @@ export function ProfileInfoList(props: {
           <h3 className="mb-2 text-[14px] font-bold text-white">Badges Habbo favoris</h3>
           <div className="flex flex-wrap gap-2">
             {favoritesBadges.map((src, i) => (
-              <div key={i} className="grid h-[42px] w-[42px] place-items-center rounded-[4px] border border-black/20 bg-[#1F1F3E]">
+              <div key={i} className="grid h-[52px] w-[52px] place-items-center rounded-[4px] border border-black/20 bg-[#1F1F3E]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`badge-${i}`} className="h-[32px] w-[32px] image-pixelated object-contain" />
+                <img src={src} alt={`badge-${i}`} className="h-[40px] w-[40px] image-pixelated object-contain" />
               </div>
             ))}
           </div>
