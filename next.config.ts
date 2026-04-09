@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
       // Habbone (legacy/news links)
       { protocol: 'https', hostname: 'habbone.fr', pathname: '/**' },
       { protocol: 'http', hostname: 'habbone.fr', pathname: '/**' },
+      // Directus API (production)
+      { protocol: 'https', hostname: 'api.habbone.fr', pathname: '/**' },
       // Local Directus dev server
       { protocol: 'http', hostname: 'localhost', port: '8055', pathname: '/**' },
     ],
