@@ -24,7 +24,7 @@ const djAvatarUrl = buildHabboAvatarUrl('Decrypt', {
   img_format: 'png',
   gesture: 'sml',
   headonly: 0,
-  size: 'm',
+  size: 'l',
   dance: 0,
   frame_num: 0,
   effect: '',
@@ -220,14 +220,14 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
         <div className="bar-top flex w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] items-center justify-between">
           <div className="left flex items-center flex-1 min-w-0">
             <div
-              className="avatar flex justify-center items-end min-w-[70px] h-[60px] rounded-[4px] mr-[10px] bg-[#303060] overflow-hidden"
+              className="avatar flex justify-center items-end min-w-[80px] h-[75px] rounded-[6px] mr-[12px] bg-[#1a1a3e] border border-[#2a2a5a] overflow-hidden"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 id="avatar-stream"
                 src={djAvatarUrl}
                 alt="Habbo DJ"
-                className="image-pixelated object-cover object-top h-[80px] w-auto mt-[5px]"
+                className="image-pixelated h-[100px] w-auto object-cover object-top"
               />
             </div>
             <div className="info-stream flex flex-col justify-between w-full">
