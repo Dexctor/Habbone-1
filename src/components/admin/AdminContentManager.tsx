@@ -8,9 +8,11 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { ChevronLeft, ChevronRight, Eye, Pencil, Save, Search, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, ImagePlus, Link2, Loader2, Pencil, Save, Search, Trash2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -400,6 +402,7 @@ function DetailPanel({
     } else if (contentType === "stories") {
       const story = item as AdminStory;
       initial.titulo = story.titulo || "";
+      initial.imagem = (story as any).image || (story as any).imagem || "";
       initial.status = story.status || "public";
     }
 
@@ -611,72 +614,85 @@ function EditForm({
     setFormState((current) => ({ ...current, [key]: value }));
   };
 
+  const ct = contentType as string;
+  const hasTitle = ct === "topics" || ct === "articles" || ct === "stories";
+  const hasImage = ct === "topics" || ct === "articles" || ct === "stories";
+  const hasEditor = ct !== "stories";
+
   return (
     <div className="space-y-4">
-      <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
-        <div className="grid gap-4 lg:grid-cols-2">
-          {(contentType === "topics" || contentType === "articles" || contentType === "stories") && (
-            <Field label="Titre">
-              <Input
-                value={(formState.titulo as string) || ""}
-                onChange={(event) => updateField("titulo", event.target.value)}
-                className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
-              />
-            </Field>
-          )}
+      {/* Section: Informations */}
+      {hasTitle && (
+        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#2596FF]">Informations</p>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {hasTitle && (
+              <Field label="Titre">
+                <Input
+                  value={(formState.titulo as string) || ""}
+                  onChange={(event) => updateField("titulo", event.target.value)}
+                  placeholder="Titre du contenu..."
+                  className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
+                />
+              </Field>
+            )}
 
-          {contentType === "articles" && (
-            <Field label="Resume">
-              <Input
-                value={(formState.descricao as string) || ""}
-                onChange={(event) => updateField("descricao", event.target.value)}
-                className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
-              />
-            </Field>
-          )}
+            {contentType === "articles" && (
+              <Field label="Resume">
+                <Input
+                  value={(formState.descricao as string) || ""}
+                  onChange={(event) => updateField("descricao", event.target.value)}
+                  placeholder="Bref resume..."
+                  className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
+                />
+              </Field>
+            )}
 
-          {(contentType === "topics" || contentType === "articles") && (
-            <Field label="Image UUID / URL">
-              <Input
-                value={(formState.imagem as string) || ""}
-                onChange={(event) => updateField("imagem", event.target.value)}
-                className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
-              />
-            </Field>
-          )}
+            {contentType === "stories" && (
+              <Field label="Statut">
+                <select
+                  className="flex h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 text-sm text-white outline-none"
+                  value={(formState.status as string) || "public"}
+                  onChange={(event) => updateField("status", event.target.value)}
+                >
+                  <option value="public" className="bg-[#141433]">Public</option>
+                  <option value="hidden" className="bg-[#141433]">Cache</option>
+                  <option value="draft" className="bg-[#141433]">Brouillon</option>
+                </select>
+              </Field>
+            )}
+          </div>
 
-          {contentType === "stories" && (
-            <Field label="Statut">
-              <select
-                className="flex h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 text-sm text-white outline-none"
-                value={(formState.status as string) || "public"}
-                onChange={(event) => updateField("status", event.target.value)}
-              >
-                <option value="public" className="bg-[#141433]">Public</option>
-                <option value="hidden" className="bg-[#141433]">Cache</option>
-                <option value="draft" className="bg-[#141433]">Brouillon</option>
-              </select>
-            </Field>
+          {contentType === "topics" && (
+            <div className="mt-4 flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
+                <Checkbox checked={!!formState.fixo} onCheckedChange={(value) => updateField("fixo", !!value)} />
+                Epingle
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
+                <Checkbox checked={!!formState.fechado} onCheckedChange={(value) => updateField("fechado", !!value)} />
+                Ferme
+              </label>
+            </div>
           )}
         </div>
+      )}
 
-        {contentType === "topics" && (
-          <div className="mt-4 flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
-              <Checkbox checked={!!formState.fixo} onCheckedChange={(value) => updateField("fixo", !!value)} />
-              Epingle
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
-              <Checkbox checked={!!formState.fechado} onCheckedChange={(value) => updateField("fechado", !!value)} />
-              Ferme
-            </label>
-          </div>
-        )}
-      </div>
-
-      {contentType !== "stories" && (
+      {/* Section: Media */}
+      {hasImage && (
         <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
-          <p className="mb-3 text-xs font-bold uppercase text-white">Edition du contenu</p>
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#2596FF]">Media</p>
+          <ImageField
+            value={(formState.imagem as string) || ""}
+            onChange={(v) => updateField("imagem", v)}
+          />
+        </div>
+      )}
+
+      {/* Section: Contenu */}
+      {hasEditor && (
+        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#2596FF]">Contenu</p>
           <AdminRichEditor
             value={
               contentType === "articles"
@@ -696,6 +712,116 @@ function EditForm({
             }}
           />
         </div>
+      )}
+    </div>
+  );
+}
+
+function ImageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [showUrl, setShowUrl] = useState(false);
+  const previewUrl = resolveAssetUrl(value);
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await fetch("/api/upload/image", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data?.ok && data?.id) {
+        onChange(data.id);
+        setShowUrl(false);
+        toast.success("Image uploadee");
+      } else {
+        toast.error(data?.error || "Erreur upload");
+      }
+    } catch {
+      toast.error("Erreur reseau");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Preview */}
+      <div className="relative overflow-hidden rounded-[4px] border border-[#141433] bg-[#1F1F3E]">
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="max-h-[200px] w-full object-contain p-2"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <div className="flex h-[120px] items-center justify-center">
+            <div className="text-center">
+              <ImagePlus className="mx-auto h-8 w-8 text-[color:var(--foreground)]/20" />
+              <p className="mt-1 text-[11px] text-[color:var(--foreground)]/30">Aucune image</p>
+            </div>
+          </div>
+        )}
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <Loader2 className="h-6 w-6 animate-spin text-[#2596FF]" />
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#303060] disabled:opacity-50"
+        >
+          <Upload className="h-3.5 w-3.5" />
+          {uploading ? "Upload..." : "Uploader"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowUrl(!showUrl)}
+          className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#303060]"
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          Coller URL
+        </button>
+        {value && (
+          <button
+            type="button"
+            onClick={() => { onChange(""); setShowUrl(false); }}
+            className="inline-flex items-center gap-1.5 rounded-[4px] border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-bold text-red-400 transition hover:bg-red-500/20"
+          >
+            <X className="h-3.5 w-3.5" />
+            Supprimer
+          </button>
+        )}
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) { e.target.value = ""; void handleUpload(file); }
+        }}
+      />
+
+      {/* URL input (toggle) */}
+      {showUrl && (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="UUID Directus ou URL de l'image..."
+          className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
+        />
       )}
     </div>
   );

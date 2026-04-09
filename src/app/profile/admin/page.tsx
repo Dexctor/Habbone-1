@@ -204,6 +204,7 @@ export default async function AdminPage() {
       status: String(formData.get('status') || 'public'),
     };
     if (formData.has('titulo')) patch.titulo = String(formData.get('titulo') || '');
+    if (formData.has('imagem')) patch.imagem = String(formData.get('imagem') || '');
     await adminUpdateStory(id, patch);
     revalidatePath('/profile/admin');
   }
