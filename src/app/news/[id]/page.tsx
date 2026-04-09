@@ -134,9 +134,6 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
                 {publishedAt ? <span className="font-normal text-[#DDD]">{publishedAt}</span> : null}
               </div>
             </div>
-            <div className="rounded-[4px] bg-[rgba(255,255,255,0.05)] px-2 py-1.5">
-              <span className="text-sm font-normal uppercase text-white">{categoryLabel}</span>
-            </div>
           </div>
         </div>
       </section>
