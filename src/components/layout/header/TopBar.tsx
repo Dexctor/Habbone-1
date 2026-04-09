@@ -220,14 +220,14 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
         <div className="bar-top flex w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] items-center justify-between">
           <div className="left flex items-center flex-1 min-w-0">
             <div
-              className="avatar flex justify-center items-end min-w-[80px] h-[70px] rounded-[4px] mr-[10px] bg-[#303060] bg-cover bg-center"
-
+              className="avatar flex justify-center items-end min-w-[70px] h-[60px] rounded-[4px] mr-[10px] bg-[#303060] overflow-hidden"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 id="avatar-stream"
                 src={djAvatarUrl}
                 alt="Habbo DJ"
+                className="image-pixelated object-cover object-top h-[80px] w-auto mt-[5px]"
               />
             </div>
             <div className="info-stream flex flex-col justify-between w-full">
