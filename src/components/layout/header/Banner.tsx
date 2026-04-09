@@ -48,9 +48,9 @@ export default function Banner({ slow, initialTheme }: BannerProps) {
     return {
       backgroundColor: theme.headerBackgroundColor,
       backgroundImage,
-      backgroundPosition: 'center top',
-      backgroundSize: 'contain',
-      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'center center',
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat',
     }
   }, [theme.headerBackgroundColor, theme.headerBackgroundImageUrl])
 
