@@ -10,20 +10,22 @@ type UseHabboProfileOptions = {
   enabled?: boolean
 }
 
-const MAX_RETRIES = 2
-const RETRY_DELAY_MS = 1500
+const MAX_RETRIES = 4
+const RETRY_DELAYS = [1000, 2000, 3000, 4000]
+
+// Simple in-memory cache to avoid refetching on navigation
+const profileCache = new Map<string, { data: HabboProfileResponse; ts: number }>()
+const CACHE_TTL = 30_000 // 30 seconds
 
 export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) {
   const [data, setData] = useState<HabboProfileResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Stabilize options to avoid re-triggering the effect
   const fallbackMessage = options?.fallbackMessage
   const lite = options?.lite
   const enabled = options?.enabled !== false
 
-  // Track the current nick to avoid stale updates
   const currentNickRef = useRef(nick)
   currentNickRef.current = nick
 
@@ -42,10 +44,19 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
 
     let cancelled = false
 
-    // Reset state when nick changes
+    // Check cache first
+    const cached = profileCache.get(safeNick.toLowerCase())
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      setData(cached.data)
+      setError(null)
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
-    setData(null)
+    // Don't clear data if we already have it (avoids flash)
+    // setData(null)  -- removed intentionally
 
     const doFetch = async (attempt: number): Promise<void> => {
       try {
@@ -56,29 +67,32 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
 
         if (cancelled || currentNickRef.current !== nick) return
 
+        // Cache the result
+        profileCache.set(safeNick.toLowerCase(), { data: profile, ts: Date.now() })
+
         setData(profile)
         setError(null)
+        setLoading(false)
       } catch (e: unknown) {
         if (cancelled || currentNickRef.current !== nick) return
 
-        // Retry on network errors
+        // Retry with increasing delays
         if (attempt < MAX_RETRIES) {
-          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+          const delay = RETRY_DELAYS[attempt] || 2000
+          await new Promise((r) => setTimeout(r, delay))
           if (!cancelled && currentNickRef.current === nick) {
             return doFetch(attempt + 1)
           }
           return
         }
 
+        // All retries exhausted
         const msg =
           e && typeof e === "object" && "message" in e
             ? String((e as any).message)
             : "Erreur de chargement du profil"
         setError(msg)
-      } finally {
-        if (!cancelled && currentNickRef.current === nick) {
-          setLoading(false)
-        }
+        setLoading(false)
       }
     }
 
@@ -93,6 +107,9 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
     const safeNick = String(nick || "").trim()
     if (!safeNick) return
 
+    // Clear cache for this nick
+    profileCache.delete(safeNick.toLowerCase())
+
     setLoading(true)
     setError(null)
     try {
@@ -100,6 +117,7 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
         fallbackMessage,
         lite,
       })
+      profileCache.set(safeNick.toLowerCase(), { data: profile, ts: Date.now() })
       setData(profile)
       return profile
     } catch (e: unknown) {
