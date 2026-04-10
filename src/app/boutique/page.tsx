@@ -41,7 +41,7 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: 16, name: 'Totem de Diamante', price: 350, category: 'Bonus', image: '/img/box.png', stock: 0, disabled: true },
 ]
 
-const PAGE_SIZE = 16
+const PAGE_SIZE = 12
 
 /* ------------------------------------------------------------------ */
 /*  Composants                                                         */
@@ -51,29 +51,29 @@ function ShopCard({ item }: { item: ShopItem }) {
   const soldOut = item.stock <= 0 || Boolean(item.disabled)
 
   return (
-    <article className="relative flex h-[200px] rounded-[8px] bg-[#1F1F3E] overflow-hidden">
-      {/* Image à gauche */}
-      <div className="flex w-[100px] shrink-0 items-center justify-center rounded-[8px] bg-[#303060] p-3">
+    <article className="flex flex-col rounded-[8px] bg-[#1F1F3E] border border-[#141433] overflow-hidden">
+      {/* Image en haut */}
+      <div className="flex h-[140px] items-center justify-center bg-[#303060]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.image}
           alt={item.name}
-          className="h-[130px] w-auto object-contain image-pixelated"
+          className="h-[100px] w-auto object-contain image-pixelated"
           loading="lazy"
         />
       </div>
 
-      {/* Contenu à droite */}
-      <div className="flex flex-1 flex-col justify-between p-3">
+      {/* Contenu en bas */}
+      <div className="flex flex-1 flex-col gap-3 p-5">
         {/* Nom du produit */}
-        <h2 className="text-[16px] font-bold uppercase leading-tight text-white">
+        <h2 className="text-[15px] font-bold uppercase leading-snug text-white">
           {item.name}
         </h2>
 
         {/* Prix */}
         <div className="flex items-center gap-2 rounded-[4px] border-2 border-white/10 bg-black/10 px-3 py-2 w-fit">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/icon-coin.png" alt="" className="h-[25px] w-[25px] image-pixelated" />
+          <img src="/img/icon-coin.png" alt="" className="h-[22px] w-[22px] image-pixelated" />
           <span className="text-[14px] font-bold text-[#DDD]">{item.price}</span>
         </div>
 
@@ -81,13 +81,13 @@ function ShopCard({ item }: { item: ShopItem }) {
         <button
           type="button"
           disabled={soldOut}
-          className={`flex items-center justify-center gap-2 rounded-[4px] px-5 py-3 text-[14px] font-bold uppercase transition ${
+          className={`mt-auto flex w-full items-center justify-center gap-2 rounded-[4px] px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide transition ${
             soldOut
               ? 'cursor-not-allowed border-2 border-white/10 bg-transparent text-[#BEBECE]'
               : 'bg-[#2596FF] text-white hover:bg-[#2976E8]'
           }`}
         >
-          <svg className="h-[17px] w-[17px]" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" />
           </svg>
           {soldOut ? 'Indisponible' : 'Acheter'}
@@ -184,7 +184,7 @@ export default function BoutiquePage() {
   const visible = filtered.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE)
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-10 sm:px-6">
+    <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
       {/* ── En-tête : titre + recherche ── */}
       <div className="flex flex-col gap-4 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ export default function BoutiquePage() {
             Aucun article trouvé.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((item) => (
               <ShopCard key={item.id} item={item} />
             ))}
