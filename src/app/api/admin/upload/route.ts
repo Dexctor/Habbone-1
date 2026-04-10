@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { assertAdmin } from '@/server/authz';
+import { uploadFileToDirectus } from '@/server/directus/stories';
+import { directusUrl } from '@/server/directus/client';
 
 /**
  * POST /api/admin/upload
- * Accepts a multipart/form-data with a single file field named "file".
- * Saves to public/uploads/shop/<timestamp>-<sanitized-filename>
- * Returns { ok: true, url: "/uploads/shop/..." }
+ * Accepts multipart/form-data with a single file field named "file".
+ * Uploads the file to Directus assets and returns the public URL.
+ * Returns { ok: true, url: "https://<directus>/assets/<id>" }
  */
 
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+export const runtime = 'nodejs';
+
+const ALLOWED_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+]);
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(req: Request) {
@@ -30,7 +38,8 @@ export async function POST(req: Request) {
     }
 
     // Validate type
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const mimeType = (file.type || '').toLowerCase();
+    if (!ALLOWED_TYPES.has(mimeType)) {
       return NextResponse.json(
         { error: `Type non autorisé : ${file.type}. Types acceptés : PNG, JPG, GIF, WebP, SVG` },
         { status: 400 },
@@ -38,37 +47,31 @@ export async function POST(req: Request) {
     }
 
     // Validate size
-    if (file.size > MAX_SIZE) {
+    if (file.size <= 0 || file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: `Fichier trop volumineux (max ${MAX_SIZE / 1024 / 1024} Mo)` },
         { status: 400 },
       );
     }
 
-    // Sanitize filename: remove special chars, keep extension
-    const ext = path.extname(file.name).toLowerCase() || '.png';
-    const baseName = file.name
-      .replace(/\.[^/.]+$/, '') // remove extension
-      .replace(/[^a-zA-Z0-9_-]/g, '_') // sanitize
-      .substring(0, 60); // limit length
-    const timestamp = Date.now();
-    const finalName = `${timestamp}-${baseName}${ext}`;
+    // Upload to Directus
+    const filename = file.name?.trim() || `shop-${Date.now()}.png`;
+    const uploaded = await uploadFileToDirectus(file, filename, mimeType);
+    const id = String(uploaded?.id || '').trim();
 
-    // Ensure directory exists
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'shop');
-    await mkdir(uploadDir, { recursive: true });
+    if (!id) {
+      return NextResponse.json({ error: 'Upload échoué — pas d\'ID retourné' }, { status: 500 });
+    }
 
-    // Write file
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = path.join(uploadDir, finalName);
-    await writeFile(filePath, buffer);
-
-    // Return public URL
-    const publicUrl = `/uploads/shop/${finalName}`;
+    // Build public URL from Directus assets
+    const publicUrl = `${directusUrl}/assets/${encodeURIComponent(id)}`;
 
     return NextResponse.json({ ok: true, url: publicUrl });
   } catch (e: any) {
     console.error('[upload] Error:', e);
-    return NextResponse.json({ error: 'Erreur lors de l\'upload' }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message || 'Erreur lors de l\'upload' },
+      { status: 500 },
+    );
   }
 }
