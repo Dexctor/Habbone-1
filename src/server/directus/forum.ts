@@ -248,24 +248,39 @@ export async function reportForumComment(commentId: number, author: string) {
 export async function setTopicVote(topicId: number, author: string, vote: 1 | -1) {
   const tipo = vote === 1 ? 'pos' : 'neg';
   const nowUnix = Math.floor(Date.now() / 1000);
+
+  // Check if user already voted on this topic
   const rows = (await directusService
     .request(
       rItems('forum_topicos_votos' as any, {
         filter: { id_topico: { _eq: topicId }, ...(author ? ({ autor: { _eq: author } } as any) : {}) } as any,
         limit: 1 as any,
-        fields: ['id'] as any,
+        fields: ['id', 'tipo'] as any,
       } as any),
     )
     .catch(() => [])) as any[];
+
   if (Array.isArray(rows) && rows.length > 0) {
-    const id = (rows[0] as any)?.id;
-    if (id != null) {
-      await directusService.request(
-        uItem('forum_topicos_votos' as any, id as any, { tipo, data: nowUnix } as any),
-      );
-      return { updated: true };
+    const existing = rows[0] as any;
+    const existingId = existing?.id;
+    const existingTipo = existing?.tipo;
+
+    if (existingId != null) {
+      if (existingTipo === tipo) {
+        // Same vote type → toggle off (remove the vote)
+        await directusService.request(dItem('forum_topicos_votos' as any, existingId));
+        return { removed: true };
+      } else {
+        // Different vote type → switch (like→dislike or dislike→like)
+        await directusService.request(
+          uItem('forum_topicos_votos' as any, existingId as any, { tipo, data: nowUnix } as any),
+        );
+        return { updated: true };
+      }
     }
   }
+
+  // No existing vote → create new
   const payload: any = { id_topico: topicId, tipo, data: nowUnix };
   if (author) payload.autor = author;
   await directusService.request(cItem('forum_topicos_votos' as any, payload));
