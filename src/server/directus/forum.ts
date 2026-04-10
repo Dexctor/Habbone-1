@@ -273,27 +273,33 @@ export async function setTopicVote(topicId: number, author: string, vote: 1 | -1
 }
 
 export async function getTopicVoteSummary(topicId: number): Promise<{ up: number; down: number }> {
-  const count = async (tipo: 'pos' | 'neg') => {
+  // Fetch all votes for this topic and count client-side.
+  // Using meta=total_count with multiple filters is unreliable on some Directus versions.
+  try {
     const url = new URL(`${directusUrl}/items/${encodeURIComponent('forum_topicos_votos')}`);
-    url.searchParams.set('limit', '0');
-    url.searchParams.set('meta', 'total_count');
+    url.searchParams.set('limit', '1000');
+    url.searchParams.set('fields', 'id,tipo');
     url.searchParams.set('filter[id_topico][_eq]', String(topicId));
-    url.searchParams.set('filter[tipo][_eq]', tipo);
-    try {
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${serviceToken}` },
-        cache: 'no-store',
-      });
-      if (!res.ok) return 0;
-      const json = await res.json();
-      const n = Number((json as any)?.meta?.total_count ?? 0);
-      return Number.isFinite(n) ? n : 0;
-    } catch {
-      return 0;
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${serviceToken}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return { up: 0, down: 0 };
+
+    const json = await res.json();
+    const rows = Array.isArray(json?.data) ? json.data : [];
+
+    let up = 0;
+    let down = 0;
+    for (const row of rows) {
+      if (row.tipo === 'pos') up++;
+      else if (row.tipo === 'neg') down++;
     }
-  };
-  const [up, down] = await Promise.all([count('pos'), count('neg')]);
-  return { up, down };
+    return { up, down };
+  } catch {
+    return { up: 0, down: 0 };
+  }
 }
 
 export async function adminUpdateForumTopic(

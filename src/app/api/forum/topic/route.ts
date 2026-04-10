@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 const TopicBodySchema = z.object({
   titulo: z.string().min(3, 'Titre trop court (min. 3 caractères)').max(200, 'Titre trop long'),
   conteudo: z.string().min(10, 'Contenu trop court (min. 10 caractères)').max(50000, 'Contenu trop long'),
+  imagem: z.string().max(500).optional().default(''),
   cat_id: z.union([z.number(), z.string(), z.null()]).optional().default(null),
 })
 
@@ -36,9 +37,10 @@ export async function POST(req: Request): Promise<NextResponse> {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    const { titulo: rawTitulo, conteudo: rawConteudo, cat_id } = parsed.data
+    const { titulo: rawTitulo, conteudo: rawConteudo, imagem: rawImagem, cat_id } = parsed.data
     const titulo = sanitizePlainText(rawTitulo)
     const conteudo = sanitizeRichContentHtml(rawConteudo)
+    const imagem = rawImagem?.trim() || null
 
     if (!titulo || titulo.length < 3) {
       return NextResponse.json({ error: 'Titre trop court (min. 3 caractères)' }, { status: 400 })
@@ -48,6 +50,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       titulo,
       conteudo,
       autor: nick,
+      imagem,
       cat_id,
     })
 
