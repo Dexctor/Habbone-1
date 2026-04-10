@@ -14,8 +14,6 @@ export interface ShopItem {
   preco: number;
   estoque: number;
   status: 'ativo' | 'inativo';
-  date_created?: string;
-  date_updated?: string;
 }
 
 export interface ShopOrder {
@@ -27,8 +25,6 @@ export interface ShopOrder {
   item_imagem?: string;
   preco: number;
   status: 'pendente' | 'entregue' | 'cancelado';
-  date_created?: string;
-  date_updated?: string;
 }
 
 export interface AdminNotification {
@@ -38,7 +34,6 @@ export interface AdminNotification {
   message?: string;
   link?: string;
   read: boolean;
-  date_created?: string;
 }
 
 const SHOP_ITEMS_TABLE = 'shop_items';
@@ -55,9 +50,9 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
     const rows = await directus.request(
       rItems(SHOP_ITEMS_TABLE, {
         ...(Object.keys(filter).length > 0 ? { filter } : {}),
-        sort: ['-date_created'],
+        sort: ['-id'],
         limit: 500,
-        fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status', 'date_created', 'date_updated'],
+        fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status'],
       })
     );
     return (rows || []) as ShopItem[];
@@ -71,7 +66,7 @@ export async function getShopItem(id: number): Promise<ShopItem | null> {
   try {
     const row = await directus.request(
       rItem(SHOP_ITEMS_TABLE, id, {
-        fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status', 'date_created', 'date_updated'],
+        fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status'],
       })
     );
     return (row || null) as ShopItem | null;
@@ -80,15 +75,12 @@ export async function getShopItem(id: number): Promise<ShopItem | null> {
   }
 }
 
-export async function createShopItem(data: Omit<ShopItem, 'id' | 'date_created' | 'date_updated'>): Promise<ShopItem | null> {
+export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopItem | null> {
   try {
-    console.log('[Shop] Creating item:', JSON.stringify(data));
     const row = await directus.request(cItem(SHOP_ITEMS_TABLE, data));
-    console.log('[Shop] Created item result:', JSON.stringify(row));
     return (row || null) as ShopItem | null;
   } catch (error: any) {
     console.error('[Shop] Failed to create item:', error?.message || error);
-    // Re-throw so the API route can return the actual error message
     throw error;
   }
 }
@@ -130,10 +122,10 @@ export async function listShopOrders(options?: {
     const rows = await directus.request(
       rItems(SHOP_ORDERS_TABLE, {
         ...(Object.keys(filter).length > 0 ? { filter } : {}),
-        sort: ['-date_created'],
+        sort: ['-id'],
         limit,
         offset: (page - 1) * limit,
-        fields: ['id', 'user_id', 'user_nick', 'item_id', 'item_nome', 'item_imagem', 'preco', 'status', 'date_created', 'date_updated'],
+        fields: ['id', 'user_id', 'user_nick', 'item_id', 'item_nome', 'item_imagem', 'preco', 'status'],
       })
     );
 
@@ -262,9 +254,9 @@ export async function listAdminNotifications(options?: {
     const rows = await directus.request(
       rItems(ADMIN_NOTIFICATIONS_TABLE, {
         ...(Object.keys(filter).length > 0 ? { filter } : {}),
-        sort: ['-date_created'],
+        sort: ['-id'],
         limit,
-        fields: ['id', 'type', 'title', 'message', 'link', 'read', 'date_created'],
+        fields: ['id', 'type', 'title', 'message', 'link', 'read'],
       })
     );
     return (rows || []) as AdminNotification[];

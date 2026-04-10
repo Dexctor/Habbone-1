@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     // Bypass SDK entirely — fetch Directus REST API directly
-    const url = `${directusUrl}/items/shop_items?filter[status][_eq]=ativo&sort=-date_created&limit=500&fields=id,nome,descricao,imagem,preco,estoque,status,date_created,date_updated`;
+    const url = `${directusUrl}/items/shop_items?filter[status][_eq]=ativo&sort=-id&limit=500&fields=id,nome,descricao,imagem,preco,estoque,status`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${serviceToken}` },
       cache: 'no-store',

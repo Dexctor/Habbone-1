@@ -44,7 +44,6 @@ type ShopOrder = {
   item_imagem?: string;
   preco: number;
   status: string;
-  date_created?: string;
 };
 
 type EditState = {
@@ -701,7 +700,7 @@ function OrdersTab() {
                     <OrderStatusBadge status={order.status} />
                   </td>
                   <td className="px-4 py-3 text-[12px] text-[#BEBECE]/50">
-                    {order.date_created ? new Date(order.date_created).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {"—"}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">

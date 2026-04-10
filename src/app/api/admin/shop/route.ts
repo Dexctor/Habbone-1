@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
   // Bypass SDK — fetch directly from Directus REST API (SDK may silently fail on Vercel)
   try {
-    const url = `${directusUrl}/items/shop_items?sort=-date_created&limit=500&fields=id,nome,descricao,imagem,preco,estoque,status,date_created,date_updated`;
+    const url = `${directusUrl}/items/shop_items?sort=-id&limit=500&fields=id,nome,descricao,imagem,preco,estoque,status`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${serviceToken}` },
       cache: 'no-store',
