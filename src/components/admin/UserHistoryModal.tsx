@@ -28,9 +28,10 @@ interface UserHistoryStats {
 interface UserHistoryModalProps {
     userId: string;
     userName?: string;
+    trigger?: React.ReactNode;
 }
 
-export default function UserHistoryModal({ userId, userName }: UserHistoryModalProps) {
+export default function UserHistoryModal({ userId, userName, trigger }: UserHistoryModalProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<UserHistoryData | null>(null);
@@ -70,14 +71,16 @@ export default function UserHistoryModal({ userId, userName }: UserHistoryModalP
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Voir l'historique"
-                    className="h-[36px] w-[36px] rounded-[4px] text-[color:var(--foreground)]/60 hover:bg-[#25254D] hover:text-white"
-                >
-                    <History className="h-4 w-4" />
-                </Button>
+                {trigger || (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Voir l'historique"
+                        className="h-[36px] w-[36px] rounded-[4px] text-[color:var(--foreground)]/60 hover:bg-[#25254D] hover:text-white"
+                    >
+                        <History className="h-4 w-4" />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="max-h-[80vh] max-w-2xl rounded-[4px] border border-[#141433] bg-[#1F1F3E] text-[color:var(--foreground)]">
                 <DialogHeader>

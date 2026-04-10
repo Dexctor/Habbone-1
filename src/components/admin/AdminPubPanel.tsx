@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, ExternalLink, Save, X } from "lucide-react";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 
 type PubItem = {
   id: number;
@@ -86,19 +87,30 @@ export default function AdminPubPanel() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Supprimer cette publicite ?")) return;
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (deleteConfirmId === null) return;
+    setDeleteLoading(true);
     try {
       const res = await fetch("/api/admin/pub", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", id }),
+        body: JSON.stringify({ action: "delete", id: deleteConfirmId }),
       });
-      if (!res.ok) throw new Error("Echec suppression");
-      toast.success("Publicite supprimee");
+      if (!res.ok) throw new Error("Échec suppression");
+      toast.success("Publicité supprimée");
       fetchItems();
     } catch {
       toast.error("Erreur suppression");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -292,6 +304,18 @@ export default function AdminPubPanel() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        onConfirm={executeDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+        title="Supprimer cette publicité ?"
+        description="La publicité sera supprimée définitivement de la page d'accueil."
+        confirmLabel="Supprimer"
+        variant="danger"
+        loading={deleteLoading}
+        icon={<Trash2 className="h-5 w-5" />}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { ChevronLeft, ChevronRight, Eye, ImagePlus, Link2, Loader2, Pencil, Save, Search, Trash2, Upload, X } from "lucide-react";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,16 +167,41 @@ export default function AdminContentManager(props: AdminContentManagerProps) {
 
   const activeMeta = CONTENT_SECTIONS[contentType];
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(`Supprimer l'element #${id} ?`)) return;
-    const formData = new FormData();
-    formData.set("id", String(id));
-    await actionSet.remove(formData);
-    setSelectedId(null);
-    setIsEditing(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    setDeleteLoading(true);
+    try {
+      const formData = new FormData();
+      formData.set("id", String(deleteConfirmId));
+      await actionSet.remove(formData);
+      setSelectedId(null);
+      setIsEditing(false);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirmId(null);
+    }
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={deleteConfirmId !== null}
+      onConfirm={executeDelete}
+      onCancel={() => setDeleteConfirmId(null)}
+      title="Supprimer ce contenu ?"
+      description={`L'élément #${deleteConfirmId} (${activeMeta.label.toLowerCase()}) sera supprimé définitivement. Cette action est irréversible.`}
+      confirmLabel="Supprimer"
+      variant="danger"
+      loading={deleteLoading}
+      icon={<Trash2 className="h-5 w-5" />}
+    />
     <div className="space-y-4">
       {/* Type selector tabs */}
       <div className="flex flex-wrap gap-1 rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-1.5">
@@ -310,6 +336,7 @@ export default function AdminContentManager(props: AdminContentManagerProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
