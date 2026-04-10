@@ -244,7 +244,7 @@ export default function UserBarLeft({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/profile/admin"
+                    href="/admin"
                     aria-label="Admin"
                     className="rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] grid place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
                   >

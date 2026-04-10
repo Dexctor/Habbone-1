@@ -29,7 +29,7 @@ export default function AuthMenu() {
       <Link href="/profile" className="rounded px-3 py-1 border hover:bg-white hover:text-black">Mon profil</Link>
       <Link href="/forum" className="underline">forum</Link>
       <Link href="/news" className="underline">Articles</Link>
-      <Link href="/profile/admin" className="underline">Admin</Link>
+      <Link href="/admin" className="underline">Admin</Link>
       <Link href="/" className="underline">Accueil</Link>
       <button
         onClick={() => signOut({ callbackUrl: '/' })}
