@@ -96,7 +96,8 @@ function HeaderBadgeImage({
       }
     }
 
-    return list.filter((value, i, arr) => arr.indexOf(value) === i)
+    const unique = list.filter((value, i, arr) => arr.indexOf(value) === i)
+    return unique.slice(0, 18)
   }, [album, imageUrl, normCode])
 
   const src = candidates[Math.min(idx, Math.max(0, candidates.length - 1))]

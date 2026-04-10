@@ -57,7 +57,9 @@ export function BadgeIcon({ code, album, imageUrl }: { code: string; album?: str
       }
     }
 
-    return list.filter((v, i, a) => a.indexOf(v) === i);
+    // Limiter à 18 candidats max pour éviter des cascades d'erreurs réseau trop longues
+    const unique = list.filter((v, i, a) => a.indexOf(v) === i);
+    return unique.slice(0, 18);
   }, [norm, albumNorm, url]);
 
   if (!norm || candidates.length === 0) {

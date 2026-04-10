@@ -107,7 +107,7 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=120',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })

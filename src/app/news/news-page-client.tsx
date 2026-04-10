@@ -38,6 +38,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null)
   const [page, setPage] = useState(0)
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
 
   const filtered = useMemo(() => {
     let result = articles
@@ -132,7 +133,9 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
         ) : (
           visible.map((article) => {
             const imageUrl = mediaUrl(article?.imagem)
-            const cardImage = imageUrl || NEWS_FALLBACK_ICON
+            const hasFailed = failedImages.has(article.id)
+            const cardImage = (imageUrl && !hasFailed) ? imageUrl : NEWS_FALLBACK_ICON
+            const isFallback = !imageUrl || hasFailed
             const title = stripHtml(article?.titulo || `Article #${article?.id || ''}`) || `Article #${article?.id || ''}`
             const excerpt = buildExcerptFromHtml(article?.descricao || article?.noticia || '', { maxLength: 170 })
             const previewText = buildPreviewText(excerpt, { maxLength: 145, suffix: '' })
@@ -151,7 +154,8 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                       alt={title}
                       fill
                       sizes="(max-width: 768px) 100vw, 300px"
-                      className={imageUrl ? 'object-cover' : 'object-contain'}
+                      className={isFallback ? 'object-contain p-4' : 'object-cover'}
+                      onError={() => setFailedImages((prev) => new Set(prev).add(article.id))}
                     />
                   </div>
 
