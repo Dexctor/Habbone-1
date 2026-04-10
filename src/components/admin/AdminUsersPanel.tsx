@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Coins,
-  History,
   Pencil,
   RotateCcw,
   Search,
   Shield,
   Trash2,
-  UserPlus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +50,300 @@ type ConfirmState = {
   roleName?: string;
 } | null;
 
+type DropdownOption = { value: string; label: string };
+
 const LIMIT = 10;
+
+/* ------------------------------------------------------------------ */
+/*  Custom Dropdown — thème sombre, accessible                         */
+/* ------------------------------------------------------------------ */
+
+function Dropdown({
+  options,
+  value,
+  onChange,
+  placeholder,
+  className = "",
+  disabled = false,
+  align = "left",
+  width,
+}: {
+  options: DropdownOption[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className?: string;
+  disabled?: boolean;
+  align?: "left" | "right";
+  width?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const selected = options.find((o) => o.value === value);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Scroll focused into view
+  useEffect(() => {
+    if (!open || focused < 0 || !listRef.current) return;
+    const el = listRef.current.children[focused] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [focused, open]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+
+    switch (e.key) {
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (!open) {
+          setOpen(true);
+          setFocused(options.findIndex((o) => o.value === value));
+        } else if (focused >= 0 && focused < options.length) {
+          onChange(options[focused].value);
+          setOpen(false);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (!open) {
+          setOpen(true);
+          setFocused(0);
+        } else {
+          setFocused((prev) => Math.min(prev + 1, options.length - 1));
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (open) {
+          setFocused((prev) => Math.max(prev - 1, 0));
+        }
+        break;
+      case "Tab":
+        if (open) setOpen(false);
+        break;
+    }
+  };
+
+  return (
+    <div ref={containerRef} className={`relative ${className}`} style={width ? { width } : undefined}>
+      <button
+        type="button"
+        onClick={() => {
+          if (!disabled) {
+            setOpen(!open);
+            if (!open) setFocused(options.findIndex((o) => o.value === value));
+          }
+        }}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className={`flex h-[42px] w-full items-center justify-between gap-2 rounded-[6px] border border-white/5 bg-[#141433]/50 px-3 text-[13px] transition-colors focus:border-[#2596FF]/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 disabled:opacity-50 ${
+          selected ? "text-white" : "text-[#BEBECE]/50"
+        }`}
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="truncate">{selected?.label || placeholder}</span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-[#BEBECE]/40 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          className={`absolute z-[60] mt-1 max-h-[240px] overflow-y-auto rounded-[6px] border border-white/10 bg-[#1E1E3D] py-1 shadow-xl ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
+          style={{ minWidth: "100%", width: width || "100%" }}
+        >
+          {options.map((opt, i) => {
+            const isSelected = opt.value === value;
+            const isFocused = i === focused;
+            return (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                onMouseEnter={() => setFocused(i)}
+                className={`flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[13px] transition-colors ${
+                  isFocused
+                    ? "bg-[#2596FF]/15 text-white"
+                    : isSelected
+                      ? "text-white"
+                      : "text-[#BEBECE]/70 hover:text-white"
+                }`}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[#2596FF]" />}
+              </li>
+            );
+          })}
+          {options.length === 0 && (
+            <li className="px-3 py-2 text-[12px] text-[#BEBECE]/40">Aucune option</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Role Dropdown — inline dans les actions du tableau                  */
+/* ------------------------------------------------------------------ */
+
+function RoleDropdown({
+  options,
+  currentValue,
+  onSelect,
+  disabled = false,
+}: {
+  options: DropdownOption[];
+  currentValue: string;
+  onSelect: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || focused < 0 || !listRef.current) return;
+    const el = listRef.current.children[focused] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [focused, open]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    switch (e.key) {
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (!open) {
+          setOpen(true);
+          setFocused(options.findIndex((o) => o.value === currentValue));
+        } else if (focused >= 0 && focused < options.length) {
+          onSelect(options[focused].value);
+          setOpen(false);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (!open) { setOpen(true); setFocused(0); }
+        else setFocused((p) => Math.min(p + 1, options.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (open) setFocused((p) => Math.max(p - 1, 0));
+        break;
+      case "Tab":
+        if (open) setOpen(false);
+        break;
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (!disabled) {
+            setOpen(!open);
+            if (!open) setFocused(options.findIndex((o) => o.value === currentValue));
+          }
+        }}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className="grid h-[30px] w-[30px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-white/5 hover:text-[#2596FF] focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 focus-visible:outline-none disabled:opacity-50"
+        title="Changer le rôle"
+        aria-label="Changer le rôle"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          className="absolute right-0 top-[34px] z-[60] max-h-[200px] w-[180px] overflow-y-auto rounded-[6px] border border-white/10 bg-[#1E1E3D] py-1 shadow-xl"
+        >
+          <li className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#BEBECE]/40">
+            Changer le rôle
+          </li>
+          {options.map((opt, i) => {
+            const isSelected = opt.value === currentValue;
+            const isFocused = i === focused;
+            const badge = getRoleBadge(opt.label);
+            return (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  if (opt.value !== currentValue) {
+                    onSelect(opt.value);
+                  }
+                  setOpen(false);
+                }}
+                onMouseEnter={() => setFocused(i)}
+                className={`flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-[12px] transition-colors ${
+                  isFocused
+                    ? "bg-[#2596FF]/10 text-white"
+                    : "text-[#BEBECE]/70 hover:text-white"
+                }`}
+              >
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.bg} ${badge.text}`}>
+                  {opt.label}
+                </span>
+                {isSelected && <Check className="h-3 w-3 shrink-0 text-[#2596FF]" />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Role badge colors                                                  */
@@ -61,7 +354,8 @@ function getRoleBadge(roleName: string): { bg: string; text: string } {
   if (n.includes("fondateur") || n.includes("founder")) return { bg: "bg-[#FFC800]/20", text: "text-[#FFC800]" };
   if (n.includes("admin")) return { bg: "bg-[#F92330]/20", text: "text-[#F92330]" };
   if (n.includes("editeur") || n.includes("editor")) return { bg: "bg-[#2596FF]/20", text: "text-[#2596FF]" };
-  if (n.includes("moderateur") || n.includes("moderator")) return { bg: "bg-[#9B59B6]/20", text: "text-[#9B59B6]" };
+  if (n.includes("moderateur") || n.includes("moderator") || n.includes("modo")) return { bg: "bg-[#9B59B6]/20", text: "text-[#9B59B6]" };
+  if (n.includes("animateur") || n.includes("animator")) return { bg: "bg-[#0FD52F]/20", text: "text-[#0FD52F]" };
   return { bg: "bg-white/10", text: "text-[#BEBECE]" };
 }
 
@@ -89,8 +383,8 @@ export default function AdminUsersPanel({
   const [coinsAmount, setCoinsAmount] = useState("");
   const [coinsSending, setCoinsSending] = useState(false);
   const [q, setQ] = useState("");
-  const [roleId, setRoleId] = useState<string | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [roleId, setRoleId] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
 
   // Confirm dialog state
@@ -114,7 +408,23 @@ export default function AdminUsersPanel({
     onStatusChange?.({ rolesVirtual, usersFallback, usersSource });
   }, [rolesVirtual, usersFallback, usersSource, onStatusChange]);
 
-  const roleOptions = useMemo(() => roles.map((r) => ({ value: r.id, label: r.name })), [roles]);
+  const roleFilterOptions = useMemo<DropdownOption[]>(
+    () => [{ value: "", label: "Tous les rôles" }, ...roles.map((r) => ({ value: r.id, label: r.name }))],
+    [roles],
+  );
+
+  const roleActionOptions = useMemo<DropdownOption[]>(
+    () => roles.map((r) => ({ value: r.id, label: r.name })),
+    [roles],
+  );
+
+  const statusFilterOptions = useMemo<DropdownOption[]>(() => [
+    { value: "", label: "Tous les statuts" },
+    { value: "active", label: "Actif" },
+    { value: "suspended", label: "Banni" },
+    { value: "inactive", label: "Inactif" },
+  ], []);
+
   const pageCount = Math.max(1, Math.ceil(total / LIMIT));
 
   /* ── Computed stats ── */
@@ -132,8 +442,8 @@ export default function AdminUsersPanel({
   }, [items]);
 
   /* ── Fetch users ── */
-  const getUsers = async ({
-    page: targetPage = page,
+  const getUsers = useCallback(async ({
+    page: targetPage = 1,
     query = q,
     role = roleId,
     status = statusFilter,
@@ -201,7 +511,8 @@ export default function AdminUsersPanel({
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, roleId, statusFilter]);
 
   useEffect(() => {
     void getUsers({ page: 1 });
@@ -226,7 +537,7 @@ export default function AdminUsersPanel({
       }
       const roleName = roles.find((r) => r.id === nextRoleId)?.name || nextRoleId;
       toast.success(`Rôle changé en "${roleName}"`);
-      await getUsers();
+      await getUsers({ page });
     } catch {
       toast.error("Impossible de mettre à jour le rôle");
     } finally {
@@ -249,7 +560,7 @@ export default function AdminUsersPanel({
         return;
       }
       toast.success(ban ? `${formatFullName(user)} a été banni` : `${formatFullName(user)} a été réactivé`);
-      await getUsers();
+      await getUsers({ page });
     } catch {
       toast.error("Impossible de mettre à jour le statut");
     } finally {
@@ -272,7 +583,7 @@ export default function AdminUsersPanel({
         return;
       }
       toast.success(`${formatFullName(user)} a été supprimé`);
-      await getUsers();
+      await getUsers({ page });
     } catch {
       toast.error("Suppression impossible");
     } finally {
@@ -362,7 +673,7 @@ export default function AdminUsersPanel({
     }
   }, [confirmState]);
 
-  /* ── Role change handler for select ── */
+  /* ── Role change handler ── */
   const handleRoleChange = (user: User, newRoleId: string) => {
     setSelectedRoles((c) => ({ ...c, [user.id]: newRoleId }));
     const roleName = roles.find((r) => r.id === newRoleId)?.name || newRoleId;
@@ -394,41 +705,34 @@ export default function AdminUsersPanel({
                 handleSearch();
               }
             }}
-            className="h-[42px] w-full rounded-[6px] border border-white/5 bg-[#141433]/50 pl-10 pr-4 text-[13px] text-white placeholder:text-[#BEBECE]/30 focus:border-[#2596FF]/40 focus:outline-none"
+            aria-label="Rechercher un utilisateur"
+            className="h-[42px] w-full rounded-[6px] border border-white/5 bg-[#141433]/50 pl-10 pr-4 text-[13px] text-white placeholder:text-[#BEBECE]/30 focus:border-[#2596FF]/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
           />
         </div>
 
-        {/* Role filter */}
-        <select
-          value={roleId ?? ""}
-          onChange={(e) => {
-            const next = e.target.value || undefined;
-            setRoleId(next);
-            void getUsers({ page: 1, role: next });
+        {/* Role filter — custom dropdown */}
+        <Dropdown
+          options={roleFilterOptions}
+          value={roleId}
+          onChange={(v) => {
+            setRoleId(v);
+            void getUsers({ page: 1, role: v });
           }}
-          className="h-[42px] rounded-[6px] border border-white/5 bg-[#141433]/50 px-3 text-[13px] text-[#BEBECE] focus:border-[#2596FF]/40 focus:outline-none sm:w-[170px]"
-        >
-          <option value="">Tous les rôles</option>
-          {roleOptions.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          placeholder="Tous les rôles"
+          className="sm:w-[180px]"
+        />
 
-        {/* Status filter */}
-        <select
-          value={statusFilter ?? ""}
-          onChange={(e) => {
-            const next = e.target.value || undefined;
-            setStatusFilter(next);
-            void getUsers({ page: 1, status: next });
+        {/* Status filter — custom dropdown */}
+        <Dropdown
+          options={statusFilterOptions}
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            void getUsers({ page: 1, status: v });
           }}
-          className="h-[42px] rounded-[6px] border border-white/5 bg-[#141433]/50 px-3 text-[13px] text-[#BEBECE] focus:border-[#2596FF]/40 focus:outline-none sm:w-[170px]"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="active">Actif</option>
-          <option value="suspended">Banni</option>
-          <option value="inactive">Inactif</option>
-        </select>
+          placeholder="Tous les statuts"
+          className="sm:w-[180px]"
+        />
 
         <span className="shrink-0 text-[12px] text-[#BEBECE]/40">
           {total} utilisateur{total !== 1 ? "s" : ""}
@@ -450,23 +754,39 @@ export default function AdminUsersPanel({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[8px] border border-white/5">
-          <table className="w-full min-w-[800px] text-left">
+          <table className="w-full min-w-[700px] text-left">
             <thead>
               <tr className="border-b border-white/5 bg-[#141433]/50">
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">Utilisateur</th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">Email</th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">Rôle</th>
-                <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">Statut</th>
-                <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">Actions</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                  Utilisateur
+                </th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                  Email
+                </th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                  Rôle
+                </th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                  Statut
+                </th>
+                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {items.map((user) => {
                 const isSuspended = String(user.status || "").toLowerCase() === "suspended";
                 const isInactive = String(user.status || "").toLowerCase() === "inactive" || String(user.status || "").toLowerCase() === "draft";
-                const displayRole = (user._roleName && user._roleName.trim()) || (typeof user.role === "object" ? ((user.role as { name?: string }).name || "") : "") || "Membre";
+                const displayRole =
+                  (user._roleName && user._roleName.trim()) ||
+                  (typeof user.role === "object" ? ((user.role as { name?: string }).name || "") : "") ||
+                  "Membre";
                 const roleBadge = getRoleBadge(displayRole);
                 const initials = getInitials(user);
+                const currentRoleId =
+                  typeof user.role === "object" ? (user.role as { id?: string })?.id : user.role;
+                const selectedRole = selectedRoles[user.id] ?? (currentRoleId ? String(currentRoleId) : "");
 
                 return (
                   <tr
@@ -492,7 +812,9 @@ export default function AdminUsersPanel({
 
                     {/* Role */}
                     <td className="px-4 py-3">
-                      <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${roleBadge.bg} ${roleBadge.text}`}>
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${roleBadge.bg} ${roleBadge.text}`}
+                      >
                         {displayRole}
                       </span>
                     </td>
@@ -508,46 +830,29 @@ export default function AdminUsersPanel({
                       )}
                     </td>
 
-                    {/* Actions */}
+                    {/* Actions — custom dropdowns thème sombre */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Edit role */}
-                        <div className="relative group">
-                          <select
-                            value={selectedRoles[user.id] ?? ""}
-                            onChange={(e) => {
-                              if (e.target.value) handleRoleChange(user, e.target.value);
-                            }}
-                            disabled={savingId === user.id}
-                            className="h-[30px] w-[30px] cursor-pointer appearance-none rounded-[4px] bg-transparent text-transparent opacity-0 absolute inset-0 z-10"
-                            title="Changer le rôle"
-                          >
-                            <option value="">—</option>
-                            {roleOptions.map((o) => (
-                              <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            className="grid h-[30px] w-[30px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-white/5 hover:text-[#2596FF]"
-                            title="Changer le rôle"
-                            tabIndex={-1}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                        {/* Edit role — custom dropdown */}
+                        <RoleDropdown
+                          options={roleActionOptions}
+                          currentValue={selectedRole}
+                          onSelect={(v) => handleRoleChange(user, v)}
+                          disabled={savingId === user.id}
+                        />
 
                         {/* Ban / Unban */}
                         <button
                           type="button"
                           onClick={() => setConfirmState({ type: isSuspended ? "unban" : "ban", user })}
                           disabled={banLoadingId === user.id}
-                          className={`grid h-[30px] w-[30px] place-items-center rounded-[4px] transition-colors hover:bg-white/5 ${
+                          className={`grid h-[30px] w-[30px] place-items-center rounded-[4px] transition-colors hover:bg-white/5 focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 focus-visible:outline-none ${
                             isSuspended
                               ? "text-[#0FD52F]/60 hover:text-[#0FD52F]"
                               : "text-[#BEBECE]/50 hover:text-[#FFC800]"
                           }`}
                           title={isSuspended ? "Réactiver" : "Bannir"}
+                          aria-label={isSuspended ? `Réactiver ${formatFullName(user)}` : `Bannir ${formatFullName(user)}`}
                         >
                           <Ban className="h-3.5 w-3.5" />
                         </button>
@@ -557,8 +862,9 @@ export default function AdminUsersPanel({
                           type="button"
                           onClick={() => setConfirmState({ type: "delete", user })}
                           disabled={deleteLoadingId === user.id}
-                          className="grid h-[30px] w-[30px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-red-500/10 hover:text-[#F92330]"
+                          className="grid h-[30px] w-[30px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-red-500/10 hover:text-[#F92330] focus-visible:ring-1 focus-visible:ring-[#F92330]/40 focus-visible:outline-none"
                           title="Supprimer"
+                          aria-label={`Supprimer ${formatFullName(user)}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -578,17 +884,17 @@ export default function AdminUsersPanel({
           <span className="text-[12px] text-[#BEBECE]/40">
             Affichage de {items.length} sur {total} utilisateur{total !== 1 ? "s" : ""}
           </span>
-          <div className="flex items-center gap-1">
+          <nav className="flex items-center gap-1" aria-label="Pagination">
             <button
               type="button"
               disabled={page <= 1 || loading}
               onClick={() => void getUsers({ page: Math.max(1, page - 1) })}
               className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              aria-label="Page précédente"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            {/* Page numbers */}
             {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => {
               let pageNum: number;
               if (pageCount <= 5) {
@@ -611,6 +917,8 @@ export default function AdminUsersPanel({
                       ? "bg-[#2596FF] text-white"
                       : "text-[#BEBECE]/50 hover:bg-white/5 hover:text-white"
                   }`}
+                  aria-label={`Page ${pageNum}`}
+                  aria-current={pageNum === page ? "page" : undefined}
                 >
                   {pageNum}
                 </button>
@@ -622,10 +930,11 @@ export default function AdminUsersPanel({
               disabled={loading || items.length === 0 || items.length < LIMIT}
               onClick={() => void getUsers({ page: page + 1 })}
               className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              aria-label="Page suivante"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-          </div>
+          </nav>
         </div>
       )}
 
@@ -636,9 +945,10 @@ export default function AdminUsersPanel({
           onClick={() => setCoinsModal(null)}
           role="dialog"
           aria-modal="true"
+          aria-label="Envoyer des HabbOneCoins"
         >
           <div
-            className="w-full max-w-[400px] rounded-[8px] border border-white/5 bg-[#1A1A3A] p-6 shadow-2xl"
+            className="w-full max-w-[400px] rounded-[8px] border border-white/5 bg-[#1E1E3D] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               if (e.key === "Escape") setCoinsModal(null);
@@ -650,8 +960,11 @@ export default function AdminUsersPanel({
             </p>
 
             <div className="mt-4">
-              <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/50">Montant</label>
+              <label htmlFor="coins-amount" className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/50">
+                Montant
+              </label>
               <input
+                id="coins-amount"
                 type="number"
                 min={1}
                 max={100000}
@@ -663,7 +976,7 @@ export default function AdminUsersPanel({
                   if (e.key === "Enter") handleSendCoins();
                   if (e.key === "Escape") setCoinsModal(null);
                 }}
-                className="w-full rounded-[6px] border border-white/5 bg-[#141433]/50 px-3 py-2.5 text-[14px] text-white placeholder:text-[#BEBECE]/30 focus:border-[#FFC800]/40 focus:outline-none"
+                className="w-full rounded-[6px] border border-white/5 bg-[#141433]/50 px-3 py-2.5 text-[14px] text-white placeholder:text-[#BEBECE]/30 focus:border-[#FFC800]/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FFC800]/40"
               />
             </div>
 
