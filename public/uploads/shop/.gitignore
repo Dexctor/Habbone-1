@@ -1,0 +1,3 @@
+# Ignore uploaded shop images (they are user-generated content)
+*
+!.gitignore
