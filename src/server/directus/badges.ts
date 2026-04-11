@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { directusUrl, serviceToken, USERS_TABLE } from './client';
+import { USERS_TABLE } from './client';
+import { directusFetch } from './fetch';
 
 // Mapping: role name (lowercase) -> badge emblema ID
 const ROLE_BADGE_MAP: Record<string, number> = {
@@ -16,32 +17,32 @@ const ROLE_BADGE_MAP: Record<string, number> = {
 };
 
 async function userHasBadge(userId: number, badgeId: number): Promise<boolean> {
-  const url = new URL(`${directusUrl}/items/emblemas_usuario`);
-  url.searchParams.set('filter[id_usuario][_eq]', String(userId));
-  url.searchParams.set('filter[id_emblema][_eq]', String(badgeId));
-  url.searchParams.set('limit', '1');
-  url.searchParams.set('fields', 'id');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return false;
-  const json = await res.json();
-  return Array.isArray(json?.data) && json.data.length > 0;
+  try {
+    const json = await directusFetch<{ data: { id: number }[] }>('/items/emblemas_usuario', {
+      params: {
+        'filter[id_usuario][_eq]': String(userId),
+        'filter[id_emblema][_eq]': String(badgeId),
+        limit: '1',
+        fields: 'id',
+      },
+    });
+    return Array.isArray(json?.data) && json.data.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 async function grantBadge(userId: number, badgeId: number): Promise<void> {
-  await fetch(`${directusUrl}/items/emblemas_usuario`, {
+  await directusFetch('/items/emblemas_usuario', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    body: {
       id_emblema: badgeId,
       id_usuario: userId,
       autor_tipo: 'ganhado',
       autor: 'system',
       data: Math.floor(Date.now() / 1000),
       status: 'ativo',
-    }),
+    },
   });
 }
 
@@ -68,36 +69,30 @@ export type UserBadge = {
 export async function getUserBadges(userId: number): Promise<UserBadge[]> {
   try {
     // Get user's badge IDs
-    const url = new URL(`${directusUrl}/items/emblemas_usuario`);
-    url.searchParams.set('filter[id_usuario][_eq]', String(userId));
-    url.searchParams.set('filter[status][_eq]', 'ativo');
-    url.searchParams.set('fields', 'id_emblema');
-    url.searchParams.set('limit', '50');
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data: { id_emblema: number }[] }>('/items/emblemas_usuario', {
+      params: {
+        'filter[id_usuario][_eq]': String(userId),
+        'filter[status][_eq]': 'ativo',
+        fields: 'id_emblema',
+        limit: '50',
+      },
     });
-    if (!res.ok) return [];
-    const json = await res.json();
     const rows = json?.data ?? [];
     if (!Array.isArray(rows) || rows.length === 0) return [];
 
-    const badgeIds = rows.map((r: any) => Number(r.id_emblema)).filter((id: number) => id > 0);
+    const badgeIds = rows.map((r) => Number(r.id_emblema)).filter((id) => id > 0);
     if (badgeIds.length === 0) return [];
 
     // Get badge details
-    const bUrl = new URL(`${directusUrl}/items/emblemas`);
-    bUrl.searchParams.set('filter[id][_in]', badgeIds.join(','));
-    bUrl.searchParams.set('filter[status][_eq]', 'ativo');
-    bUrl.searchParams.set('fields', 'id,nome,imagem');
-    bUrl.searchParams.set('limit', '50');
-    const bRes = await fetch(bUrl.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const bJson = await directusFetch<{ data: { id: number; nome: string; imagem: string }[] }>('/items/emblemas', {
+      params: {
+        'filter[id][_in]': badgeIds.join(','),
+        'filter[status][_eq]': 'ativo',
+        fields: 'id,nome,imagem',
+        limit: '50',
+      },
     });
-    if (!bRes.ok) return [];
-    const bJson = await bRes.json();
-    return (bJson?.data ?? []).map((b: any) => ({
+    return (bJson?.data ?? []).map((b) => ({
       id: Number(b.id),
       nome: String(b.nome || ''),
       imagem: String(b.imagem || ''),
@@ -118,16 +113,13 @@ export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<str
   if (!nicks.length) return result;
 
   try {
-    const url = new URL(`${directusUrl}/items/${USERS_TABLE}`);
-    url.searchParams.set('filter[nick][_in]', nicks.join(','));
-    url.searchParams.set('fields', 'nick,role');
-    url.searchParams.set('limit', String(nicks.length));
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data: { nick: string; role: string }[] }>(`/items/${USERS_TABLE}`, {
+      params: {
+        'filter[nick][_in]': nicks.join(','),
+        fields: 'nick,role',
+        limit: String(nicks.length),
+      },
     });
-    if (!res.ok) return result;
-    const json = await res.json();
     for (const u of json?.data ?? []) {
       const nick = String(u?.nick || '');
       const role = String(u?.role || '');

@@ -10,6 +10,7 @@ import {
   uItem,
   dItem,
 } from './client';
+import { directusFetch } from './fetch';
 import type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCategoryRecord } from './types';
 
 export async function adminListForumTopics(limit = 200): Promise<ForumTopicRecord[]> {
@@ -154,18 +155,18 @@ export async function adminDeleteForumPost(id: number) {
 }
 
 export async function adminListForumComments(limit = 500, topicId?: number): Promise<ForumCommentRecord[]> {
-  const url = new URL(`${directusUrl}/items/forum_coment`);
-  url.searchParams.set('limit', String(limit));
-  url.searchParams.set('sort', '-data');
-  url.searchParams.set('fields', 'id,id_forum,comentario,autor,data,status');
-  if (topicId) url.searchParams.set('filter[id_forum][_eq]', String(topicId));
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const params: Record<string, string> = {
+      limit: String(limit),
+      sort: '-data',
+      fields: 'id,id_forum,comentario,autor,data,status',
+    };
+    if (topicId) params['filter[id_forum][_eq]'] = String(topicId);
+    const json = await directusFetch<{ data: ForumCommentRecord[] }>('/items/forum_coment', { params });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function adminUpdateForumComment(
@@ -291,18 +292,13 @@ export async function getTopicVoteSummary(topicId: number): Promise<{ up: number
   // Fetch all votes for this topic and count client-side.
   // Using meta=total_count with multiple filters is unreliable on some Directus versions.
   try {
-    const url = new URL(`${directusUrl}/items/${encodeURIComponent('forum_topicos_votos')}`);
-    url.searchParams.set('limit', '1000');
-    url.searchParams.set('fields', 'id,tipo');
-    url.searchParams.set('filter[id_topico][_eq]', String(topicId));
-
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data: { id: number; tipo: string }[] }>('/items/forum_topicos_votos', {
+      params: {
+        limit: '1000',
+        fields: 'id,tipo',
+        'filter[id_topico][_eq]': String(topicId),
+      },
     });
-    if (!res.ok) return { up: 0, down: 0 };
-
-    const json = await res.json();
     const rows = Array.isArray(json?.data) ? json.data : [];
 
     let up = 0;
@@ -368,18 +364,19 @@ export function getPublicPostById(id: number): Promise<ForumPostRecord> {
 }
 
 export async function getPublicTopicComments(topicId: number): Promise<ForumCommentRecord[]> {
-  const url = new URL(`${directusUrl}/items/forum_coment`);
-  url.searchParams.set('filter[id_forum][_eq]', String(topicId));
-  url.searchParams.set('fields', 'id,id_forum,comentario,autor,data,status');
-  url.searchParams.set('sort', 'data');
-  url.searchParams.set('limit', '500');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await directusFetch<{ data: ForumCommentRecord[] }>('/items/forum_coment', {
+      params: {
+        'filter[id_forum][_eq]': String(topicId),
+        fields: 'id,id_forum,comentario,autor,data,status',
+        sort: 'data',
+        limit: '500',
+      },
+    });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export function listPublicForumCategories(): Promise<ForumCategoryRecord[]> {

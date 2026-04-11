@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { directusService, directusUrl, serviceToken, rItems, rItem, cItem, uItem, dItem } from './client';
+import { directusFetch } from './fetch';
 import type { NewsRecord, NewsCommentRecord } from './types';
 import { stripHtml } from '@/lib/text-utils';
 
@@ -83,18 +84,18 @@ export async function listNewsByAuthorService(author: string, limit = 30): Promi
 }
 
 export async function adminListNewsComments(limit = 500, newsId?: number): Promise<NewsCommentRecord[]> {
-  const url = new URL(`${directusUrl}/items/noticias_coment`);
-  url.searchParams.set('limit', String(limit));
-  url.searchParams.set('sort', '-data');
-  url.searchParams.set('fields', 'id,id_noticia,comentario,autor,data,status');
-  if (newsId) url.searchParams.set('filter[id_noticia][_eq]', String(newsId));
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const params: Record<string, string> = {
+      limit: String(limit),
+      sort: '-data',
+      fields: 'id,id_noticia,comentario,autor,data,status',
+    };
+    if (newsId) params['filter[id_noticia][_eq]'] = String(newsId);
+    const json = await directusFetch<{ data: NewsCommentRecord[] }>('/items/noticias_coment', { params });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function adminUpdateNewsComment(
@@ -193,35 +194,28 @@ export function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> {
 }
 
 export async function getPublicNewsComments(newsId: number): Promise<NewsCommentRecord[]> {
-  const url = new URL(`${directusUrl}/items/noticias_coment`);
-  url.searchParams.set('filter[id_noticia][_eq]', String(newsId));
-  url.searchParams.set('fields', 'id,id_noticia,comentario,autor,data,status');
-  url.searchParams.set('sort', 'data');
-  url.searchParams.set('limit', '200');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await directusFetch<{ data: NewsCommentRecord[] }>('/items/noticias_coment', {
+      params: {
+        'filter[id_noticia][_eq]': String(newsId),
+        fields: 'id,id_noticia,comentario,autor,data,status',
+        sort: 'data',
+        limit: '200',
+      },
+    });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function listPublicNewsBadges(limitNews = 160, limitBadges = 220): Promise<NewsBadgeItem[]> {
   let rows: NewsRecord[] = [];
   try {
-    const url = new URL(`${directusUrl}/items/noticias`);
-    url.searchParams.set('fields', 'id,titulo,noticia,data');
-    url.searchParams.set('sort', '-data');
-    url.searchParams.set('limit', String(limitNews));
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data: NewsRecord[] }>('/items/noticias', {
+      params: { fields: 'id,titulo,noticia,data', sort: '-data', limit: String(limitNews) },
     });
-    if (res.ok) {
-      const json = await res.json();
-      rows = Array.isArray(json?.data) ? json.data : [];
-    }
+    rows = Array.isArray(json?.data) ? json.data : [];
   } catch {}
 
   if (rows.length === 0) return [];

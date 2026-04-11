@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { directusUrl, serviceToken, USERS_TABLE } from './client';
+import { USERS_TABLE } from './client';
+import { directusFetch } from './fetch';
 import { parseTimestamp } from '@/lib/date-utils';
 import type { TeamMember } from './types';
 
@@ -21,33 +22,32 @@ type DirectusRole = {
 };
 
 async function fetchRoles(): Promise<DirectusRole[]> {
-  const url = new URL(`${directusUrl}/roles`);
-  url.searchParams.set('fields', 'id,name');
-  url.searchParams.set('sort', 'name');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await directusFetch<{ data: DirectusRole[] }>('/roles', {
+      params: { fields: 'id,name', sort: 'name' },
+    });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 async function fetchUsersByRoleId(roleId: string): Promise<LegacyTeamRow[]> {
-  const url = new URL(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}`);
-  url.searchParams.set('fields', 'id,nick,role,directus_role_id,data_criacao,twitter,banido,ativado');
-  url.searchParams.set('filter[directus_role_id][_eq]', roleId);
-  url.searchParams.set('filter[banido][_neq]', 's');
-  url.searchParams.set('filter[ativado][_neq]', 'n');
-  url.searchParams.set('limit', '200');
-  url.searchParams.set('sort', 'nick');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await directusFetch<{ data: LegacyTeamRow[] }>(`/items/${encodeURIComponent(USERS_TABLE)}`, {
+      params: {
+        fields: 'id,nick,role,directus_role_id,data_criacao,twitter,banido,ativado',
+        'filter[directus_role_id][_eq]': roleId,
+        'filter[banido][_neq]': 's',
+        'filter[ativado][_neq]': 'n',
+        limit: '200',
+        sort: 'nick',
+      },
+    });
+    return Array.isArray(json?.data) ? json.data : [];
+  } catch {
+    return [];
+  }
 }
 
 // Hidden roles that shouldn't appear on the team page
