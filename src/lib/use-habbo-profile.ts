@@ -10,8 +10,8 @@ type UseHabboProfileOptions = {
   enabled?: boolean
 }
 
-const MAX_RETRIES = 4
-const RETRY_DELAYS = [1000, 2000, 3000, 4000]
+const MAX_RETRIES = 3
+const RETRY_DELAYS = [1500, 3000, 5000]
 
 // Simple in-memory cache to avoid refetching on navigation
 const profileCache = new Map<string, { data: HabboProfileResponse; ts: number }>()
@@ -29,6 +29,9 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
   const currentNickRef = useRef(nick)
   currentNickRef.current = nick
 
+  // Keep a ref to the AbortController so we can cancel on unmount or nick change
+  const abortRef = useRef<AbortController | null>(null)
+
   useEffect(() => {
     if (!enabled) {
       setLoading(false)
@@ -42,7 +45,10 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
       return
     }
 
-    let cancelled = false
+    // Abort any previous in-flight request
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
     // Check cache first
     const cached = profileCache.get(safeNick.toLowerCase())
@@ -55,17 +61,18 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
 
     setLoading(true)
     setError(null)
-    // Don't clear data if we already have it (avoids flash)
-    // setData(null)  -- removed intentionally
 
     const doFetch = async (attempt: number): Promise<void> => {
+      if (controller.signal.aborted) return
+
       try {
         const profile = await fetchHabboProfileByName(safeNick, {
           fallbackMessage,
           lite,
+          signal: controller.signal,
         })
 
-        if (cancelled || currentNickRef.current !== nick) return
+        if (controller.signal.aborted || currentNickRef.current !== nick) return
 
         // Cache the result
         profileCache.set(safeNick.toLowerCase(), { data: profile, ts: Date.now() })
@@ -74,24 +81,28 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
         setError(null)
         setLoading(false)
       } catch (e: unknown) {
-        if (cancelled || currentNickRef.current !== nick) return
+        if (controller.signal.aborted || currentNickRef.current !== nick) return
+
+        // Don't retry if it's a 404 (user not found)
+        const msg = e && typeof e === "object" && "message" in e ? String((e as any).message) : ""
+        if (msg.includes("introuvable") || msg.includes("404")) {
+          setError(msg || fallbackMessage || "Utilisateur introuvable")
+          setLoading(false)
+          return
+        }
 
         // Retry with increasing delays
         if (attempt < MAX_RETRIES) {
-          const delay = RETRY_DELAYS[attempt] || 2000
+          const delay = RETRY_DELAYS[attempt] || 3000
           await new Promise((r) => setTimeout(r, delay))
-          if (!cancelled && currentNickRef.current === nick) {
+          if (!controller.signal.aborted && currentNickRef.current === nick) {
             return doFetch(attempt + 1)
           }
           return
         }
 
         // All retries exhausted
-        const msg =
-          e && typeof e === "object" && "message" in e
-            ? String((e as any).message)
-            : "Erreur de chargement du profil"
-        setError(msg)
+        setError(msg || "Erreur de chargement du profil")
         setLoading(false)
       }
     }
@@ -99,7 +110,7 @@ export function useHabboProfile(nick: string, options?: UseHabboProfileOptions) 
     void doFetch(0)
 
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [nick, enabled, fallbackMessage, lite])
 
