@@ -236,32 +236,16 @@ export default function ProfileClient({ nick }: { nick: string }) {
   );
 
   const favoriteBadges = useMemo(() => {
-    // Prefer the official selectedBadges (manually chosen by the player in-game)
+    // Only show the official selectedBadges (manually chosen by the player in-game)
+    // Do NOT fallback to random badges — that gives incorrect information
     const selected = headerUser?.selectedBadges ?? [];
-    if (selected.length > 0) {
-      return selected
-        .map((b) => {
-          const code = (b?.badgeCode || "").trim();
-          return code ? badgeImageUrl(code) : "";
-        })
-        .filter(Boolean);
-    }
-    // Fallback: first 10 badges from the full list
-    return (data?.badges ?? [])
-      .slice(0, 10)
-      .map((badge) => {
-        const direct =
-          (badge as any)?.imageUrl ||
-          (badge as any)?.badgeImageUrl ||
-          (badge as any)?.image ||
-          (badge as any)?.url ||
-          "";
-        if (typeof direct === "string" && direct.trim()) return direct;
-        const code = badgeCodeFromEntry(badge);
+    return selected
+      .map((b) => {
+        const code = (b?.badgeCode || "").trim();
         return code ? badgeImageUrl(code) : "";
       })
       .filter(Boolean);
-  }, [headerUser?.selectedBadges, data?.badges]);
+  }, [headerUser?.selectedBadges]);
 
   return (
     <div className="w-full space-y-6" aria-busy={loading} aria-live="polite">
