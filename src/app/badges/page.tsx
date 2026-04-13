@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
 type Badge = {
   code: string
@@ -172,29 +174,45 @@ export default function BadgesPageClient() {
               Aucun badge disponible.
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8">
-              {visibleSlots.map((badge, index) => (
-                <div
-                  key={badge ? `${badge.code}-${badge.image}` : `empty-${index}`}
-                  title={badge?.name || ''}
-                  className={`flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] ${
-                    badge ? 'group transition hover:bg-[#303060]' : 'opacity-35'
-                  }`}
-                >
-                  {badge ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={badge.image}
-                      alt={badge.name}
-                      className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
-                      onError={(event) => {
-                        (event.target as HTMLImageElement).style.display = 'none'
-                      }}
+            <TooltipProvider delayDuration={150}>
+              <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8">
+                {visibleSlots.map((badge, index) => (
+                  badge ? (
+                    <TooltipPrimitive.Root key={`${badge.code}-${badge.image}`}>
+                      <TooltipPrimitive.Trigger asChild>
+                        <div
+                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={badge.image}
+                            alt={badge.name}
+                            className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
+                            onError={(event) => {
+                              (event.target as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      </TooltipPrimitive.Trigger>
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content
+                          sideOffset={6}
+                          className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
+                        >
+                          {badge.name}
+                          <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
+                  ) : (
+                    <div
+                      key={`empty-${index}`}
+                      className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
                     />
-                  ) : null}
-                </div>
-              ))}
-            </div>
+                  )
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </div>
       </section>

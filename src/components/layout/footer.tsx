@@ -25,7 +25,7 @@ export default function Footer() {
             </div>
             <div className="menu flex flex-col space-y-2">
               <Link href="/team" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Équipe</Link>
-              <Link href="/store" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Boutique</Link>
+              <Link href="/boutique" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Boutique</Link>
               <Link href="/news" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Tous les articles</Link>
               <a href="/page/20/partenaires" target="_blank" rel="noreferrer" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Partenaires</a>
               <a href="/page/23/contact" target="_blank" rel="noreferrer" className="font-bold text-[var(--text-sm)] leading-[17px] text-[var(--text-100)] text-left hover:text-blue-300 transition-all duration-200 ease-out hover:pl-2">Contact</a>
@@ -87,7 +87,7 @@ export default function Footer() {
             <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">HabbOne</div>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/team" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Équipe</Link>
-              <Link href="/store" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Boutique</Link>
+              <Link href="/boutique" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Boutique</Link>
               <Link href="/news" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Tous les articles</Link>
               <a href="/page/20/partenaires" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Partenaires</a>
               <a href="/page/23/contact" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">Contact</a>
@@ -123,13 +123,7 @@ export default function Footer() {
             </div>
           </section>
 
-          {/* Development */}
-          <section className="w-full">
-            <div className="font-bold uppercase tracking-wide text-[var(--text-500)] mb-4">Development</div>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <a href="https://wteamdev.com/" target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-[var(--blue-500)] hover:text-white transition-all">W-Team Development</a>
-            </div>
-          </section>
+        
 
           {/* Logo mobile */}
           <div className="mt-2 flex justify-center">

@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
 type Mobi = {
   id: number
@@ -143,31 +145,46 @@ export default function MobisPageClient() {
               Aucun mobi trouvé.
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8">
-              {visibleSlots.map((mobi, index) => (
-                <div
-                  key={mobi ? `${mobi.id}-${mobi.name}` : `empty-${index}`}
-                  title={mobi ? `${mobi.name} (${mobi.category})` : ''}
-                  className={`flex aspect-square w-full min-h-[64px] flex-col items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] ${
-                    mobi ? 'group transition hover:bg-[#303060]' : 'opacity-35'
-                  }`}
-                >
-                  {mobi ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={mobi.image}
-                        alt={mobi.name}
-                        className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
-                        onError={(event) => {
-                          (event.target as HTMLImageElement).style.display = 'none'
-                        }}
-                      />
-                    </>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <TooltipProvider delayDuration={150}>
+              <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8">
+                {visibleSlots.map((mobi, index) => (
+                  mobi ? (
+                    <TooltipPrimitive.Root key={`${mobi.id}-${mobi.name}`}>
+                      <TooltipPrimitive.Trigger asChild>
+                        <div
+                          className="flex aspect-square w-full min-h-[64px] flex-col items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mobi.image}
+                            alt={mobi.name}
+                            className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
+                            onError={(event) => {
+                              (event.target as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      </TooltipPrimitive.Trigger>
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content
+                          sideOffset={6}
+                          className="z-50 max-w-[200px] rounded-md bg-black px-3 py-1.5 text-xs text-white text-center shadow-md animate-in fade-in-0 zoom-in-95"
+                        >
+                          <p className="font-semibold">{mobi.name}</p>
+                          <p className="text-[10px] text-white/60">{mobi.category}</p>
+                          <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
+                  ) : (
+                    <div
+                      key={`empty-${index}`}
+                      className="flex aspect-square w-full min-h-[64px] flex-col items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
+                    />
+                  )
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </div>
       </section>

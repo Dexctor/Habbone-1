@@ -20,31 +20,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import type { ShopItem, ShopOrder } from "@/types/shop";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
-type ShopItem = {
-  id: number;
-  nome: string;
-  descricao?: string;
-  imagem: string;
-  preco: number;
-  estoque: number;
-  status: string;
-};
-
-type ShopOrder = {
-  id: number;
-  user_id: number;
-  user_nick?: string;
-  item_id: number;
-  item_nome?: string;
-  item_imagem?: string;
-  preco: number;
-  status: string;
-};
 
 type EditState = {
   id: number | null;

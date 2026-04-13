@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
 type Item = {
   code: string
@@ -135,27 +137,43 @@ export default function LatestBadges() {
               Aucun element disponible.
             </div>
           ) : (
-            <div className="grid grid-cols-6 gap-[8px]">
-              {visibleSlots.map((item, index) => (
-                <div
-                  key={item ? `${item.code}-${index}` : `empty-${index}`}
-                  title={item?.name || ''}
-                  className={`flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] ${
-                    item ? 'group transition hover:bg-[#303060]' : 'opacity-35'
-                  }`}
-                >
-                  {item ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            <TooltipProvider delayDuration={150}>
+              <div className="grid grid-cols-6 gap-[8px]">
+                {visibleSlots.map((item, index) => (
+                  item ? (
+                    <TooltipPrimitive.Root key={`${item.code}-${index}`}>
+                      <TooltipPrimitive.Trigger asChild>
+                        <div
+                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                          />
+                        </div>
+                      </TooltipPrimitive.Trigger>
+                      <TooltipPrimitive.Portal>
+                        <TooltipPrimitive.Content
+                          sideOffset={6}
+                          className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
+                        >
+                          {item.name}
+                          <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                        </TooltipPrimitive.Content>
+                      </TooltipPrimitive.Portal>
+                    </TooltipPrimitive.Root>
+                  ) : (
+                    <div
+                      key={`empty-${index}`}
+                      className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
                     />
-                  ) : null}
-                </div>
-              ))}
-            </div>
+                  )
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </div>
 

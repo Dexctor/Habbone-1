@@ -46,8 +46,26 @@ export const GET = withAdmin(async (req) => {
       console.error('[Admin Shop GET] Directus error:', res.status, body);
       return NextResponse.json({ ok: true, data: [] });
     }
-    const json = await res.json();
-    return NextResponse.json({ ok: true, data: json?.data ?? [] });
+    // Read as ArrayBuffer and decode as UTF-8 to avoid charset issues
+    const buf = await res.arrayBuffer();
+    const text = new TextDecoder('utf-8').decode(buf);
+    const json = JSON.parse(text);
+    const items = (json?.data ?? []).map((item: Record<string, unknown>) => {
+      const fixed = { ...item };
+      for (const key of ['nome', 'descricao']) {
+        if (typeof fixed[key] === 'string') {
+          const val = fixed[key] as string;
+          if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(val) || val.includes('\ufffd')) {
+            try {
+              const bytes = new Uint8Array([...val].map((c) => c.charCodeAt(0) & 0xff));
+              fixed[key] = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+            } catch { /* keep original */ }
+          }
+        }
+      }
+      return fixed;
+    });
+    return NextResponse.json({ ok: true, data: items });
   } catch (e: any) {
     console.error('[Admin Shop GET] Error:', e?.message);
     return NextResponse.json({ ok: true, data: [] });

@@ -1,21 +1,17 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-type ShopItem = {
-  id: number
-  nome: string
-  descricao?: string
-  imagem: string
-  preco: number
-  estoque: number
-  status: string
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import type { ShopItem } from '@/types/shop'
 
 const PAGE_SIZE = 12
 
@@ -155,6 +151,15 @@ function Pagination({
 /*  Page Client                                                        */
 /* ------------------------------------------------------------------ */
 
+function useDebounce(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
+
 export default function BoutiqueClient({
   initialItems,
   initialCoins,
@@ -165,29 +170,21 @@ export default function BoutiqueClient({
   loggedIn: boolean
 }) {
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebounce(query, 250)
   const [page, setPage] = useState(0)
   const [items, setItems] = useState<ShopItem[]>(initialItems)
   const [coins, setCoins] = useState(initialCoins)
   const [buying, setBuying] = useState<number | null>(null)
+  const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null)
 
-  // Purchase handler
-  const handleBuy = useCallback(async (itemId: number) => {
-    if (!loggedIn) {
-      toast.error('Connecte-toi pour acheter')
-      return
-    }
-
-    const item = items.find((i) => i.id === itemId)
-    if (!item) return
-
-    if (!window.confirm(`Acheter "${item.nome}" pour ${item.preco} coins ?`)) return
-
-    setBuying(itemId)
+  // Purchase execution (called after dialog confirm)
+  const executePurchase = useCallback(async (item: ShopItem) => {
+    setBuying(item.id)
     try {
       const res = await fetch('/api/shop/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId }),
+        body: JSON.stringify({ itemId: item.id }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json?.error || 'Erreur')
@@ -204,14 +201,25 @@ export default function BoutiqueClient({
     } finally {
       setBuying(null)
     }
+  }, [])
+
+  // Open confirm dialog
+  const handleBuy = useCallback((itemId: number) => {
+    if (!loggedIn) {
+      toast.error('Connecte-toi pour acheter')
+      return
+    }
+    const item = items.find((i) => i.id === itemId)
+    if (!item) return
+    setConfirmItem(item)
   }, [loggedIn, items])
 
-  /* Filtrage */
+  /* Filtrage (avec debounce) */
   const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase()
+    const term = debouncedQuery.trim().toLowerCase()
     if (!term) return items
     return items.filter((item) => item.nome.toLowerCase().includes(term))
-  }, [query, items])
+  }, [debouncedQuery, items])
 
   /* Pagination */
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -281,6 +289,65 @@ export default function BoutiqueClient({
 
       {/* Pagination */}
       <Pagination page={clampedPage} pageCount={pageCount} onPageChange={setPage} />
+
+      {/* Dialog de confirmation d'achat */}
+      <Dialog open={!!confirmItem} onOpenChange={(open) => { if (!open) setConfirmItem(null) }}>
+        <DialogContent className="border-[#141433] bg-[#1F1F3E] text-white sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-[16px] font-bold uppercase tracking-wide text-[#DDD]">
+              Confirmer l&apos;achat
+            </DialogTitle>
+            <DialogDescription className="text-[13px] text-[#BEBECE]">
+              Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+
+          {confirmItem && (
+            <div className="flex items-center gap-4 rounded-[6px] border border-white/10 bg-[#272746] p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={confirmItem.imagem}
+                alt={confirmItem.nome}
+                className="h-[60px] w-[60px] object-contain image-pixelated"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/img/box.png' }}
+              />
+              <div className="flex-1">
+                <p className="text-[14px] font-bold text-white">{confirmItem.nome}</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/img/icon-coin.png" alt="" className="h-[18px] w-[18px] image-pixelated" />
+                  <span className="text-[14px] font-bold text-[#FFC800]">{confirmItem.preco}</span>
+                  <span className="text-[11px] text-[#BEBECE]/60">coins</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="rounded-[4px] border-2 border-white/10 bg-transparent px-5 py-2.5 text-[13px] font-bold uppercase tracking-wide text-[#BEBECE] transition hover:bg-white/5"
+              >
+                Annuler
+              </button>
+            </DialogClose>
+            <button
+              type="button"
+              disabled={buying !== null}
+              onClick={() => {
+                if (confirmItem) {
+                  setConfirmItem(null)
+                  executePurchase(confirmItem)
+                }
+              }}
+              className="rounded-[4px] bg-[#2596FF] px-5 py-2.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2976E8] disabled:opacity-50"
+            >
+              {buying !== null ? 'Achat en cours...' : 'Confirmer'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

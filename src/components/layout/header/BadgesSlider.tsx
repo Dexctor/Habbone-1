@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
 const C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_C_IMAGES_BASE || 'https://images.habbo.com/c_images'
 const EU_SSL_C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_EUSSL_C_IMAGES_BASE || 'https://images-eussl.habbo.com/c_images'
@@ -219,17 +220,30 @@ export default function BadgesSlider() {
                     aria-label={`${page * PAGE_SIZE + index + 1} / ${visibleItems.length || PAGE_SIZE}`}
                   >
                     {item ? (
-                      <a
-                        className="grid h-full w-full place-items-center rounded-[6px] border border-[#141433] bg-[#1F1F3E] shadow-[0_1px_0_rgba(255,255,255,.1)] transition-colors hover:bg-[#2596FF]"
-                        href={item.articleUrl}
-                        title={`${item.badgeCode} - ${item.title}`}
-                      >
-                        <HeaderBadgeImage
-                          code={item.badgeCode}
-                          album={item.badgeAlbum}
-                          imageUrl={item.badgeImageUrl}
-                        />
-                      </a>
+                      <TooltipPrimitive.Root>
+                        <TooltipPrimitive.Trigger asChild>
+                          <a
+                            className="grid h-full w-full place-items-center rounded-[6px] border border-[#141433] bg-[#1F1F3E] shadow-[0_1px_0_rgba(255,255,255,.1)] transition-colors hover:bg-[#2596FF]"
+                            href={item.articleUrl}
+                          >
+                            <HeaderBadgeImage
+                              code={item.badgeCode}
+                              album={item.badgeAlbum}
+                              imageUrl={item.badgeImageUrl}
+                            />
+                          </a>
+                        </TooltipPrimitive.Trigger>
+                        <TooltipPrimitive.Portal>
+                          <TooltipPrimitive.Content
+                            sideOffset={6}
+                            className="z-50 max-w-[200px] rounded-md bg-black px-3 py-1.5 text-xs text-white text-center shadow-md animate-in fade-in-0 zoom-in-95"
+                          >
+                            <p className="font-semibold">{item.badgeCode}</p>
+                            <p className="text-[10px] text-white/60">{item.title}</p>
+                            <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                          </TooltipPrimitive.Content>
+                        </TooltipPrimitive.Portal>
+                      </TooltipPrimitive.Root>
                     ) : (
                       <span className="grid h-full w-full place-items-center rounded-[6px] border border-[#141433] bg-[#1F1F3E] opacity-30">
                         <span className="h-[28px] w-[28px] rounded bg-[rgba(255,255,255,0.14)]" />

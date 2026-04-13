@@ -1,44 +1,32 @@
 import 'server-only';
 
 import { directusService as directus, rItems, rItem, cItem, uItem, dItem, directusUrl, serviceToken, USERS_TABLE } from './client';
+import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-export interface ShopItem {
-  id: number;
-  nome: string;
-  descricao?: string;
-  imagem: string;
-  preco: number;
-  estoque: number;
-  status: 'ativo' | 'inativo';
-}
-
-export interface ShopOrder {
-  id: number;
-  user_id: number;
-  user_nick?: string;
-  item_id: number;
-  item_nome?: string;
-  item_imagem?: string;
-  preco: number;
-  status: 'pendente' | 'entregue' | 'cancelado';
-}
-
-export interface AdminNotification {
-  id: number;
-  type: string;
-  title: string;
-  message?: string;
-  link?: string;
-  read: boolean;
-}
+export type { ShopItem, ShopOrder, AdminNotification };
 
 const SHOP_ITEMS_TABLE = 'shop_items';
 const SHOP_ORDERS_TABLE = 'shop_orders';
 const ADMIN_NOTIFICATIONS_TABLE = 'admin_notifications';
+
+/** Fix double-encoded UTF-8 (latin1 column read as UTF-8 → mojibake) */
+function fixEncoding(value: string): string {
+  if (!/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value) && !value.includes('\ufffd')) return value;
+  try {
+    const bytes = new Uint8Array([...value].map((c) => c.charCodeAt(0) & 0xff));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch { return value; }
+}
+
+function fixItemStrings<T>(item: T): T {
+  const fixed = { ...item } as any;
+  for (const key of ['nome', 'descricao', 'item_nome']) {
+    if (typeof fixed[key] === 'string') {
+      fixed[key] = fixEncoding(fixed[key]);
+    }
+  }
+  return fixed as T;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Shop Items                                                         */
@@ -55,7 +43,7 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
         fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status'],
       })
     );
-    return (rows || []) as ShopItem[];
+    return ((rows || []) as ShopItem[]).map(fixItemStrings);
   } catch (error: any) {
     console.error('[Shop] Failed to list items:', error?.message || error);
     return [];
@@ -69,7 +57,7 @@ export async function getShopItem(id: number): Promise<ShopItem | null> {
         fields: ['id', 'nome', 'descricao', 'imagem', 'preco', 'estoque', 'status'],
       })
     );
-    return (row || null) as ShopItem | null;
+    return row ? fixItemStrings(row as ShopItem) : null;
   } catch {
     return null;
   }
@@ -138,7 +126,7 @@ export async function listShopOrders(options?: {
     const countJson = await countRes.json().catch(() => ({}));
     const total = Number(countJson?.meta?.total_count ?? (rows as any[])?.length ?? 0);
 
-    return { data: (rows || []) as ShopOrder[], total };
+    return { data: ((rows || []) as ShopOrder[]).map(fixItemStrings), total };
   } catch (error) {
     console.error('[Shop] Failed to list orders:', error);
     return { data: [], total: 0 };
