@@ -54,13 +54,17 @@ export const GET = withAdmin(async (req) => {
       const fixed = { ...item };
       for (const key of ['nome', 'descricao']) {
         if (typeof fixed[key] === 'string') {
-          const val = fixed[key] as string;
-          if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(val) || val.includes('\ufffd')) {
+          let val = fixed[key] as string;
+          // Fix double-encoded UTF-8 (e.g. "Ã´" → "ô")
+          if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(val)) {
             try {
               const bytes = new Uint8Array([...val].map((c) => c.charCodeAt(0) & 0xff));
-              fixed[key] = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+              val = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
             } catch { /* keep original */ }
           }
+          // Strip irrecoverable U+FFFD replacement chars
+          if (val.includes('\ufffd')) val = val.replace(/\ufffd/g, '');
+          fixed[key] = val;
         }
       }
       return fixed;

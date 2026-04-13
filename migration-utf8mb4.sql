@@ -26,8 +26,11 @@ ALTER TABLE `shop_items` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicod
 ALTER TABLE `shop_orders` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `admin_notifications` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Reparer les donnees deja corrompues (double-encoded latin1→utf8)
--- Trône Doré stocké en latin1 apparait comme "TrÃ´ne DorÃ©" en utf8
+-- ============================================================
+-- IMPORTANT : Reparer les donnees corrompues
+-- ============================================================
+-- CAS 1 : Double-encodage (latin1→utf8) — "TrÃ´ne DorÃ©"
+-- Cette requete les repare automatiquement :
 UPDATE `shop_items`
 SET nome = CONVERT(CAST(CONVERT(nome USING latin1) AS BINARY) USING utf8mb4)
 WHERE nome LIKE '%Ã%' OR nome LIKE '%Ã©%' OR nome LIKE '%Ã´%' OR nome LIKE '%Ã¨%';
@@ -35,6 +38,15 @@ WHERE nome LIKE '%Ã%' OR nome LIKE '%Ã©%' OR nome LIKE '%Ã´%' OR nome LIKE 
 UPDATE `shop_items`
 SET descricao = CONVERT(CAST(CONVERT(descricao USING latin1) AS BINARY) USING utf8mb4)
 WHERE descricao IS NOT NULL AND (descricao LIKE '%Ã%' OR descricao LIKE '%Ã©%');
+
+-- CAS 2 : Caracteres remplacement U+FFFD — "Tr?ne Dor?"  (affichés comme losange ◆)
+-- Ces donnees sont IRRECUPERABLES par SQL.
+-- Il faut les re-saisir manuellement via l'admin Directus.
+-- Pour les identifier :
+SELECT id, nome, descricao FROM shop_items WHERE nome LIKE '%?%' OR descricao LIKE '%?%';
+
+-- Exemple de correction manuelle :
+-- UPDATE shop_items SET nome = 'Trône Doré', descricao = 'Un magnifique trône doré pour ta chambre Habbo' WHERE id = 1;
 
 -- 3. Tables secondaires qui pourraient etre utilisees plus tard
 ALTER TABLE `emblemas` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

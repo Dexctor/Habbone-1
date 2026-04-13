@@ -9,13 +9,24 @@ const SHOP_ITEMS_TABLE = 'shop_items';
 const SHOP_ORDERS_TABLE = 'shop_orders';
 const ADMIN_NOTIFICATIONS_TABLE = 'admin_notifications';
 
-/** Fix double-encoded UTF-8 (latin1 column read as UTF-8 → mojibake) */
+/**
+ * Fix encoding issues in strings from Directus/MySQL.
+ * 1) Double-encoded UTF-8 (latin1 → utf8 mojibake): "Ã´" → "ô"
+ * 2) Replacement chars U+FFFD (data lost at insertion): strip them
+ */
 function fixEncoding(value: string): string {
-  if (!/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value) && !value.includes('\ufffd')) return value;
-  try {
-    const bytes = new Uint8Array([...value].map((c) => c.charCodeAt(0) & 0xff));
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch { return value; }
+  // Case 1: double-encoded UTF-8 (e.g. "Ã´" for "ô")
+  if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value)) {
+    try {
+      const bytes = new Uint8Array([...value].map((c) => c.charCodeAt(0) & 0xff));
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch { /* fall through */ }
+  }
+  // Case 2: replacement characters (irrecoverable — just strip them)
+  if (value.includes('\ufffd')) {
+    return value.replace(/\ufffd/g, '');
+  }
+  return value;
 }
 
 function fixItemStrings<T>(item: T): T {

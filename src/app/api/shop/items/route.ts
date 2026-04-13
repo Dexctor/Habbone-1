@@ -5,25 +5,21 @@ import { directusUrl, serviceToken } from '@/server/directus/client';
 export const dynamic = 'force-dynamic';
 
 /**
- * Repair mojibake / double-encoded UTF-8 strings.
- * When UTF-8 text is stored in a latin1 column then read as UTF-8,
- * each multi-byte char gets double-encoded:
- *   "ô" (U+00F4) → latin1 bytes C3 B4 → read as UTF-8 → "Ã´"
- *   "é" (U+00E9) → latin1 bytes C3 A9 → read as UTF-8 → "Ã©"
- *   "è" (U+00E8) → latin1 bytes C3 A8 → read as UTF-8 → "Ã¨"
- * Fix: treat each char code as a raw byte and re-decode as UTF-8.
+ * Fix encoding issues in strings from Directus/MySQL.
+ * 1) Double-encoded UTF-8 (latin1 → utf8 mojibake): "Ã´" → "ô"
+ * 2) Replacement chars U+FFFD (data lost at insertion): strip them
  */
 function fixEncoding(value: string): string {
-  // Quick check: does it look like double-encoded UTF-8?
-  if (!/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value) && !value.includes('\ufffd')) {
-    return value;
+  if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value)) {
+    try {
+      const bytes = new Uint8Array([...value].map((c) => c.charCodeAt(0) & 0xff));
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch { /* fall through */ }
   }
-  try {
-    const bytes = new Uint8Array([...value].map((c) => c.charCodeAt(0) & 0xff));
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return value;
+  if (value.includes('\ufffd')) {
+    return value.replace(/\ufffd/g, '');
   }
+  return value;
 }
 
 function fixItemEncoding<T extends Record<string, unknown>>(item: T): T {
