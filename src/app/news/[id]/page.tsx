@@ -82,11 +82,11 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   const avatarUrl = author
     ? buildHabboAvatarUrl(author, {
       direction: 2,
-      head_direction: 2,
+      head_direction: 3,
       img_format: "png",
       gesture: "sml",
-      headonly: 0,
-      size: "m",
+      headonly: 1,
+      size: "l",
     })
     : "/img/avatar_empty.png"
 

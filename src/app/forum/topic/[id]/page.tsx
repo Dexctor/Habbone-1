@@ -120,11 +120,11 @@ export default async function TopicPage(props: TopicPageProps) {
   const avatarUrl = author
     ? buildHabboAvatarUrl(author, {
         direction: 2,
-        head_direction: 2,
+        head_direction: 3,
         img_format: "png",
         gesture: "sml",
-        headonly: 0,
-        size: "m",
+        headonly: 1,
+        size: "l",
       })
     : "/img/avatar_empty.png";
   const isAuthenticated = Boolean((session as { user?: unknown } | null)?.user);

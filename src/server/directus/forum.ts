@@ -191,7 +191,7 @@ export async function createForumComment(input: {
     comentario: input.content,
     autor: input.author || 'Anonyme',
     data: Math.floor(Date.now() / 1000),
-    status: input.status ?? 'public',
+    status: input.status ?? 'ativo',
   };
   return directusService.request(cItem('forum_coment', payload)) as Promise<ForumCommentRecord>;
 }

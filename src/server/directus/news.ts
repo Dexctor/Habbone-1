@@ -120,7 +120,7 @@ export async function createNewsComment(input: {
     comentario: input.content,
     autor: input.author || 'Anonyme',
     data: Math.floor(Date.now() / 1000),
-    status: input.status ?? 'public',
+    status: input.status ?? 'ativo',
   };
   return directusService.request(cItem('noticias_coment', payload as any)) as Promise<NewsCommentRecord>;
 }
