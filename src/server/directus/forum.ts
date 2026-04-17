@@ -116,12 +116,14 @@ export async function createForumTopic(data: {
     conteudo: data.conteudo,
     autor: data.autor,
     imagem: data.imagem ?? null,
-    cat_id: data.cat_id ?? 0,
+    cat_id: data.cat_id ?? 1,
     data: Math.floor(Date.now() / 1000),
     status: 'ativo',
     views: 0,
-    fixo: 0,
-    fechado: 0,
+    fixo: 'n',
+    fechado: 'n',
+    editado: 'n',
+    moderado: 'n',
   };
   return directusService.request(cItem('forum_topicos', payload)) as Promise<ForumTopicRecord>;
 }
