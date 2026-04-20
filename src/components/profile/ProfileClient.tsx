@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { ProfileHeaderCard } from "./modules/ProfileHeaderCard";
 import { ProfileInfoList } from "./modules/ProfileInfoList";
+import { ProfileRankings } from "./modules/ProfileRankings";
 import { ProfileSection } from "./modules/ProfileSection";
 import { ProfileTabs } from "./modules/ProfileTabs";
 import { BadgeIcon } from "./modules/BadgeIcon";
@@ -400,11 +401,13 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               favoritesBadges={favoriteBadges}
               nick={headerUser?.name || nick}
             />
+
+            <ProfileRankings data={data} favoriteBadges={favoriteBadges} />
           </aside>
 
           <div className="space-y-6">
             <ProfileSection
-              title="Sujets postes"
+              title="Sujets postés"
               onPrev={() => {
                 setTopicsDir(-1);
                 setTopicsPage((p) => Math.max(0, p - 1));
@@ -466,7 +469,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
             </ProfileSection>
 
             <ProfileSection
-              title="Articles postes"
+              title="Articles postés"
               onPrev={() => {
                 setArticlesDir(-1);
                 setArticlesPage((p) => Math.max(0, p - 1));

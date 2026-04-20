@@ -35,11 +35,11 @@ export function ProfileInfoList(props: {
 
   return (
     <section className="space-y-3">
-      <ProfileInfoRow icon="/img/topics-mini.png" label="Sujets postes:" value={stats.topics} />
-      <ProfileInfoRow icon="/img/icon-comment.png" label="Commentaires:" value={stats.comments} />
-      <ProfileInfoRow icon="/img/pincel-mini.png" label="Articles postes:" value={stats.articles} />
-      <ProfileInfoRow icon="/img/badges.gif" label="Badges du site:" value={stats.badges} />
-      <ProfileInfoRow icon="/img/coin-mini.png" label="Achats:" value={stats.coins} />
+      <ProfileInfoRow icon="/img/topics-mini.png" label="Sujets postés :" value={stats.topics} />
+      <ProfileInfoRow icon="/img/icon-comment.png" label="Commentaires :" value={stats.comments} />
+      <ProfileInfoRow icon="/img/pincel-mini.png" label="Articles postés :" value={stats.articles} />
+      <ProfileInfoRow icon="/img/badges.gif" label="Badges Habbo :" value={stats.badges} />
+      <ProfileInfoRow icon="/img/coin-mini.png" label="Money :" value={stats.coins} />
       <ProfileInfoRow icon="/img/friends.png" label="Amis:" value={stats.friends} />
       <ProfileInfoRow icon="/img/groups.png" label="Groupes:" value={stats.groups} />
       {typeof stats.achievements === "number" ? (
