@@ -41,22 +41,22 @@ export function ProfileHeaderCard(props: {
     >
       <Card aria-busy={ariaBusy} aria-live="polite" className="border-[#1F1F3E] bg-[#25254D]">
         <CardContent className="flex gap-3 p-4">
-          <div className="relative h-[150px] w-[90px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
+          <div className="relative h-[160px] w-[100px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
             {/* Dalle (socle) au fond, centrée horizontalement */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/Plataforma.png"
               alt=""
               aria-hidden="true"
-              className="absolute bottom-[18px] left-1/2 -translate-x-1/2 image-pixelated pointer-events-none"
+              className="absolute bottom-[15px] left-1/2 -translate-x-1/2 image-pixelated pointer-events-none"
             />
-            {/* Avatar par-dessus la dalle, pieds au centre du disque, légèrement agrandi */}
+            {/* Avatar par-dessus la dalle, pieds au centre du disque */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatarUrl}
               alt={`Avatar de ${nick}`}
-              className="absolute left-1/2 bottom-[34px] -translate-x-1/2 image-pixelated"
-              style={{ transform: 'translateX(-50%) scale(1.15)', transformOrigin: 'bottom center' }}
+              className="absolute left-1/2 bottom-[32px] image-pixelated"
+              style={{ transform: 'translateX(-50%) scale(1.1)', transformOrigin: 'bottom center' }}
             />
             {online ? (
               <span
