@@ -46,7 +46,7 @@ export function ProfileHeaderCard(props: {
             <img
               src={avatarUrl}
               alt={`Avatar de ${nick}`}
-              className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 image-pixelated"
+              className="absolute left-1/2 bottom-[40px] -translate-x-1/2 image-pixelated"
             />
             {online ? (
               <span
