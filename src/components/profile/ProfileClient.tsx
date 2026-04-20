@@ -226,6 +226,14 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
     img_format: "png",
     size: "m",
   });
+  const headerAvatarWaveUrl = buildHabboAvatarUrl(headerUser?.name || nick || "", {
+    direction: 2,
+    head_direction: 3,
+    img_format: "png",
+    size: "m",
+    action: "wave",
+    gesture: "sml",
+  });
 
   const summaryStats = useMemo(
     () => ({
@@ -390,6 +398,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               levelPercent={headerUser?.currentLevelCompletePercent}
               starGems={headerUser?.starGemCount}
               avatarUrl={headerAvatarUrl}
+              avatarWaveUrl={headerAvatarWaveUrl}
               motto={headerUser?.motto}
               online={headerUser?.online}
               lastAccessTime={headerUser?.lastAccessTime}
