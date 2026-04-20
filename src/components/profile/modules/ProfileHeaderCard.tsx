@@ -41,12 +41,12 @@ export function ProfileHeaderCard(props: {
     >
       <Card aria-busy={ariaBusy} aria-live="polite" className="border-[#1F1F3E] bg-[#25254D]">
         <CardContent className="flex gap-3 p-4">
-          <div className="relative h-[137px] w-[76px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060] bg-[url('/img/Plataforma.png')] bg-bottom bg-no-repeat">
+          <div className="relative h-[160px] w-[90px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060] bg-[url('/img/Plataforma.png')] bg-bottom bg-no-repeat">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatarUrl}
               alt={`Avatar de ${nick}`}
-              className="absolute left-1/2 bottom-[40px] -translate-x-1/2 image-pixelated"
+              className="absolute left-1/2 bottom-[26px] -translate-x-1/2 image-pixelated"
             />
             {online ? (
               <span
