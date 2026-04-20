@@ -41,12 +41,21 @@ export function ProfileHeaderCard(props: {
     >
       <Card aria-busy={ariaBusy} aria-live="polite" className="border-[#1F1F3E] bg-[#25254D]">
         <CardContent className="flex gap-3 p-4">
-          <div className="relative h-[170px] w-[100px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060] bg-[url('/img/Plataforma.png')] bg-no-repeat" style={{ backgroundPosition: 'center 118px' }}>
+          <div className="relative h-[150px] w-[90px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
+            {/* Dalle (socle) au fond, centrée horizontalement, posée en bas */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/Plataforma.png"
+              alt=""
+              aria-hidden="true"
+              className="absolute bottom-[10px] left-1/2 -translate-x-1/2 image-pixelated pointer-events-none"
+            />
+            {/* Avatar par-dessus la dalle, pieds au centre du disque */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatarUrl}
               alt={`Avatar de ${nick}`}
-              className="absolute left-1/2 bottom-[35px] -translate-x-1/2 image-pixelated"
+              className="absolute left-1/2 bottom-[30px] -translate-x-1/2 image-pixelated"
             />
             {online ? (
               <span

@@ -224,7 +224,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
     direction: 2,
     head_direction: 3,
     img_format: "png",
-    size: "l",
+    size: "m",
   });
 
   const summaryStats = useMemo(
