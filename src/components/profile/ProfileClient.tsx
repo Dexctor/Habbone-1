@@ -402,7 +402,11 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               nick={headerUser?.name || nick}
             />
 
-            <ProfileRankings data={data} favoriteBadges={favoriteBadges} />
+            <ProfileRankings
+              data={data}
+              favoriteBadges={favoriteBadges}
+              nick={headerUser?.name || nick}
+            />
           </aside>
 
           <div className="space-y-6">
