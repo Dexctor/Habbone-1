@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 
 function fmtLastAccess(v?: string): string | null {
@@ -31,11 +30,9 @@ export function ProfileHeaderCard(props: {
   lastAccessTime?: string;
   ariaBusy?: boolean;
 }) {
-  const { nick, memberSince, level, levelPercent, starGems, avatarUrl, avatarWaveUrl, motto, online, lastAccessTime, ariaBusy } = props;
+  const { nick, memberSince, level, levelPercent, starGems, avatarUrl, motto, online, lastAccessTime, ariaBusy } = props;
   const reduce = useReducedMotion();
   const lastSeen = fmtLastAccess(lastAccessTime);
-  const [hovering, setHovering] = useState(false);
-  const displayAvatar = hovering && avatarWaveUrl ? avatarWaveUrl : avatarUrl;
 
   return (
     <motion.div
@@ -45,56 +42,22 @@ export function ProfileHeaderCard(props: {
     >
       <Card aria-busy={ariaBusy} aria-live="polite" className="border-[#1F1F3E] bg-[#25254D]">
         <CardContent className="flex gap-3 p-4">
-          <div
-            className="group relative h-[160px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-[3px] bg-[#303060]"
-            onMouseEnter={() => setHovering(true)}
-            onMouseLeave={() => setHovering(false)}
-            onFocus={() => setHovering(true)}
-            onBlur={() => setHovering(false)}
-            tabIndex={0}
-            aria-label={`Avatar de ${nick}`}
-          >
-            {/* Preload the wave avatar to avoid flicker on first hover */}
-            {avatarWaveUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarWaveUrl} alt="" aria-hidden="true" className="absolute -z-10 h-0 w-0 opacity-0" />
-            ) : null}
-
-            {/* Dalle (socle) au fond, centrée horizontalement */}
+          <div className="relative h-[160px] w-[100px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
+            {/* Dalle (socle) : positionnée à 20px du bas */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/Plataforma.png"
               alt=""
               aria-hidden="true"
-              className="absolute bottom-[15px] left-1/2 -translate-x-1/2 image-pixelated pointer-events-none"
+              className="absolute bottom-[20px] left-1/2 -translate-x-1/2 image-pixelated pointer-events-none"
             />
-            {/* Avatar par-dessus la dalle, pieds au centre du disque */}
+            {/* Avatar : pieds pile au centre du disque de la dalle (bottom = 20 + 26 = 46) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={displayAvatar}
+              src={avatarUrl}
               alt={`Avatar de ${nick}`}
-              className="absolute left-1/2 bottom-[32px] image-pixelated transition-transform duration-200 group-hover:scale-[1.15]"
-              style={{ transform: 'translateX(-50%) scale(1.1)', transformOrigin: 'bottom center' }}
+              className="absolute left-1/2 bottom-[46px] -translate-x-1/2 image-pixelated"
             />
-
-            {/* Bulle "Salut !" au hover */}
-            <AnimatePresence>
-              {hovering && !reduce ? (
-                <motion.div
-                  key="salut"
-                  initial={{ opacity: 0, y: -4, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
-                  transition={{ duration: 0.15 }}
-                  className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#2596FF] shadow-[0_2px_6px_rgba(0,0,0,0.35)] ring-1 ring-black/10"
-                  aria-hidden="true"
-                >
-                  Salut !
-                  <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[5px] border-x-transparent border-t-white" />
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
             {online ? (
               <span
                 className="absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-[#25254D] bg-green-500"
