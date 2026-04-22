@@ -108,26 +108,80 @@ export default function UserBarLeft({
         </div>
       )}
 
+      {/* User card — Habbo pixel-art style (authenticated) */}
       {!isLoading && isAuthenticated && avatarSrc && (
-        <div className="avatar relative flex items-center justify-center min-w-[60px] h-[60px] rounded-full bg-[#1F1F3E] mr-[12px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={avatarSrc} alt={(session?.user as any)?.nick ?? ''} className="image-pixelated" />
-          {typeof level === 'number' && (
-            <div className="absolute -bottom-1 -right-1 min-w-[24px] h-[24px] px-1 rounded-full bg-[#2596FF] text-white text-[11px] font-bold grid place-items-center shadow-[0_1px_0_rgba(255,255,255,.25)]">
-              Lv {level}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Infos utilisateur: cachées sur petit mobile, visibles sur md+ */}
-      {!isLoading && isAuthenticated && (
-        <div className="hidden sm:flex items-center gap-2 ml-[2px] mr-[8px]">
-          <div className="py-1 px-2 rounded bg-[#1F1F3E] text-[#DDDDDD] font-bold text-[0.85rem]">@{(session?.user as any)?.nick}</div>
-          <div className="py-1 px-2 rounded bg-[#1F1F3E] text-[#DDDDDD] font-bold text-[0.85rem] flex items-center gap-1">
+        <div
+          className="user-habbo relative flex items-center gap-[8px] px-[8px] py-[6px] mr-[10px] bg-[#1F1F3E] border-2 border-[#141433]"
+          style={{
+            boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+            imageRendering: 'pixelated',
+          }}
+        >
+          {/* Avatar box — pixel frame */}
+          <div
+            className="relative flex items-center justify-center w-[56px] h-[56px] shrink-0 bg-[#303060] border-2 border-[#141433]"
+            style={{ boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.3)' }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/icon-coin.png" alt="coins" className="w-4 h-4" />
-            <span>{coinsLabel}</span>
+            <img
+              src={avatarSrc}
+              alt={(session?.user as any)?.nick ?? ''}
+              className="image-pixelated h-[48px] w-auto"
+            />
+            {/* Level pixel badge */}
+            {typeof level === 'number' && (
+              <div
+                className="absolute -bottom-[6px] left-1/2 -translate-x-1/2 flex items-center justify-center min-w-[32px] h-[16px] px-[4px] bg-[#2596FF] border-2 border-[#141433] text-white text-[9px] font-bold uppercase tracking-[0.08em]"
+                style={{
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.3), 0 1px 0 rgba(0,0,0,0.4)',
+                  textShadow: '1px 1px 0 rgba(0,0,0,0.5)',
+                }}
+              >
+                LVL {level}
+              </div>
+            )}
+          </div>
+
+          {/* Info column : nick + coins */}
+          <div className="hidden sm:flex flex-col justify-center gap-[4px] min-w-0">
+            {/* Nick row */}
+            <div
+              className="flex items-center gap-[6px] px-[6px] h-[22px] bg-[#141433] border-2 border-[#141433]"
+              style={{ boxShadow: 'inset 0 2px 0 rgba(0,0,0,0.4), inset 0 -1px 0 rgba(255,255,255,0.04)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/star-mini.png"
+                alt=""
+                aria-hidden="true"
+                className="image-pixelated h-[10px] w-[10px] shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+              <span
+                className="font-bold text-white text-[11px] uppercase tracking-[0.06em] truncate max-w-[120px]"
+                style={{ textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}
+              >
+                {(session?.user as any)?.nick}
+              </span>
+            </div>
+            {/* Coins row */}
+            <div
+              className="flex items-center gap-[6px] px-[6px] h-[22px] bg-[#141433] border-2 border-[#141433]"
+              style={{ boxShadow: 'inset 0 2px 0 rgba(0,0,0,0.4), inset 0 -1px 0 rgba(255,255,255,0.04)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/icon-coin.png"
+                alt="coins"
+                className="image-pixelated h-[14px] w-[14px] shrink-0"
+              />
+              <span
+                className="font-bold text-[#FFC800] text-[11px] uppercase tracking-[0.04em] tabular-nums"
+                style={{ textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}
+              >
+                {coinsLabel}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -236,9 +290,9 @@ export default function UserBarLeft({
         </form>
       )}
 
-      {/* Boutons utilisateur connecté: compacts sur mobile */}
+      {/* Boutons utilisateur connecté — pixel Habbo style */}
       {!isLoading && isAuthenticated && (
-        <div className="box-buttons flex gap-1 sm:gap-[10px] ml-auto lg:ml-[10px]" id="logout">
+        <div className="box-buttons flex gap-[4px] sm:gap-[6px] ml-auto lg:ml-[10px]" id="logout">
           {(session?.user as any)?.role === 'admin' && (
             <TooltipProvider>
               <Tooltip>
@@ -246,16 +300,18 @@ export default function UserBarLeft({
                   <Link
                     href="/admin"
                     aria-label="Admin"
-                    className="rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] grid place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
+                    className="btn-habbo-icon group relative grid place-items-center h-[40px] w-[40px] sm:h-[44px] sm:w-[44px] bg-[#F92330] border-2 border-[#141433] text-white hover:bg-[#E11036] active:translate-y-[1px] transition-colors"
+                    style={{
+                      boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+                    }}
                   >
-                    <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>admin_panel_settings</i>
+                    <i className="material-icons text-[20px] sm:text-[22px]" aria-hidden>admin_panel_settings</i>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="top">Admin</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
-          {/* Story: caché sur mobile, visible sur sm+ */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -263,9 +319,12 @@ export default function UserBarLeft({
                   type="button"
                   onClick={onOpenStory}
                   aria-label="Publier une storie"
-                  className="hidden sm:grid rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
+                  className="hidden sm:grid place-items-center h-[40px] w-[40px] sm:h-[44px] sm:w-[44px] bg-[#0FD52F] border-2 border-[#141433] text-white hover:bg-[#16B254] active:translate-y-[1px] transition-colors"
+                  style={{
+                    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+                  }}
                 >
-                  <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>add_a_photo</i>
+                  <i className="material-icons text-[20px] sm:text-[22px]" aria-hidden>add_a_photo</i>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Publier une storie</TooltipContent>
@@ -277,9 +336,12 @@ export default function UserBarLeft({
                 <Link
                   href="/profile"
                   aria-label="Profil"
-                  className="rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] grid place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
+                  className="grid place-items-center h-[40px] w-[40px] sm:h-[44px] sm:w-[44px] bg-[#2596FF] border-2 border-[#141433] text-white hover:bg-[#2976E8] active:translate-y-[1px] transition-colors"
+                  style={{
+                    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+                  }}
                 >
-                  <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>account_circle</i>
+                  <i className="material-icons text-[20px] sm:text-[22px]" aria-hidden>account_circle</i>
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="top">Profil</TooltipContent>
@@ -291,9 +353,12 @@ export default function UserBarLeft({
                 <Link
                   href="/settings"
                   aria-label="Parametres"
-                  className="rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] grid place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
+                  className="grid place-items-center h-[40px] w-[40px] sm:h-[44px] sm:w-[44px] bg-[#303060] border-2 border-[#141433] text-[#DDD] hover:bg-[#3a3a6a] hover:text-white active:translate-y-[1px] transition-colors"
+                  style={{
+                    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.1), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+                  }}
                 >
-                  <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>settings</i>
+                  <i className="material-icons text-[20px] sm:text-[22px]" aria-hidden>settings</i>
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="top">Parametres</TooltipContent>
@@ -305,10 +370,13 @@ export default function UserBarLeft({
                 <button
                   type="button"
                   aria-label="Deconnexion"
-                  className="rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] grid place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.1)] hover:bg-[#2596FF] hover:text-white transition-colors"
+                  className="grid place-items-center h-[40px] w-[40px] sm:h-[44px] sm:w-[44px] bg-[#303060] border-2 border-[#141433] text-[#DDD] hover:bg-[#F92330] hover:text-white active:translate-y-[1px] transition-colors"
+                  style={{
+                    boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.1), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
+                  }}
                   onClick={onLogout}
                 >
-                  <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>logout</i>
+                  <i className="material-icons text-[20px] sm:text-[22px]" aria-hidden>logout</i>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Deconnexion</TooltipContent>
