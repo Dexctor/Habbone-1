@@ -216,53 +216,126 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
         <div className="bar-top flex w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] items-center justify-between">
           <div className="left flex items-center flex-1 min-w-0">
             <div
-              className="flex items-center justify-center min-w-[68px] h-[68px] rounded-[8px] mr-[12px] bg-gradient-to-b from-[#2C2C5A] to-[#1a1a3e] border border-[#3a3a6a] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              className={`relative flex items-center gap-3 rounded-[10px] pl-2 pr-3 py-2 bg-gradient-to-br from-[#2a2a5a] via-[#1f1f42] to-[#141433] border border-[#3a3a6a]/70 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 ${radio.isPlaying ? 'ring-1 ring-[#2596FF]/40' : ''}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                id="avatar-stream"
-                src={djAvatarUrl}
-                alt="Habbo DJ"
-                className="image-pixelated h-[50px] w-auto"
-              />
-            </div>
-            <div className="info-stream flex flex-col justify-between w-full">
-              <div className="text mb-[5px]">
-                <span className="text-[0.8rem] leading-[18px] text-white">
-                  <span id="programming-stream" className="font-bold">
-                    HabbOne Radio
-                  </span>{' '}
-                  <span className="text-[#BEBECE]">par</span>{' '}
-                  <span className="font-bold">Decrypt</span>
-                  {radio.isPlaying && <span className="text-[#0FD52F] text-[0.7rem] ml-2">● LIVE</span>}
-                  {radio.isLoading && <span className="text-[#FFC800] text-[0.7rem] ml-2">● ...</span>}
-                </span>
+              {/* Subtle glow when playing */}
+              {radio.isPlaying && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-[10px] bg-gradient-to-r from-[#2596FF]/0 via-[#2596FF]/10 to-[#2596FF]/0 animate-pulse"
+                />
+              )}
+
+              {/* DJ Avatar */}
+              <div className="relative flex items-center justify-center w-[64px] h-[64px] rounded-[8px] shrink-0 bg-gradient-to-b from-[#2C2C5A] to-[#1a1a3e] border border-[#3a3a6a] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  id="avatar-stream"
+                  src={djAvatarUrl}
+                  alt="Habbo DJ"
+                  className="image-pixelated h-[50px] w-auto"
+                />
+                {/* LIVE dot on avatar corner */}
+                {radio.isPlaying && (
+                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0FD52F] opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#0FD52F] ring-1 ring-[#0a6b18]/50" />
+                  </span>
+                )}
               </div>
-              <div className="range flex items-center flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={`pause flex items-center justify-center w-[30px] h-[30px] rounded-[4px] text-white mr-[10px] transition-colors ${radio.isPlaying ? 'bg-[#F92330]' : 'bg-[#2596FF]'} ${radio.isLoading ? 'animate-pulse' : ''}`}
-                  onClick={radio.toggle}
-                  aria-label={radio.isPlaying ? 'Arrêter la radio' : 'Lancer la radio'}
-                  disabled={radio.isLoading}
-                >
-                  <i className="material-icons" id="pause-stream">{radio.isPlaying ? 'stop' : 'play_arrow'}</i>
-                </button>
-                <div className="box-volume hidden md:flex items-center w-full max-w-[183px] h-[30px] bg-[#141433] rounded-[4px] mr-[10px]">
-                  <input
-                    type="range"
-                    className="volume appearance-none w-[150px] h-[5px] ml-[10%] rounded-[10px]"
-                    id="volume"
-                    min={0}
-                    max={100}
-                    value={radio.volume}
-                    onChange={handleVolumeChange}
-                    step={1}
-                    aria-label="Volume radio"
-                    style={{
-                      backgroundImage: `linear-gradient(to right, #2596FF ${radio.volume}%, #fff ${radio.volume}%)`
-                    }}
-                  />
+
+              {/* Info + controls */}
+              <div className="info-stream flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  {/* Music icon */}
+                  <i className="material-icons text-[16px] text-[#2596FF] shrink-0" aria-hidden>graphic_eq</i>
+                  <span className="flex items-baseline gap-1.5 text-[0.8rem] leading-tight min-w-0">
+                    <span id="programming-stream" className="font-bold text-white truncate">
+                      HabbOne Radio
+                    </span>
+                    <span className="text-[#BEBECE]/70 text-[0.7rem]">par</span>
+                    <span className="font-semibold text-[#2596FF] truncate">Decrypt</span>
+                  </span>
+
+                  {/* Status badge */}
+                  {radio.isPlaying && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#0FD52F]/15 border border-[#0FD52F]/30 text-[0.6rem] font-bold text-[#0FD52F] tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#0FD52F] animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
+                  {radio.isLoading && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#FFC800]/15 border border-[#FFC800]/30 text-[0.6rem] font-bold text-[#FFC800] tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FFC800] animate-pulse" />
+                      CHARGEMENT
+                    </span>
+                  )}
+                </div>
+
+                {/* Equalizer bars when playing */}
+                <div className="flex items-end gap-[3px] h-[10px] px-1" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <span
+                      key={i}
+                      className={`w-[2px] rounded-full transition-all duration-300 ${
+                        radio.isPlaying
+                          ? 'bg-gradient-to-t from-[#2596FF] to-[#7dc4ff] animate-pulse'
+                          : 'bg-[#3a3a6a] h-[3px]'
+                      }`}
+                      style={
+                        radio.isPlaying
+                          ? {
+                              height: `${20 + (Math.sin(i * 0.9) + 1) * 40}%`,
+                              animationDelay: `${i * 100}ms`,
+                              animationDuration: `${600 + (i % 3) * 200}ms`,
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+
+                {/* Controls row */}
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    className={`relative flex items-center justify-center w-[32px] h-[32px] rounded-full text-white shrink-0 transition-all duration-200 shadow-[0_2px_6px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 ${
+                      radio.isPlaying
+                        ? 'bg-gradient-to-br from-[#F92330] to-[#c41020] hover:shadow-[0_0_12px_rgba(249,35,48,0.5)]'
+                        : 'bg-gradient-to-br from-[#2596FF] to-[#1668b8] hover:shadow-[0_0_12px_rgba(37,150,255,0.5)]'
+                    } ${radio.isLoading ? 'animate-pulse cursor-wait' : ''}`}
+                    onClick={radio.toggle}
+                    aria-label={radio.isPlaying ? 'Arrêter la radio' : 'Lancer la radio'}
+                    disabled={radio.isLoading}
+                  >
+                    <i className="material-icons text-[18px]" id="pause-stream">
+                      {radio.isLoading ? 'hourglass_empty' : radio.isPlaying ? 'stop' : 'play_arrow'}
+                    </i>
+                  </button>
+
+                  {/* Volume with icon */}
+                  <div className="hidden md:flex items-center gap-2 h-[28px] px-2.5 bg-[#141433]/70 rounded-full border border-[#3a3a6a]/50">
+                    <i className="material-icons text-[14px] text-[#BEBECE]" aria-hidden>
+                      {radio.volume === 0 ? 'volume_off' : radio.volume < 50 ? 'volume_down' : 'volume_up'}
+                    </i>
+                    <input
+                      type="range"
+                      className="volume-slider appearance-none w-[120px] h-[4px] rounded-full cursor-pointer bg-[#3a3a6a]"
+                      id="volume"
+                      min={0}
+                      max={100}
+                      value={radio.volume}
+                      onChange={handleVolumeChange}
+                      step={1}
+                      aria-label="Volume radio"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, #2596FF 0%, #7dc4ff ${radio.volume}%, #3a3a6a ${radio.volume}%, #3a3a6a 100%)`,
+                      }}
+                    />
+                    <span className="text-[0.65rem] font-mono text-[#BEBECE]/80 w-[22px] text-right tabular-nums">
+                      {radio.volume}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

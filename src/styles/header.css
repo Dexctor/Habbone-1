@@ -8,7 +8,7 @@
 /* Disabled arrows state */
 .swiper-button-disabled { pointer-events: none; opacity: .5; }
 
-/* Range (player volume) unique styling */
+/* Range (player volume) unique styling — legacy */
 input.volume {
   appearance: none;
   -webkit-appearance: none;
@@ -18,6 +18,42 @@ input.volume::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px; height: 14px; border-radius: 10px;
   background: var(--blue-500, #2596FF); border: 2px solid var(--blue-500, #2596FF);
+}
+
+/* Modern volume slider for the redesigned radio */
+input.volume-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  transition: height .15s ease;
+}
+input.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2596FF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 8px rgba(37, 150, 255, 0.4);
+  cursor: grab;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+input.volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(37, 150, 255, 0.6);
+}
+input.volume-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+input.volume-slider::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2596FF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 8px rgba(37, 150, 255, 0.4);
+  cursor: grab;
+  transition: transform .15s ease;
+}
+input.volume-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
 }
 
 /* Subtle hover scale for badge boxes */
