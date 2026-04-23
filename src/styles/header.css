@@ -56,6 +56,16 @@ input.volume-slider::-moz-range-thumb:hover {
   transform: scale(1.15);
 }
 
+/* Skeleton shimmer — used by badge/mobi tiles while loading */
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.skeleton-shimmer {
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Radio equalizer bars animation */
 @keyframes radio-eq {
   0%, 100% { transform: scaleY(0.4); }

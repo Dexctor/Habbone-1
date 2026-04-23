@@ -144,68 +144,77 @@ export default function LatestBadges() {
         </header>
 
         <div className="px-[18px] py-[20px]">
-          {loading ? (
-            <div className="rounded-[4px] border border-dashed border-[#1F1F3E] px-4 py-16 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Chargement...
-            </div>
-          ) : visibleItems.length === 0 ? (
-            <div className="rounded-[4px] border border-dashed border-[#1F1F3E] px-4 py-16 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Aucun element disponible.
-            </div>
-          ) : (
-            <TooltipProvider delayDuration={150}>
-              <div className="relative overflow-hidden">
-                <AnimatePresence mode="wait" initial={false} custom={direction}>
-                  <motion.div
-                    key={`${tab}-${clampedPage}`}
-                    custom={direction}
-                    initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
-                    animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
-                    exit={reduce ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
-                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-                    className="grid grid-cols-6 gap-[3px]"
-                  >
-                    {visibleSlots.map((item, index) => (
-                      item ? (
-                        <TooltipPrimitive.Root key={`${item.code}-${index}`}>
-                          <TooltipPrimitive.Trigger asChild>
-                            <motion.div
-                              initial={reduce ? false : { opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ duration: 0.2, delay: reduce ? 0 : Math.min(index * 0.012, 0.2) }}
-                              className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                              />
-                            </motion.div>
-                          </TooltipPrimitive.Trigger>
-                          <TooltipPrimitive.Portal>
-                            <TooltipPrimitive.Content
-                              sideOffset={6}
-                              className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
-                            >
-                              {item.name}
-                              <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
-                            </TooltipPrimitive.Content>
-                          </TooltipPrimitive.Portal>
-                        </TooltipPrimitive.Root>
-                      ) : (
+          <TooltipProvider delayDuration={150}>
+            <div className="relative overflow-hidden">
+              <AnimatePresence mode="wait" initial={false} custom={direction}>
+                <motion.div
+                  key={loading ? `${tab}-loading` : `${tab}-${clampedPage}`}
+                  custom={direction}
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
+                  animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
+                  transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                  className="grid grid-cols-6 gap-[3px]"
+                >
+                  {loading
+                    ? Array.from({ length: PAGE_SIZE }, (_, index) => (
                         <div
-                          key={`empty-${index}`}
-                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
-                        />
-                      )
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </TooltipProvider>
-          )}
+                          key={`skeleton-${index}`}
+                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden relative"
+                        >
+                          <div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent skeleton-shimmer"
+                            style={{ animationDelay: `${(index % 6) * 80}ms` }}
+                          />
+                        </div>
+                      ))
+                    : visibleItems.length === 0
+                      ? Array.from({ length: PAGE_SIZE }, (_, index) => (
+                          <div
+                            key={`empty-${index}`}
+                            className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
+                          />
+                        ))
+                      : visibleSlots.map((item, index) => (
+                          item ? (
+                            <TooltipPrimitive.Root key={`${item.code}-${index}`}>
+                              <TooltipPrimitive.Trigger asChild>
+                                <motion.div
+                                  initial={reduce ? false : { opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.2, delay: reduce ? 0 : Math.min(index * 0.012, 0.2) }}
+                                  className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                  />
+                                </motion.div>
+                              </TooltipPrimitive.Trigger>
+                              <TooltipPrimitive.Portal>
+                                <TooltipPrimitive.Content
+                                  sideOffset={6}
+                                  className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
+                                >
+                                  {item.name}
+                                  <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                                </TooltipPrimitive.Content>
+                              </TooltipPrimitive.Portal>
+                            </TooltipPrimitive.Root>
+                          ) : (
+                            <div
+                              key={`empty-${index}`}
+                              className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
+                            />
+                          )
+                        ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </TooltipProvider>
         </div>
 
         {/* Pagination */}
