@@ -2,25 +2,32 @@ import 'server-only';
 
 import { directusService as directus, rItems, rItem, cItem, uItem, dItem, directusUrl, serviceToken, USERS_TABLE } from './client';
 import { directusFetch } from './fetch';
+import { TABLES, USE_V2 } from './tables';
+import { resolveUserId, resolveUserNicks, nowIso, unixSecondsToIso } from './user-cache';
 import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
 
 export type { ShopItem, ShopOrder, AdminNotification };
 
-// Real table names in the database
-const SHOP_ITEMS_TABLE = 'shop_itens';
-const SHOP_ORDERS_TABLE = 'shop_itens_mobis';
-const ADMIN_NOTIFICATIONS_TABLE = 'acp_notificacoes';
+const SHOP_ITEMS_TABLE = TABLES.shopItems;
+const SHOP_ORDERS_TABLE = TABLES.shopOrders;
+const ADMIN_NOTIFICATIONS_TABLE = TABLES.adminNotifications;
 
-// DB column names for shop_itens
-const ITEMS_FIELDS = ['id', 'nome', 'imagem', 'preco_moedas', 'qtd_disponivel', 'disponivel', 'status'];
-// DB column names for shop_itens_mobis (orders)
-const ORDERS_FIELDS = ['id', 'id_item', 'comprador', 'data', 'ip', 'status'];
-// DB column names for acp_notificacoes
-const NOTIF_FIELDS = ['id', 'texto', 'tipo', 'autor', 'data', 'status'];
+const ITEMS_FIELDS = USE_V2
+  ? ['id', 'name', 'description', 'image', 'price_coins', 'stock', 'active']
+  : ['id', 'nome', 'imagem', 'preco_moedas', 'qtd_disponivel', 'disponivel', 'status'];
 
-/**
- * Fix encoding issues in strings from Directus/MySQL.
- */
+const ORDERS_FIELDS = USE_V2
+  ? ['id', 'item', 'buyer', 'created_at', 'status']
+  : ['id', 'id_item', 'comprador', 'data', 'ip', 'status'];
+
+const NOTIF_FIELDS = USE_V2
+  ? ['id', 'message', 'severity', 'read', 'created_at']
+  : ['id', 'texto', 'tipo', 'autor', 'data', 'status'];
+
+/* ------------------------------------------------------------------ */
+/*  Encoding helper                                                    */
+/* ------------------------------------------------------------------ */
+
 function fixEncoding(value: string): string {
   if (/[\u00c0-\u00c3][\u0080-\u00bf]/.test(value)) {
     try {
@@ -43,10 +50,21 @@ function fixStr(v: unknown): string {
 /* ------------------------------------------------------------------ */
 
 function mapDbToShopItem(row: any): ShopItem {
+  if (USE_V2) {
+    return {
+      id: Number(row.id),
+      nome: fixStr(row.name),
+      descricao: row.description ? fixStr(row.description) : undefined,
+      imagem: String(row.image || ''),
+      preco: Number(row.price_coins || 0),
+      estoque: Number(row.stock || 0),
+      status: row.active ? 'ativo' : 'inativo',
+    };
+  }
   return {
     id: Number(row.id),
     nome: fixStr(row.nome),
-    descricao: undefined, // shop_itens doesn't have descricao column
+    descricao: undefined,
     imagem: String(row.imagem || ''),
     preco: Number(row.preco_moedas || 0),
     estoque: Number(row.qtd_disponivel || 0),
@@ -55,6 +73,16 @@ function mapDbToShopItem(row: any): ShopItem {
 }
 
 function mapShopItemToDb(data: Partial<ShopItem>): Record<string, unknown> {
+  if (USE_V2) {
+    const db: Record<string, unknown> = {};
+    if (data.nome !== undefined) db.name = data.nome;
+    if (data.descricao !== undefined) db.description = data.descricao ?? null;
+    if (data.imagem !== undefined) db.image = data.imagem;
+    if (data.preco !== undefined) db.price_coins = data.preco;
+    if (data.estoque !== undefined) db.stock = data.estoque;
+    if (data.status !== undefined) db.active = data.status === 'ativo';
+    return db;
+  }
   const db: Record<string, unknown> = {};
   if (data.nome !== undefined) db.nome = data.nome;
   if (data.imagem !== undefined) db.imagem = data.imagem;
@@ -64,12 +92,28 @@ function mapShopItemToDb(data: Partial<ShopItem>): Record<string, unknown> {
   return db;
 }
 
-function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): ShopOrder {
+async function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): Promise<ShopOrder> {
+  if (USE_V2) {
+    const itemId = Number(row.item || 0);
+    const item = itemsCache?.get(itemId);
+    const buyerId = Number(row.buyer || 0);
+    const buyerNick = buyerId ? (await resolveUserNicks([buyerId])).get(buyerId) ?? '' : '';
+    return {
+      id: Number(row.id),
+      user_id: buyerId,
+      user_nick: buyerNick,
+      item_id: itemId,
+      item_nome: item?.nome,
+      item_imagem: item?.imagem,
+      preco: item?.preco || 0,
+      status: (row.status as any) || 'pendente',
+    };
+  }
   const itemId = Number(row.id_item || 0);
   const item = itemsCache?.get(itemId);
   return {
     id: Number(row.id),
-    user_id: 0, // shop_itens_mobis doesn't store user_id, only comprador (nick)
+    user_id: 0,
     user_nick: fixStr(row.comprador),
     item_id: itemId,
     item_nome: item?.nome,
@@ -80,13 +124,23 @@ function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): ShopOrd
 }
 
 function mapDbToNotification(row: any): AdminNotification {
+  if (USE_V2) {
+    return {
+      id: Number(row.id),
+      type: String(row.severity || 'info'),
+      title: fixStr(row.message),
+      message: undefined,
+      link: undefined,
+      read: !!row.read,
+    };
+  }
   return {
     id: Number(row.id),
     type: String(row.tipo || ''),
     title: fixStr(row.texto),
     message: undefined,
     link: undefined,
-    read: row.status !== 'ativo', // ativo = unread, anything else = read
+    read: row.status !== 'ativo',
   };
 }
 
@@ -98,8 +152,12 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
   try {
     const filter: Record<string, unknown> = {};
     if (onlyActive) {
-      filter.status = { _eq: 'ativo' };
-      filter.disponivel = { _eq: 's' };
+      if (USE_V2) {
+        filter.active = { _eq: true };
+      } else {
+        filter.status = { _eq: 'ativo' };
+        filter.disponivel = { _eq: 's' };
+      }
     }
     const rows = await directus.request(
       rItems(SHOP_ITEMS_TABLE, {
@@ -118,11 +176,7 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
 
 export async function getShopItem(id: number): Promise<ShopItem | null> {
   try {
-    const row = await directus.request(
-      rItem(SHOP_ITEMS_TABLE, id, {
-        fields: ITEMS_FIELDS,
-      })
-    );
+    const row = await directus.request(rItem(SHOP_ITEMS_TABLE, id, { fields: ITEMS_FIELDS }));
     return row ? mapDbToShopItem(row) : null;
   } catch {
     return null;
@@ -131,15 +185,17 @@ export async function getShopItem(id: number): Promise<ShopItem | null> {
 
 export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopItem | null> {
   try {
-    const dbData = {
-      ...mapShopItemToDb(data),
-      autor: 'admin',
-      data: Math.floor(Date.now() / 1000),
-      tipo: 1,
-      id_util: 1,
-      gratis: 'n',
-      qtd_comprado: 0,
-    };
+    const dbData = USE_V2
+      ? { ...mapShopItemToDb(data), sold_count: 0, free: false }
+      : {
+          ...mapShopItemToDb(data),
+          autor: 'admin',
+          data: Math.floor(Date.now() / 1000),
+          tipo: 1,
+          id_util: 1,
+          gratis: 'n',
+          qtd_comprado: 0,
+        };
     const row = await directus.request(cItem(SHOP_ITEMS_TABLE, dbData));
     return row ? mapDbToShopItem(row) : null;
   } catch (error: any) {
@@ -173,6 +229,22 @@ export async function deleteShopItem(id: number): Promise<boolean> {
 /*  Shop Orders                                                        */
 /* ------------------------------------------------------------------ */
 
+function appStatusToDb(status: string): string {
+  if (USE_V2) {
+    if (status === 'pendente') return 'pending';
+    if (status === 'entregue') return 'delivered';
+    if (status === 'cancelado') return 'cancelled';
+    return status;
+  }
+  if (status === 'pendente') return 'ativo';
+  return status;
+}
+
+function dbStatusToAppFilter(): Record<string, unknown> | null {
+  // Not used directly; inlined below for clarity
+  return null;
+}
+
 export async function listShopOrders(options?: {
   status?: string;
   limit?: number;
@@ -181,13 +253,7 @@ export async function listShopOrders(options?: {
   const { status, limit = 50, page = 1 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
-    if (status) {
-      // Map app status to DB status
-      if (status === 'pendente') filter.status = { _eq: 'ativo' };
-      else if (status === 'entregue') filter.status = { _eq: 'entregue' };
-      else if (status === 'cancelado') filter.status = { _eq: 'cancelado' };
-      else filter.status = { _eq: status };
-    }
+    if (status) filter.status = { _eq: appStatusToDb(status) };
 
     const rows = await directus.request(
       rItems(SHOP_ORDERS_TABLE, {
@@ -199,30 +265,26 @@ export async function listShopOrders(options?: {
       })
     );
 
-    // Build items cache for order enrichment
     const items = await listShopItems(false);
-    const itemsMap = new Map(items.map(i => [i.id, i]));
+    const itemsMap = new Map(items.map((i) => [i.id, i]));
 
     // Count total
     const countParams: Record<string, string> = {};
-    if (status === 'pendente') countParams['filter[status][_eq]'] = 'ativo';
-    else if (status) countParams[`filter[status][_eq]`] = status;
+    if (status) countParams['filter[status][_eq]'] = appStatusToDb(status);
 
     let total = 0;
     try {
       const countJson = await directusFetch<{ meta?: { total_count?: number } }>(
         `/items/${SHOP_ORDERS_TABLE}`,
-        { params: { limit: '0', meta: 'total_count', ...countParams } }
+        { params: { limit: '0', meta: 'total_count', ...countParams } },
       );
       total = Number(countJson?.meta?.total_count ?? 0);
     } catch {
       total = (rows as any[])?.length ?? 0;
     }
 
-    return {
-      data: ((rows || []) as any[]).map(r => mapDbToShopOrder(r, itemsMap)),
-      total,
-    };
+    const data = await Promise.all(((rows || []) as any[]).map((r) => mapDbToShopOrder(r, itemsMap)));
+    return { data, total };
   } catch (error) {
     console.error('[Shop] Failed to list orders:', error);
     return { data: [], total: 0 };
@@ -238,13 +300,24 @@ export async function createShopOrder(data: {
   preco: number;
 }): Promise<ShopOrder | null> {
   try {
-    const dbData = {
-      id_item: data.item_id,
-      comprador: data.user_nick,
-      data: Math.floor(Date.now() / 1000),
-      ip: '0.0.0.0',
-      status: 'ativo', // 'ativo' in DB = 'pendente' in app
-    };
+    let dbData: Record<string, unknown>;
+    if (USE_V2) {
+      const buyerId = data.user_id || (await resolveUserId(data.user_nick)) || null;
+      dbData = {
+        item: data.item_id,
+        buyer: buyerId,
+        price_paid: data.preco,
+        status: 'pending',
+      };
+    } else {
+      dbData = {
+        id_item: data.item_id,
+        comprador: data.user_nick,
+        data: Math.floor(Date.now() / 1000),
+        ip: '0.0.0.0',
+        status: 'ativo',
+      };
+    }
     const row = await directus.request(cItem(SHOP_ORDERS_TABLE, dbData));
     return (row || null) as ShopOrder | null;
   } catch (error) {
@@ -256,11 +329,7 @@ export async function createShopOrder(data: {
 export async function updateShopOrder(id: number, data: Partial<ShopOrder>): Promise<ShopOrder | null> {
   try {
     const dbData: Record<string, unknown> = {};
-    if (data.status) {
-      // Map app status back to DB
-      if (data.status === 'pendente') dbData.status = 'ativo';
-      else dbData.status = data.status; // entregue, cancelado stay as-is
-    }
+    if (data.status) dbData.status = appStatusToDb(data.status);
     const row = await directus.request(uItem(SHOP_ORDERS_TABLE, id, dbData));
     return (row || null) as ShopOrder | null;
   } catch (error) {
@@ -270,7 +339,7 @@ export async function updateShopOrder(id: number, data: Partial<ShopOrder>): Pro
 }
 
 /* ------------------------------------------------------------------ */
-/*  Purchase logic (atomic: check coins → deduct → create order)       */
+/*  Purchase logic                                                     */
 /* ------------------------------------------------------------------ */
 
 export async function purchaseItem(userId: number, userNick: string, itemId: number): Promise<{
@@ -283,15 +352,19 @@ export async function purchaseItem(userId: number, userNick: string, itemId: num
   if (item.status !== 'ativo') return { ok: false, error: 'Article indisponible' };
   if (item.estoque <= 0) return { ok: false, error: 'Rupture de stock' };
 
-  const userRes = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}?fields=id,nick,moedas`, {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
+  // Users stay in legacy table until Session C; here we fetch through USERS_TABLE
+  // which points to `usuarios` today and will point to `users` once users.ts
+  // migration lands. Column names: id, nick, moedas (legacy) vs id, nick, coins (v2)
+  const coinsCol = USE_V2 ? 'coins' : 'moedas';
+  const userRes = await fetch(
+    `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}?fields=id,nick,${coinsCol}`,
+    { headers: { Authorization: `Bearer ${serviceToken}` }, cache: 'no-store' },
+  );
   if (!userRes.ok) return { ok: false, error: 'Utilisateur introuvable' };
   const userData = (await userRes.json())?.data;
   if (!userData) return { ok: false, error: 'Utilisateur introuvable' };
 
-  const currentCoins = Number(userData.moedas) || 0;
+  const currentCoins = Number(userData[coinsCol]) || 0;
   if (currentCoins < item.preco) {
     return { ok: false, error: `Coins insuffisants (${currentCoins}/${item.preco})` };
   }
@@ -300,7 +373,7 @@ export async function purchaseItem(userId: number, userNick: string, itemId: num
   const patchRes = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ moedas: newBalance }),
+    body: JSON.stringify({ [coinsCol]: newBalance }),
   });
   if (!patchRes.ok) return { ok: false, error: 'Erreur lors du paiement' };
 
@@ -328,7 +401,7 @@ export async function purchaseItem(userId: number, userNick: string, itemId: num
 }
 
 /* ------------------------------------------------------------------ */
-/*  Admin Notifications (acp_notificacoes)                             */
+/*  Admin Notifications                                                */
 /* ------------------------------------------------------------------ */
 
 export async function listAdminNotifications(options?: {
@@ -338,7 +411,10 @@ export async function listAdminNotifications(options?: {
   const { unreadOnly = false, limit = 50 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
-    if (unreadOnly) filter.status = { _eq: 'ativo' }; // ativo = unread
+    if (unreadOnly) {
+      if (USE_V2) filter.read = { _eq: false };
+      else filter.status = { _eq: 'ativo' };
+    }
 
     const rows = await directus.request(
       rItems(ADMIN_NOTIFICATIONS_TABLE, {
@@ -362,13 +438,19 @@ export async function createAdminNotification(data: {
   link?: string;
 }): Promise<AdminNotification | null> {
   try {
-    const dbData = {
-      texto: data.title + (data.message ? ` — ${data.message}` : ''),
-      tipo: data.type === 'shop_order' ? 'success' : 'info',
-      autor: 'system',
-      data: Math.floor(Date.now() / 1000),
-      status: 'ativo',
-    };
+    const dbData = USE_V2
+      ? {
+          message: data.title + (data.message ? ` — ${data.message}` : ''),
+          severity: data.type === 'shop_order' ? 'success' : 'info',
+          read: false,
+        }
+      : {
+          texto: data.title + (data.message ? ` — ${data.message}` : ''),
+          tipo: data.type === 'shop_order' ? 'success' : 'info',
+          autor: 'system',
+          data: Math.floor(Date.now() / 1000),
+          status: 'ativo',
+        };
     const row = await directus.request(cItem(ADMIN_NOTIFICATIONS_TABLE, dbData));
     return row ? mapDbToNotification(row) : null;
   } catch (error) {
@@ -379,7 +461,8 @@ export async function createAdminNotification(data: {
 
 export async function markNotificationRead(id: number): Promise<boolean> {
   try {
-    await directus.request(uItem(ADMIN_NOTIFICATIONS_TABLE, id, { status: 'lido' }));
+    const patch = USE_V2 ? { read: true } : { status: 'lido' };
+    await directus.request(uItem(ADMIN_NOTIFICATIONS_TABLE, id, patch));
     return true;
   } catch {
     return false;

@@ -2,8 +2,12 @@ import 'server-only';
 
 import { USERS_TABLE } from './client';
 import { directusFetch } from './fetch';
+import { TABLES, USE_V2 } from './tables';
 
-// Mapping: role name (lowercase) -> badge emblema ID
+const BADGES_TABLE = TABLES.badges;
+const USER_BADGES_TABLE = TABLES.userBadges;
+
+// Mapping: role name (lowercase) -> badge id
 const ROLE_BADGE_MAP: Record<string, number> = {
   'fondateur': 5,
   'responsable': 6,
@@ -16,12 +20,20 @@ const ROLE_BADGE_MAP: Record<string, number> = {
   'member': 13,
 };
 
+const UB_FIELDS = USE_V2
+  ? { badge: 'badge', user: 'user', source: 'source', active: 'active' }
+  : { badge: 'id_emblema', user: 'id_usuario', source: 'autor_tipo', active: 'status' };
+
+const BADGE_FIELDS = USE_V2
+  ? { id: 'id', name: 'name', image: 'image', active: 'active' }
+  : { id: 'id', name: 'nome', image: 'imagem', active: 'status' };
+
 async function userHasBadge(userId: number, badgeId: number): Promise<boolean> {
   try {
-    const json = await directusFetch<{ data: { id: number }[] }>('/items/emblemas_usuario', {
+    const json = await directusFetch<{ data: { id: number }[] }>(`/items/${USER_BADGES_TABLE}`, {
       params: {
-        'filter[id_usuario][_eq]': String(userId),
-        'filter[id_emblema][_eq]': String(badgeId),
+        [`filter[${UB_FIELDS.user}][_eq]`]: String(userId),
+        [`filter[${UB_FIELDS.badge}][_eq]`]: String(badgeId),
         limit: '1',
         fields: 'id',
       },
@@ -33,20 +45,27 @@ async function userHasBadge(userId: number, badgeId: number): Promise<boolean> {
 }
 
 async function grantBadge(userId: number, badgeId: number): Promise<void> {
-  await directusFetch('/items/emblemas_usuario', {
+  const body: Record<string, unknown> = USE_V2
+    ? {
+        [UB_FIELDS.badge]: badgeId,
+        [UB_FIELDS.user]: userId,
+        [UB_FIELDS.source]: 'earned',
+        active: true,
+      }
+    : {
+        [UB_FIELDS.badge]: badgeId,
+        [UB_FIELDS.user]: userId,
+        [UB_FIELDS.source]: 'ganhado',
+        autor: 'system',
+        data: Math.floor(Date.now() / 1000),
+        status: 'ativo',
+      };
+  await directusFetch(`/items/${USER_BADGES_TABLE}`, {
     method: 'POST',
-    body: {
-      id_emblema: badgeId,
-      id_usuario: userId,
-      autor_tipo: 'ganhado',
-      autor: 'system',
-      data: Math.floor(Date.now() / 1000),
-      status: 'ativo',
-    },
+    body,
   });
 }
 
-// Mapping: role name (lowercase) -> badge image path
 export const ROLE_BADGE_IMAGE: Record<string, string> = {
   'fondateur': '/badges-roles/HOFONDA.gif',
   'responsable': '/badges-roles/HORESP.gif',
@@ -68,34 +87,44 @@ export type UserBadge = {
 /** Get all badges owned by a user */
 export async function getUserBadges(userId: number): Promise<UserBadge[]> {
   try {
-    // Get user's badge IDs
-    const json = await directusFetch<{ data: { id_emblema: number }[] }>('/items/emblemas_usuario', {
-      params: {
-        'filter[id_usuario][_eq]': String(userId),
-        'filter[status][_eq]': 'ativo',
-        fields: 'id_emblema',
-        limit: '50',
-      },
+    const userBadgeFilter: Record<string, string> = {
+      [`filter[${UB_FIELDS.user}][_eq]`]: String(userId),
+      fields: UB_FIELDS.badge,
+      limit: '50',
+    };
+    if (USE_V2) {
+      userBadgeFilter[`filter[${UB_FIELDS.active}][_eq]`] = 'true';
+    } else {
+      userBadgeFilter[`filter[${UB_FIELDS.active}][_eq]`] = 'ativo';
+    }
+
+    const json = await directusFetch<{ data: Record<string, unknown>[] }>(`/items/${USER_BADGES_TABLE}`, {
+      params: userBadgeFilter,
     });
     const rows = json?.data ?? [];
     if (!Array.isArray(rows) || rows.length === 0) return [];
 
-    const badgeIds = rows.map((r) => Number(r.id_emblema)).filter((id) => id > 0);
+    const badgeIds = rows.map((r) => Number(r[UB_FIELDS.badge])).filter((id) => id > 0);
     if (badgeIds.length === 0) return [];
 
-    // Get badge details
-    const bJson = await directusFetch<{ data: { id: number; nome: string; imagem: string }[] }>('/items/emblemas', {
-      params: {
-        'filter[id][_in]': badgeIds.join(','),
-        'filter[status][_eq]': 'ativo',
-        fields: 'id,nome,imagem',
-        limit: '50',
-      },
+    const badgeFilter: Record<string, string> = {
+      [`filter[${BADGE_FIELDS.id}][_in]`]: badgeIds.join(','),
+      fields: `${BADGE_FIELDS.id},${BADGE_FIELDS.name},${BADGE_FIELDS.image}`,
+      limit: '50',
+    };
+    if (USE_V2) {
+      badgeFilter[`filter[${BADGE_FIELDS.active}][_eq]`] = 'true';
+    } else {
+      badgeFilter[`filter[${BADGE_FIELDS.active}][_eq]`] = 'ativo';
+    }
+
+    const bJson = await directusFetch<{ data: Record<string, unknown>[] }>(`/items/${BADGES_TABLE}`, {
+      params: badgeFilter,
     });
     return (bJson?.data ?? []).map((b) => ({
-      id: Number(b.id),
-      nome: String(b.nome || ''),
-      imagem: String(b.imagem || ''),
+      id: Number(b[BADGE_FIELDS.id]),
+      nome: String(b[BADGE_FIELDS.name] || ''),
+      imagem: String(b[BADGE_FIELDS.image] || ''),
     }));
   } catch {
     return [];
@@ -107,7 +136,12 @@ export function getRoleBadgeImage(roleName: string): string | null {
   return ROLE_BADGE_IMAGE[roleName.toLowerCase().trim()] ?? null;
 }
 
-/** Get role badge images for a list of nicks (batch) */
+/**
+ * Get role badge images for a list of nicks (batch).
+ * Note: users.ts refactor not done yet — this still reads the legacy `role`
+ * string column on usuarios. When Session C lands, this will read directus_role
+ * and resolve through directus_roles.name instead.
+ */
 export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<string, string | null>> {
   const result: Record<string, string | null> = {};
   if (!nicks.length) return result;
@@ -133,24 +167,21 @@ export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<str
 /**
  * Ensure a user has the badge corresponding to their role.
  * Also ensures they have the "member" badge.
- * Call this on login or role change.
  */
 export async function ensureRoleBadge(userId: number, roleName: string): Promise<void> {
   try {
     const key = roleName.toLowerCase().trim();
 
-    // Always grant member badge
     const memberBadgeId = ROLE_BADGE_MAP['member'];
     if (memberBadgeId && !(await userHasBadge(userId, memberBadgeId))) {
       await grantBadge(userId, memberBadgeId);
     }
 
-    // Grant role-specific badge
     const roleBadgeId = ROLE_BADGE_MAP[key];
     if (roleBadgeId && roleBadgeId !== memberBadgeId && !(await userHasBadge(userId, roleBadgeId))) {
       await grantBadge(userId, roleBadgeId);
     }
   } catch {
-    // Non-blocking: badge assignment failure should not break login/role change
+    // Non-blocking
   }
 }
