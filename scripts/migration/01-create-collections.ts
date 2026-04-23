@@ -187,7 +187,11 @@ const collections: CollectionDef[] = [
       id,
       { ...text('nick', { maxLength: 80, nullable: false }) },
       { ...text('email', { maxLength: 320 }) },
-      { ...text('password', { maxLength: 255, nullable: false }), meta: { interface: 'input-hash', readonly: true, special: ['hash'] } },
+      // IMPORTANT: password is stored as-is (bcrypt hash from the app). We do
+      // NOT use special=['hash'] here: Directus would re-hash the bcrypt string
+      // in Argon2 on insert, breaking all existing users. The app hashes via
+      // bcrypt in server/directus/security.ts before writing.
+      { ...text('password', { maxLength: 255, nullable: false }) },
       text('avatar_url', { maxLength: 500 }),
       text('background_url', { maxLength: 500 }),
       longText('mission', { nullable: true }),
