@@ -8,6 +8,7 @@ import {
   getAllAchievements,
 } from '@/server/habbo-cache';
 import { enrichHabboBadges, buildHabboProfilePayload } from '@/server/habbo-profile-core';
+import { syncHabboName } from '@/server/directus/pseudo-changes';
 import { HabboProfileQuerySchema, searchParamsToObject, formatZodError, buildError } from '@/types/api';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,11 @@ export async function GET(req: Request) {
         buildError('Utilisateur Habbo introuvable.', { code: 'HABBO_NOT_FOUND' }),
         { status: 404 }
       );
+    }
+
+    // Passive pseudo change detection — every profile visit feeds the tracker
+    if (core?.name) {
+      void syncHabboName(String(uniqueId), String(core.name));
     }
 
     // Lite mode: just core user data, no details

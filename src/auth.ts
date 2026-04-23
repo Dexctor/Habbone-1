@@ -14,6 +14,7 @@ import {
 import { getRoleById } from '@/server/directus/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
 import { ensureRoleBadge } from '@/server/directus/badges';
+import { syncHabboName } from '@/server/directus/pseudo-changes';
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
@@ -56,6 +57,18 @@ export const authOptions: NextAuthOptions = {
         try {
           const core = await getHabboUserByNameForHotel(user.nick, hotelCode, { cache: false });
           void tryUpdateHabboSnapshotForUser(Number(user.id), core);
+
+          // Detect pseudo change : compare Habbo API nick with stored one
+          const apiUniqueId = (core as any)?.uniqueId;
+          const apiNick = (core as any)?.name;
+          const storedNick = (user as any)?.habbo_name || user.nick;
+          if (apiUniqueId && apiNick) {
+            void syncHabboName(String(apiUniqueId), String(apiNick), {
+              hotel: hotelCode,
+              userId: Number(user.id),
+              previousNick: storedNick ? String(storedNick) : undefined,
+            });
+          }
         } catch {}
 
         // ── Unified role system: read directus_role_id from usuarios ──
