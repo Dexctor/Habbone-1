@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `users` ← `usuarios` | 23 | 23 | ✅ |
 | `article_categories` ← `noticias_cat` | 34 | 34 | ✅ |
-| `articles` ← `noticias` | 97 | **90** | ⚠️ 7 manquants |
+| `articles` ← `noticias` | 97 | **97** | ✅ (après ALTER TABLE body LONGTEXT) |
 | `article_comments` ← `noticias_coment` | 7 | 7 | ✅ |
 | `article_comment_likes` ← `noticias_coment_curtidas` | 12 | 9 | ℹ️ 3 likes sans auteur résoluble, ignorés |
 | `forum_categories` ← `forum_cat` | 13 | 13 | ✅ |
@@ -22,44 +22,25 @@
 | `user_badges` ← `emblemas_usuario` | 30 | 30 | ✅ |
 | `admin_notifications` ← `acp_notificacoes` | 59 | 59 | ✅ |
 
-## 7 articles non migrés (à réparer)
+## Articles manquants → résolus ✅
 
-La colonne `articles.body` est créée par Directus en type `TEXT` (max 65KB).
-Les 7 articles ci-dessous ont un HTML qui dépasse cette limite à cause
-d'**images base64 inline** dans le corps du texte.
+Les 7 articles qui avaient échoué à cause de la limite TEXT (65KB) de
+Directus sur les colonnes body/content ont été récupérés après un
+`ALTER TABLE ... MODIFY COLUMN ... LONGTEXT` exécuté manuellement sur
+les 4 collections concernées :
 
-| Legacy ID | Titre |
-|---|---|
-| 18 | Achetez votre Mascotte Canard |
-| 29 | Nouveau mobis NFT : Action Figure Noob |
-| 31 | Le Calendrier des cadeaux est de retour |
-| 40 | Pack Feu Follet |
-| 41 | DR Sports: Coupe du monde féminine |
-| 42 | Pack Maison De Bonnie Blond À Malibu |
-| 49 | Rare Statue De Lion Gardien |
-
-### Options pour récupérer ces articles
-
-**Option A — Nettoyer le HTML source côté `noticias`** (recommandé)
-Remplacer les `<img src="data:image/png;base64,...">` par de vraies URLs
-(upload dans Directus files puis pointer sur l'asset). Ensuite relancer
-`npm run migrate:data`.
-
-**Option B — Agrandir la colonne `body` côté MySQL** (hack temporaire)
-Se connecter en SSH au VPS et exécuter :
 ```sql
 ALTER TABLE articles MODIFY COLUMN body LONGTEXT;
--- idem pour les tables qui pourraient en souffrir
 ALTER TABLE forum_topics MODIFY COLUMN body LONGTEXT;
 ALTER TABLE article_comments MODIFY COLUMN content LONGTEXT;
 ALTER TABLE forum_comments MODIFY COLUMN content LONGTEXT;
 ```
-Puis relancer `npm run migrate:data`. Directus acceptera les gros contenus.
 
-**Option C — Ignorer**
-Ces articles sont peu importants (promotions de mobiliers datées). Tu peux
-les considérer comme archivés et ne pas les migrer. L'app v2 continuera
-sans eux.
+Ces ALTER devront être rejoués si l'on reconstruit l'environnement depuis
+zéro. Voir `scripts/migration/01-create-collections.ts` pour une éventuelle
+amélioration future : forcer `longtext` dès la création (Directus ne le
+supporte pas natif aujourd'hui, un workaround via l'endpoint schema pourrait
+être ajouté).
 
 ## Warnings (auteurs non résolus, non bloquants)
 
