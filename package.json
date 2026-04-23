@@ -14,6 +14,7 @@
     "migrate:create": "tsx scripts/migration/01-create-collections.ts",
     "migrate:data:dry": "tsx scripts/migration/02-migrate-data.ts --dry-run",
     "migrate:data": "tsx scripts/migration/02-migrate-data.ts",
+    "migrate:backfill": "tsx scripts/migration/03-backfill-content.ts",
     "tw:init": "tailwindcss init -p"
   },
   "dependencies": {
