@@ -11,6 +11,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test \"src/**/__tests__/**/*.test.ts\"",
     "setup:admin-logs": "tsx scripts/setup-admin-logs.ts",
+    "migrate:create": "tsx scripts/migration/01-create-collections.ts",
+    "migrate:data:dry": "tsx scripts/migration/02-migrate-data.ts --dry-run",
+    "migrate:data": "tsx scripts/migration/02-migrate-data.ts",
     "tw:init": "tailwindcss init -p"
   },
   "dependencies": {
