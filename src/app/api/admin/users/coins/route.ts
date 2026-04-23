@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
 import { directusUrl, serviceToken, USERS_TABLE } from '@/server/directus/client'
+import { guardTargetUser, isCallerFounder } from '@/server/admin-guards'
+import { logAdminAction } from '@/server/directus/admin-logs'
+
+const MAX_BALANCE = 10_000_000
 
 const BodySchema = z.object({
   userId: z.string().min(1),
@@ -31,7 +35,7 @@ async function updateUserCoins(id: string, newBalance: number) {
   return json?.data ?? null
 }
 
-export const POST = withAdmin(async (req) => {
+export const POST = withAdmin(async (req, { user: caller }) => {
   const body = await req.json().catch(() => null)
   const parsed = BodySchema.safeParse(body)
   if (!parsed.success) {
@@ -41,6 +45,14 @@ export const POST = withAdmin(async (req) => {
 
   const { userId, amount } = parsed.data
 
+  const guard = await guardTargetUser({
+    callerId: caller?.id,
+    callerIsFounder: isCallerFounder(caller),
+    targetUserId: userId,
+    action: 'coins',
+  })
+  if (!guard.ok) return guard.response
+
   const user = await getUserById(userId)
   if (!user) {
     return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
@@ -49,10 +61,31 @@ export const POST = withAdmin(async (req) => {
   const currentBalance = Number(user.moedas) || 0
   const newBalance = currentBalance + amount
 
+  if (newBalance > MAX_BALANCE) {
+    return NextResponse.json(
+      { error: `Solde maximum depasse (${MAX_BALANCE.toLocaleString('fr-FR')})` },
+      { status: 400 }
+    )
+  }
+
   const updated = await updateUserCoins(userId, newBalance)
   if (!updated) {
     return NextResponse.json({ error: 'Echec de la mise a jour' }, { status: 500 })
   }
+
+  await logAdminAction({
+    action: 'user.coins_grant',
+    admin_id: String(caller?.id || ''),
+    admin_name: caller?.nick ?? undefined,
+    target_type: 'user',
+    target_id: guard.target.id,
+    details: {
+      nick: user.nick,
+      amount,
+      previous: currentBalance,
+      new_balance: newBalance,
+    },
+  })
 
   return NextResponse.json({
     ok: true,

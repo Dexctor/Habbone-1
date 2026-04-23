@@ -11,6 +11,7 @@ export type AdminAction =
     | "user.unban"
     | "user.delete"
     | "user.role_change"
+    | "user.coins_grant"
     | "content.delete"
     | "content.update";
 
