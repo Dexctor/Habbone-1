@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { adminCount, adminCountUsers } from '@/server/directus/admin';
+import { TABLES } from '@/server/directus/tables';
 import {
   adminListForumTopics,
   adminListForumPosts,
@@ -84,12 +85,12 @@ export default async function AdminPage() {
     adminListForumPosts(200).catch(() => []),
     adminListNews(200).catch(() => []),
     adminListStories(100).catch(() => []),
-    adminCount('forum_topicos').catch(() => 0),
-    adminCount('noticias').catch(() => 0),
+    adminCount(TABLES.forumTopics).catch(() => 0),
+    adminCount(TABLES.articles).catch(() => 0),
     adminCountUsers().catch(() => 0),
     adminCount('directus_users').catch(() => 0),
-    adminCount('forum_coment').catch(() => 0),
-    adminCount('noticias_coment').catch(() => 0),
+    adminCount(TABLES.forumComments).catch(() => 0),
+    adminCount(TABLES.articleComments).catch(() => 0),
     adminListForumComments(100).catch(() => []),
     adminListNewsComments(100).catch(() => []),
   ]);

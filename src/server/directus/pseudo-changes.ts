@@ -1,9 +1,39 @@
 import 'server-only';
 
-import { directusService as directus, rItems, cItem, uItem, USERS_TABLE } from './client';
+import { directusService as directus, rItems, cItem, uItem } from './client';
 import { directusFetch } from './fetch';
+import { TABLES, USE_V2 } from './tables';
+import { resolveUserId, isoToUnixSeconds } from './user-cache';
 
-const TABLE = 'pseudo_changes';
+const TABLE = TABLES.pseudoChanges;
+const USERS_TABLE = TABLES.users;
+
+/* ------------------------------------------------------------------ */
+/*  Field maps                                                         */
+/* ------------------------------------------------------------------ */
+
+const FIELDS = USE_V2
+  ? {
+      id: 'id',
+      uniqueId: 'habbo_unique_id',
+      oldNick: 'old_nick',
+      newNick: 'new_nick',
+      hotel: 'hotel',
+      user: 'user',
+      changedAt: 'created_at',
+    }
+  : {
+      id: 'id',
+      uniqueId: 'habbo_unique_id',
+      oldNick: 'old_nick',
+      newNick: 'new_nick',
+      hotel: 'hotel',
+      user: 'user_id',
+      changedAt: 'changed_at',
+    };
+
+const SELECT_FIELDS = [FIELDS.id, FIELDS.uniqueId, FIELDS.oldNick, FIELDS.newNick, FIELDS.hotel, FIELDS.user, FIELDS.changedAt];
+const SORT = [`-${FIELDS.changedAt}`, '-id'];
 
 export interface PseudoChange {
   id: number;
@@ -15,35 +45,44 @@ export interface PseudoChange {
   changed_at: number; // unix seconds
 }
 
+function mapRow(row: any): PseudoChange {
+  const rawChangedAt = row[FIELDS.changedAt];
+  let changedAtUnix = 0;
+  if (USE_V2) {
+    changedAtUnix = isoToUnixSeconds(rawChangedAt) ?? 0;
+  } else {
+    changedAtUnix = Number(rawChangedAt) || 0;
+  }
+  return {
+    id: Number(row[FIELDS.id]),
+    habbo_unique_id: String(row[FIELDS.uniqueId] || ''),
+    old_nick: String(row[FIELDS.oldNick] || ''),
+    new_nick: String(row[FIELDS.newNick] || ''),
+    hotel: String(row[FIELDS.hotel] || ''),
+    user_id: row[FIELDS.user] ? Number(row[FIELDS.user]) : null,
+    changed_at: changedAtUnix,
+  };
+}
+
 /* ------------------------------------------------------------------ */
-/*  In-memory dedup (avoid spamming DB on repeated syncs)              */
+/*  Dedup cache                                                        */
 /* ------------------------------------------------------------------ */
 
 type DedupEntry = { lastSeenNick: string; lastSyncAt: number };
 const DEDUP_CACHE = new Map<string, DedupEntry>();
-const DEDUP_TTL_MS = 5 * 60 * 1000; // 5 minutes: re-check after this window
+const DEDUP_TTL_MS = 5 * 60 * 1000;
 
 /* ------------------------------------------------------------------ */
-/*  Detect + log a pseudo change                                       */
+/*  syncHabboName                                                      */
 /* ------------------------------------------------------------------ */
 
-/**
- * Sync the current Habbo nick against the last stored one.
- * If different → log to pseudo_changes and update the stored snapshot.
- *
- * Non-blocking: all errors are silently swallowed.
- *
- * @param uniqueId Habbo uniqueId (immutable), e.g. "hhfr-abc123..."
- * @param currentNick Current nick from Habbo API
- * @param options hotel / userId / previousNick (if known)
- */
 export async function syncHabboName(
   uniqueId: string,
   currentNick: string,
   options?: {
     hotel?: string;
     userId?: number;
-    previousNick?: string; // if provided, skip the DB lookup
+    previousNick?: string;
   },
 ): Promise<{ changed: boolean; oldNick?: string } | null> {
   try {
@@ -53,55 +92,54 @@ export async function syncHabboName(
 
     const hotel = String(options?.hotel || detectHotelFromUniqueId(cleanId)).toLowerCase();
 
-    // In-memory dedup to avoid hitting DB on every page visit
     const cacheKey = cleanId;
     const cached = DEDUP_CACHE.get(cacheKey);
     if (cached && Date.now() - cached.lastSyncAt < DEDUP_TTL_MS) {
       if (cached.lastSeenNick === cleanNick) {
-        // Same nick, checked recently → nothing to do
         return { changed: false };
       }
-      // Nick changed during the cache window → fall through to log
     }
 
-    // Figure out the "previous nick" — from options, or look it up
     let previousNick = options?.previousNick ?? null;
-
     if (previousNick === null) {
-      // Look up most recent stored nick for this uniqueId
       previousNick = await getLastKnownNick(cleanId);
     }
 
-    // First time we see this user — store baseline, no change logged
     if (previousNick === null) {
       DEDUP_CACHE.set(cacheKey, { lastSeenNick: cleanNick, lastSyncAt: Date.now() });
       return { changed: false };
     }
 
     if (previousNick === cleanNick) {
-      // No change — just update dedup cache
       DEDUP_CACHE.set(cacheKey, { lastSeenNick: cleanNick, lastSyncAt: Date.now() });
       return { changed: false };
     }
 
     // CHANGE DETECTED — log it
-    await directus.request(
-      cItem(TABLE, {
-        habbo_unique_id: cleanId,
-        old_nick: previousNick,
-        new_nick: cleanNick,
-        hotel,
-        user_id: options?.userId ?? null,
-        changed_at: Math.floor(Date.now() / 1000),
-      } as any),
-    );
+    const payload: Record<string, unknown> = USE_V2
+      ? {
+          [FIELDS.uniqueId]: cleanId,
+          [FIELDS.oldNick]: previousNick,
+          [FIELDS.newNick]: cleanNick,
+          [FIELDS.hotel]: hotel,
+          [FIELDS.user]: options?.userId ?? null,
+        }
+      : {
+          [FIELDS.uniqueId]: cleanId,
+          [FIELDS.oldNick]: previousNick,
+          [FIELDS.newNick]: cleanNick,
+          [FIELDS.hotel]: hotel,
+          [FIELDS.user]: options?.userId ?? null,
+          [FIELDS.changedAt]: Math.floor(Date.now() / 1000),
+        };
+
+    await directus.request(cItem(TABLE, payload as any));
 
     // Update the user's habbo_name snapshot if userId is known
     if (options?.userId) {
       try {
-        await directus.request(
-          uItem(USERS_TABLE, options.userId, { habbo_name: cleanNick } as any),
-        );
+        const patch = USE_V2 ? { habbo_name: cleanNick } : { habbo_name: cleanNick };
+        await directus.request(uItem(USERS_TABLE, options.userId, patch as any));
       } catch { /* silent */ }
     }
 
@@ -113,28 +151,26 @@ export async function syncHabboName(
   }
 }
 
-/**
- * Find the last known nick for a given uniqueId.
- * Checks the most recent pseudo_changes entry, then falls back to usuarios.habbo_name.
- * Returns null if completely unknown.
- */
+/* ------------------------------------------------------------------ */
+/*  getLastKnownNick                                                   */
+/* ------------------------------------------------------------------ */
+
 async function getLastKnownNick(uniqueId: string): Promise<string | null> {
   try {
-    // Check recent pseudo_changes for this uniqueId
     const recent = (await directus.request(
       rItems(TABLE, {
-        filter: { habbo_unique_id: { _eq: uniqueId } } as any,
-        sort: ['-changed_at'] as any,
+        filter: { [FIELDS.uniqueId]: { _eq: uniqueId } } as any,
+        sort: [`-${FIELDS.changedAt}`] as any,
         limit: 1,
-        fields: ['new_nick'] as any,
+        fields: [FIELDS.newNick] as any,
       } as any),
     )) as any[];
 
-    if (Array.isArray(recent) && recent.length > 0 && recent[0]?.new_nick) {
-      return String(recent[0].new_nick);
+    if (Array.isArray(recent) && recent.length > 0 && recent[0]?.[FIELDS.newNick]) {
+      return String(recent[0][FIELDS.newNick]);
     }
 
-    // Fallback: check usuarios table for stored habbo_name
+    // Fallback: users table
     const users = await directusFetch<{ data: { habbo_name: string | null }[] }>(
       `/items/${USERS_TABLE}`,
       {
@@ -156,12 +192,6 @@ async function getLastKnownNick(uniqueId: string): Promise<string | null> {
   }
 }
 
-/**
- * Hotel detection from Habbo uniqueId format:
- *   "hhfr-..."    → "fr"
- *   "hhcom-..."   → "com"
- *   "hhcombr-..." → "com.br" (approximated)
- */
 function detectHotelFromUniqueId(uniqueId: string): string {
   const match = uniqueId.match(/^hh([a-z]+)-/i);
   if (!match) return 'fr';
@@ -174,7 +204,7 @@ function detectHotelFromUniqueId(uniqueId: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Public list (for /pseudohabbo page)                                */
+/*  Public list                                                        */
 /* ------------------------------------------------------------------ */
 
 export async function listPseudoChanges(options?: {
@@ -185,21 +215,20 @@ export async function listPseudoChanges(options?: {
   const { hotel, limit = 50, page = 1 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
-    if (hotel && hotel !== 'all') filter.hotel = { _eq: hotel };
+    if (hotel && hotel !== 'all') filter[FIELDS.hotel] = { _eq: hotel };
 
-    const rows = await directus.request(
+    const rows = (await directus.request(
       rItems(TABLE, {
         ...(Object.keys(filter).length > 0 ? { filter } : {}),
-        sort: ['-changed_at', '-id'],
+        sort: SORT,
         limit,
         offset: (page - 1) * limit,
-        fields: ['id', 'habbo_unique_id', 'old_nick', 'new_nick', 'hotel', 'user_id', 'changed_at'],
+        fields: SELECT_FIELDS,
       } as any),
-    );
+    )) as any[];
 
-    // Count total
     const params: Record<string, string> = { limit: '0', meta: 'total_count' };
-    if (hotel && hotel !== 'all') params['filter[hotel][_eq]'] = hotel;
+    if (hotel && hotel !== 'all') params[`filter[${FIELDS.hotel}][_eq]`] = hotel;
     let total = 0;
     try {
       const json = await directusFetch<{ meta?: { total_count?: number } }>(
@@ -211,7 +240,7 @@ export async function listPseudoChanges(options?: {
       total = Array.isArray(rows) ? rows.length : 0;
     }
 
-    return { data: (rows || []) as PseudoChange[], total };
+    return { data: (rows || []).map(mapRow), total };
   } catch (error) {
     console.error('[pseudo-changes] listPseudoChanges failed:', error);
     return { data: [], total: 0 };
