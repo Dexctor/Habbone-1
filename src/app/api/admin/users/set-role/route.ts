@@ -61,7 +61,9 @@ export const POST = withAdmin(async (req, { user }) => {
     });
 
     return NextResponse.json({ data: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: 'SET_ROLE_FAILED', code: 'SET_ROLE_FAILED' }, { status: 500 });
+  } catch (e: unknown) {
+    console.error('[admin:set-role]', e);
+    const message = e instanceof Error ? e.message : 'SET_ROLE_FAILED';
+    return NextResponse.json({ error: message, code: 'SET_ROLE_FAILED' }, { status: 500 });
   }
 }, { key: 'admin:users:set-role', limit: 20, windowMs: 60_000 });

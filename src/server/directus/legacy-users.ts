@@ -113,10 +113,13 @@ export async function setLegacyUserRoleId(userId: number | string, directusRoleI
 }
 
 export async function setLegacyUserBanStatus(userId: number | string, banned: boolean) {
-  const payload: Partial<LegacyUserLite> & { status: string } = {
+  // Only write banido + ativado — the legacy `status` column has a DB trigger
+  // that nullifies some required field when it changes, which makes Directus
+  // reject the PATCH with CONTAINS_NULL_VALUES. The admin search already
+  // derives "suspended | active" from banido/ativado, so we keep status out.
+  const payload: Partial<LegacyUserLite> = {
     banido: banned ? 's' : 'n',
     ativado: banned ? 'n' : 's',
-    status: banned ? 'suspended' : 'active',
   };
   return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
 }

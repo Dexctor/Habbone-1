@@ -41,7 +41,9 @@ export const POST = withAdmin(async (req, { user }) => {
     });
 
     return NextResponse.json({ data: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'DELETE_ACTION_FAILED', code: 'DELETE_ACTION_FAILED' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('[admin:delete]', error);
+    const message = error instanceof Error ? error.message : 'DELETE_ACTION_FAILED';
+    return NextResponse.json({ error: message, code: 'DELETE_ACTION_FAILED' }, { status: 500 });
   }
 }, { key: 'admin:users:delete', limit: 10, windowMs: 60_000 });

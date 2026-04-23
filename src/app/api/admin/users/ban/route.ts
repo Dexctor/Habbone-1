@@ -42,7 +42,9 @@ export const POST = withAdmin(async (req, { user }) => {
     });
 
     return NextResponse.json({ data: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'BAN_ACTION_FAILED', code: 'BAN_ACTION_FAILED' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('[admin:ban]', error);
+    const message = error instanceof Error ? error.message : 'BAN_ACTION_FAILED';
+    return NextResponse.json({ error: message, code: 'BAN_ACTION_FAILED' }, { status: 500 });
   }
 }, { key: 'admin:users:ban', limit: 20, windowMs: 60_000 });
