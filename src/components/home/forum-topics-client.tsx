@@ -17,8 +17,7 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
   const visibleTopics = topics.slice(0, 7)
 
   return (
-    <section className="relative overflow-x-clip py-16 lg:py-[72px]">
-      <div aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-screen -translate-x-1/2 bg-[#25254D]" />
+    <section className="relative w-screen left-1/2 -translate-x-1/2 bg-[#25254D] py-16 lg:py-[72px]">
       <div className="relative mx-auto w-full max-w-[1200px] px-4 sm:px-6">
         <div className="mb-12 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

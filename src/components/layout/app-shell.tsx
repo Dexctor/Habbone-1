@@ -10,9 +10,9 @@ export type AppShellProps = {
 
 export default function AppShell({ topbar, footer, children, className }: AppShellProps) {
   return (
-    <div className={cn("min-h-dvh bg-background text-foreground", className)}>
+    <div className={cn("min-h-dvh bg-background text-foreground overflow-x-clip", className)}>
       {topbar}
-      <main className="mx-auto w-full max-w-[1420px] py-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1420px] overflow-x-clip py-6">{children}</main>
       {footer}
     </div>
   )
