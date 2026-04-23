@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import {
   Ban,
   Check,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { rowActionReducer, type RowActionState } from "@/components/admin/row-action-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,7 +70,7 @@ function getRoleBadge(roleName: string): { bg: string; text: string } {
   const n = roleName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (n.includes("fondateur") || n.includes("founder")) return { bg: "bg-[#FFC800]/20", text: "text-[#FFC800]" };
   if (n.includes("admin")) return { bg: "bg-[#F92330]/20", text: "text-[#F92330]" };
-  if (n.includes("editeur") || n.includes("editor")) return { bg: "bg-[#2596FF]/20", text: "text-[#2596FF]" };
+  if (n.includes("editeur") || n.includes("editor")) return { bg: "bg-[#2596FF]/20", text: "text-admin-brand-blue" };
   if (n.includes("moderateur") || n.includes("moderator") || n.includes("modo")) return { bg: "bg-[#9B59B6]/20", text: "text-[#9B59B6]" };
   if (n.includes("animateur") || n.includes("animator")) return { bg: "bg-[#0FD52F]/20", text: "text-[#0FD52F]" };
   return { bg: "bg-white/10", text: "text-[#BEBECE]" };
@@ -91,13 +92,14 @@ export default function AdminUsersPanel({
   const [items, setItems] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [banLoadingId, setBanLoadingId] = useState<string | null>(null);
-  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [rowActions, dispatchRowAction] = useReducer(rowActionReducer, {} as RowActionState);
+  const savingId = rowActions.saveRole ?? null;
+  const banLoadingId = rowActions.ban ?? null;
+  const deleteLoadingId = rowActions.delete ?? null;
+  const coinsSendingId = rowActions.coins ?? null;
   const [selectedRoles, setSelectedRoles] = useState<Record<string, string>>({});
   const [coinsModal, setCoinsModal] = useState<{ userId: string; userName: string } | null>(null);
   const [coinsAmount, setCoinsAmount] = useState("");
-  const [coinsSending, setCoinsSending] = useState(false);
   const [q, setQ] = useState("");
   const [roleId, setRoleId] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -238,7 +240,7 @@ export default function AdminUsersPanel({
   /* ── Actions ── */
 
   const onSaveRole = async (userId: string, nextRoleId: string) => {
-    setSavingId(userId);
+    dispatchRowAction({ type: 'start', action: 'saveRole', userId });
     try {
       const response = await fetch("/api/admin/users/set-role", {
         method: "POST",
@@ -257,12 +259,12 @@ export default function AdminUsersPanel({
     } catch {
       toast.error("Impossible de mettre à jour le rôle");
     } finally {
-      setSavingId(null);
+      dispatchRowAction({ type: 'end', action: 'saveRole' });
     }
   };
 
   const handleToggleBan = async (user: User, ban: boolean) => {
-    setBanLoadingId(user.id);
+    dispatchRowAction({ type: 'start', action: 'ban', userId: user.id });
     try {
       const response = await fetch("/api/admin/users/ban", {
         method: "POST",
@@ -280,12 +282,12 @@ export default function AdminUsersPanel({
     } catch {
       toast.error("Impossible de mettre à jour le statut");
     } finally {
-      setBanLoadingId(null);
+      dispatchRowAction({ type: 'end', action: 'ban' });
     }
   };
 
   const handleDeleteUser = async (user: User) => {
-    setDeleteLoadingId(user.id);
+    dispatchRowAction({ type: 'start', action: 'delete', userId: user.id });
     try {
       const response = await fetch("/api/admin/users/delete", {
         method: "POST",
@@ -303,7 +305,7 @@ export default function AdminUsersPanel({
     } catch {
       toast.error("Suppression impossible");
     } finally {
-      setDeleteLoadingId(null);
+      dispatchRowAction({ type: 'end', action: 'delete' });
     }
   };
 
@@ -314,7 +316,7 @@ export default function AdminUsersPanel({
       toast.error("Montant invalide");
       return;
     }
-    setCoinsSending(true);
+    dispatchRowAction({ type: 'start', action: 'coins', userId: coinsModal.userId });
     try {
       const res = await fetch("/api/admin/users/coins", {
         method: "POST",
@@ -326,10 +328,11 @@ export default function AdminUsersPanel({
       toast.success(`${amount} HabbOneCoins envoyés à ${json?.nick || coinsModal.userName} (solde : ${json?.newBalance})`);
       setCoinsModal(null);
       setCoinsAmount("");
-    } catch (e: any) {
-      toast.error(e?.message || "Erreur");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur";
+      toast.error(msg);
     } finally {
-      setCoinsSending(false);
+      dispatchRowAction({ type: 'end', action: 'coins' });
     }
   };
 
@@ -409,7 +412,7 @@ export default function AdminUsersPanel({
       {/* ── Search + Filters ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#BEBECE]/50" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-tertiary" />
           <input
             type="text"
             placeholder="Rechercher par pseudo ou email..."
@@ -422,7 +425,7 @@ export default function AdminUsersPanel({
               }
             }}
             aria-label="Rechercher un utilisateur"
-            className="h-[42px] w-full rounded-[6px] border border-white/10 bg-[#141433]/60 pl-10 pr-4 text-[13px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
+            className="h-[42px] w-full rounded-[6px] border border-white/10 bg-[#141433]/60 pl-10 pr-4 text-[13px] text-white placeholder:text-admin-text-tertiary focus:border-[#2596FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
           />
         </div>
 
@@ -450,21 +453,21 @@ export default function AdminUsersPanel({
           className="sm:w-[180px]"
         />
 
-        <span className="shrink-0 text-[12px] text-[#BEBECE]/50">
+        <span className="shrink-0 text-[12px] text-admin-text-tertiary">
           {total} utilisateur{total !== 1 ? "s" : ""}
         </span>
       </div>
 
       {/* ── Table ── */}
       {loading && items.length === 0 ? (
-        <div className="py-12 text-center text-[13px] text-[#BEBECE]/50">Chargement...</div>
+        <div className="py-12 text-center text-[13px] text-admin-text-tertiary">Chargement...</div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-[8px] border border-dashed border-white/10 bg-[#141433]/30 p-12 text-center">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-[#BEBECE]/40">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-admin-text-tertiary">
             <Users className="h-6 w-6" />
           </div>
           <p className="text-[14px] font-semibold text-white">Aucun utilisateur trouvé</p>
-          <p className="max-w-sm text-[12px] text-[#BEBECE]/50">
+          <p className="max-w-sm text-[12px] text-admin-text-tertiary">
             Essaie une recherche plus large ou retire les filtres.
           </p>
         </div>
@@ -473,19 +476,19 @@ export default function AdminUsersPanel({
           <table className="w-full min-w-[750px] text-left">
             <thead>
               <tr className="border-b border-white/5 bg-[#141433]/60">
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Utilisateur
                 </th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Email
                 </th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Rôle
                 </th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Statut
                 </th>
-                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">
+                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Actions
                 </th>
               </tr>
@@ -512,7 +515,7 @@ export default function AdminUsersPanel({
                     {/* User */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#2596FF]/20 text-[11px] font-bold uppercase text-[#2596FF]">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#2596FF]/20 text-[11px] font-bold uppercase text-admin-brand-blue">
                           {initials}
                         </div>
                         <span className="text-[13px] font-semibold text-white">
@@ -522,7 +525,7 @@ export default function AdminUsersPanel({
                     </td>
 
                     {/* Email */}
-                    <td className="px-4 py-3 text-[13px] text-[#BEBECE]/70">
+                    <td className="px-4 py-3 text-[13px] text-admin-text-secondary">
                       {user.email || "—"}
                     </td>
 
@@ -555,7 +558,7 @@ export default function AdminUsersPanel({
                             <button
                               type="button"
                               disabled={savingId === user.id}
-                              className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 transition-colors hover:bg-[#2596FF]/10 hover:text-[#2596FF] focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 focus-visible:outline-none disabled:opacity-50"
+                              className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary transition-colors hover:bg-[#2596FF]/10 hover:text-admin-brand-blue focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 focus-visible:outline-none disabled:opacity-50"
                               title="Changer le rôle"
                               aria-label={`Changer le rôle de ${formatFullName(user)}`}
                             >
@@ -566,7 +569,7 @@ export default function AdminUsersPanel({
                             align="end"
                             className="w-[200px] border-white/10 bg-[#1E1E3D] text-white"
                           >
-                            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-[#BEBECE]/50">
+                            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                               Changer le rôle
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-white/5" />
@@ -586,7 +589,7 @@ export default function AdminUsersPanel({
                                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.bg} ${badge.text}`}>
                                     {opt.label}
                                   </span>
-                                  {isSelected && <Check className="h-3 w-3 shrink-0 text-[#2596FF]" />}
+                                  {isSelected && <Check className="h-3 w-3 shrink-0 text-admin-brand-blue" />}
                                 </DropdownMenuItem>
                               );
                             })}
@@ -597,7 +600,7 @@ export default function AdminUsersPanel({
                         <button
                           type="button"
                           onClick={() => setCoinsModal({ userId: user.id, userName: formatFullName(user) })}
-                          className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 transition-colors hover:bg-[#FFC800]/10 hover:text-[#FFC800] focus-visible:ring-1 focus-visible:ring-[#FFC800]/40 focus-visible:outline-none"
+                          className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary transition-colors hover:bg-[#FFC800]/10 hover:text-[#FFC800] focus-visible:ring-1 focus-visible:ring-[#FFC800]/40 focus-visible:outline-none"
                           title="Envoyer des coins"
                           aria-label={`Envoyer des coins à ${formatFullName(user)}`}
                         >
@@ -612,7 +615,7 @@ export default function AdminUsersPanel({
                           className={`grid h-[36px] w-[36px] place-items-center rounded-[6px] transition-colors focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 focus-visible:outline-none ${
                             isSuspended
                               ? "text-[#0FD52F]/70 hover:bg-[#0FD52F]/10 hover:text-[#0FD52F]"
-                              : "text-[#BEBECE]/60 hover:bg-[#FFC800]/10 hover:text-[#FFC800]"
+                              : "text-admin-text-tertiary hover:bg-[#FFC800]/10 hover:text-[#FFC800]"
                           }`}
                           title={isSuspended ? "Réactiver" : "Bannir"}
                           aria-label={isSuspended ? `Réactiver ${formatFullName(user)}` : `Bannir ${formatFullName(user)}`}
@@ -625,7 +628,7 @@ export default function AdminUsersPanel({
                           type="button"
                           onClick={() => setConfirmState({ type: "delete", user })}
                           disabled={deleteLoadingId === user.id}
-                          className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 transition-colors hover:bg-[#F92330]/10 hover:text-[#F92330] focus-visible:ring-1 focus-visible:ring-[#F92330]/40 focus-visible:outline-none"
+                          className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary transition-colors hover:bg-[#F92330]/10 hover:text-[#F92330] focus-visible:ring-1 focus-visible:ring-[#F92330]/40 focus-visible:outline-none"
                           title="Supprimer"
                           aria-label={`Supprimer ${formatFullName(user)}`}
                         >
@@ -644,7 +647,7 @@ export default function AdminUsersPanel({
       {/* ── Pagination ── */}
       {items.length > 0 && (
         <div className="flex items-center justify-between">
-          <span className="text-[12px] text-[#BEBECE]/50">
+          <span className="text-[12px] text-admin-text-tertiary">
             Affichage de {items.length} sur {total} utilisateur{total !== 1 ? "s" : ""}
           </span>
           <nav className="flex items-center gap-1" aria-label="Pagination">
@@ -652,7 +655,7 @@ export default function AdminUsersPanel({
               type="button"
               disabled={page <= 1 || loading}
               onClick={() => void getUsers({ page: Math.max(1, page - 1) })}
-              className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/60 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-admin-text-tertiary transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
               aria-label="Page précédente"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -678,7 +681,7 @@ export default function AdminUsersPanel({
                   className={`grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[12px] font-bold transition-colors ${
                     pageNum === page
                       ? "bg-[#2596FF] text-white"
-                      : "text-[#BEBECE]/60 hover:bg-white/5 hover:text-white"
+                      : "text-admin-text-tertiary hover:bg-white/5 hover:text-white"
                   }`}
                   aria-label={`Page ${pageNum}`}
                   aria-current={pageNum === page ? "page" : undefined}
@@ -692,7 +695,7 @@ export default function AdminUsersPanel({
               type="button"
               disabled={loading || items.length === 0 || items.length < LIMIT}
               onClick={() => void getUsers({ page: page + 1 })}
-              className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/60 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-admin-text-tertiary transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
               aria-label="Page suivante"
             >
               <ChevronRight className="h-4 w-4" />
@@ -718,12 +721,12 @@ export default function AdminUsersPanel({
             }}
           >
             <h3 className="text-[16px] font-bold text-white">Envoyer des HabbOneCoins</h3>
-            <p className="mt-1 text-[13px] text-[#BEBECE]/70">
-              Destinataire : <span className="font-bold text-[#2596FF]">{coinsModal.userName}</span>
+            <p className="mt-1 text-[13px] text-admin-text-secondary">
+              Destinataire : <span className="font-bold text-admin-brand-blue">{coinsModal.userName}</span>
             </p>
 
             <div className="mt-4">
-              <label htmlFor="coins-amount" className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">
+              <label htmlFor="coins-amount" className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">
                 Montant
               </label>
               <input
@@ -739,7 +742,7 @@ export default function AdminUsersPanel({
                   if (e.key === "Enter") handleSendCoins();
                   if (e.key === "Escape") setCoinsModal(null);
                 }}
-                className="w-full rounded-[6px] border border-white/10 bg-[#141433]/60 px-3 py-2.5 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#FFC800]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FFC800]/40"
+                className="w-full rounded-[6px] border border-white/10 bg-[#141433]/60 px-3 py-2.5 text-[14px] text-white placeholder:text-admin-text-tertiary focus:border-[#FFC800]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#FFC800]/40"
               />
             </div>
 
@@ -767,12 +770,12 @@ export default function AdminUsersPanel({
               <button
                 type="button"
                 onClick={handleSendCoins}
-                disabled={coinsSending || !coinsAmount || parseInt(coinsAmount, 10) <= 0}
+                disabled={Boolean(coinsSendingId) || !coinsAmount || parseInt(coinsAmount, 10) <= 0}
                 className="h-[36px] rounded-[6px] bg-[#FFC800] px-4 text-[13px] font-bold text-black transition-colors hover:bg-[#E6B400] disabled:opacity-50"
               >
                 <span className="inline-flex items-center gap-1.5">
                   <Coins className="h-3.5 w-3.5" />
-                  {coinsSending ? "Envoi..." : "Envoyer"}
+                  {coinsSendingId ? "Envoi..." : "Envoyer"}
                 </span>
               </button>
             </div>
@@ -826,11 +829,11 @@ function FilterDropdown({
           <button
             type="button"
             className={`flex h-[42px] w-full items-center justify-between gap-2 rounded-[6px] border border-white/10 bg-[#141433]/60 px-3 text-[13px] transition-colors focus:border-[#2596FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 ${
-              selected && selected.value ? "text-white" : "text-[#BEBECE]/60"
+              selected && selected.value ? "text-white" : "text-admin-text-tertiary"
             }`}
           >
             <span className="truncate">{selected?.label || placeholder}</span>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#BEBECE]/50" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-admin-text-tertiary" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -846,7 +849,7 @@ function FilterDropdown({
                 className="flex cursor-pointer items-center justify-between gap-2 text-[13px] text-[#BEBECE]/80 transition-colors focus:bg-[#2596FF]/10 focus:text-white"
               >
                 <span className="truncate">{opt.label}</span>
-                {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[#2596FF]" />}
+                {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-admin-brand-blue" />}
               </DropdownMenuItem>
             );
           })}
@@ -866,7 +869,7 @@ function MiniStatCard({ value, label, color }: { value: number; label: string; c
       <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-[6px] ${color} text-[13px] font-bold text-white`}>
         {value}
       </div>
-      <span className="text-[13px] text-[#BEBECE]/70">{label}</span>
+      <span className="text-[13px] text-admin-text-secondary">{label}</span>
     </div>
   );
 }

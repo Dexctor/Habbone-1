@@ -137,7 +137,7 @@ export default function AdminThemePanel() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="theme-logo-url" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">URL du logo</Label>
+            <Label htmlFor="theme-logo-url" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">URL du logo</Label>
             <Input
               id="theme-logo-url"
               value={settings.headerLogoUrl}
@@ -185,7 +185,7 @@ export default function AdminThemePanel() {
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="theme-bg-color" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Couleur de fond</Label>
+            <Label htmlFor="theme-bg-color" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Couleur de fond</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="theme-bg-color"
@@ -214,7 +214,7 @@ export default function AdminThemePanel() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="theme-bg-url" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Image de fond (optionnel)</Label>
+            <Label htmlFor="theme-bg-url" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Image de fond (optionnel)</Label>
             <Input
               id="theme-bg-url"
               value={settings.headerBackgroundImageUrl ?? ""}
@@ -255,7 +255,7 @@ export default function AdminThemePanel() {
                   headerBackgroundImageUrl: null,
                 }))
               }
-              className="h-[36px] rounded-[4px] border border-[#141433] bg-[#25254D] text-xs text-[color:var(--foreground)]/60 hover:bg-[#303060] hover:text-white"
+              className="h-[36px] rounded-[4px] border border-[#141433] bg-[#25254D] text-xs text-admin-text-tertiary hover:bg-[#303060] hover:text-white"
             >
               Retirer image
             </Button>
@@ -283,7 +283,7 @@ export default function AdminThemePanel() {
         </Button>
       </div>
 
-      {loading && <p className="text-xs text-[color:var(--foreground)]/50">Chargement...</p>}
+      {loading && <p className="text-xs text-admin-text-tertiary">Chargement...</p>}
     </div>
   );
 }

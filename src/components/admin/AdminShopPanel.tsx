@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import type { ShopItem, ShopOrder } from "@/types/shop";
+import { useAdminFetch } from "@/hooks/useAdminFetch";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -108,7 +109,7 @@ function ImageUpload({
 
   return (
     <div className="space-y-2">
-      <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">
+      <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">
         Image
       </label>
 
@@ -133,7 +134,7 @@ function ImageUpload({
           >
             <X className="h-3 w-3" />
           </button>
-          <p className="mt-2 max-w-[200px] truncate text-[10px] text-[#BEBECE]/40">
+          <p className="mt-2 max-w-[200px] truncate text-[10px] text-admin-text-tertiary">
             {value}
           </p>
         </div>
@@ -162,20 +163,20 @@ function ImageUpload({
           {uploading ? (
             <>
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2596FF]/30 border-t-[#2596FF]" />
-              <span className="text-[12px] font-medium text-[#BEBECE]/60">
+              <span className="text-[12px] font-medium text-admin-text-tertiary">
                 Upload en cours...
               </span>
             </>
           ) : (
             <>
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-[#2596FF]/10 text-[#2596FF]">
+              <div className="grid h-12 w-12 place-items-center rounded-full bg-[#2596FF]/10 text-admin-brand-blue">
                 <ImagePlus className="h-6 w-6" />
               </div>
               <div className="text-center">
                 <p className="text-[13px] font-semibold text-white">
                   Cliquer ou glisser-déposer
                 </p>
-                <p className="mt-0.5 text-[11px] text-[#BEBECE]/50">
+                <p className="mt-0.5 text-[11px] text-admin-text-tertiary">
                   PNG, JPG, GIF, WebP — Max 5 Mo
                 </p>
               </div>
@@ -197,14 +198,14 @@ function ImageUpload({
       {/* Fallback: paste URL */}
       {!value && (
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#BEBECE]/40">ou</span>
+          <span className="text-[10px] text-admin-text-tertiary">ou</span>
           <button
             type="button"
             onClick={() => {
               const url = window.prompt("Coller une URL d'image :");
               if (url?.trim()) onChange(url.trim());
             }}
-            className="text-[11px] font-medium text-[#2596FF]/70 transition-colors hover:text-[#2596FF]"
+            className="text-[11px] font-medium text-admin-brand-blue/80 transition-colors hover:text-admin-brand-blue"
           >
             Coller une URL
           </button>
@@ -229,7 +230,7 @@ export default function AdminShopPanel() {
           type="button"
           onClick={() => setTab("items")}
           className={`flex items-center gap-2 rounded-[4px] px-4 py-2 text-[13px] font-semibold transition-colors ${
-            tab === "items" ? "bg-[#2596FF] text-white" : "text-[#BEBECE]/60 hover:text-white"
+            tab === "items" ? "bg-[#2596FF] text-white" : "text-admin-text-tertiary hover:text-white"
           }`}
         >
           <Package className="h-4 w-4" />
@@ -239,7 +240,7 @@ export default function AdminShopPanel() {
           type="button"
           onClick={() => setTab("orders")}
           className={`flex items-center gap-2 rounded-[4px] px-4 py-2 text-[13px] font-semibold transition-colors ${
-            tab === "orders" ? "bg-[#2596FF] text-white" : "text-[#BEBECE]/60 hover:text-white"
+            tab === "orders" ? "bg-[#2596FF] text-white" : "text-admin-text-tertiary hover:text-white"
           }`}
         >
           <ShoppingBag className="h-4 w-4" />
@@ -258,27 +259,22 @@ export default function AdminShopPanel() {
 /* ================================================================== */
 
 function ItemsTab() {
-  const [items, setItems] = useState<ShopItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data,
+    loading,
+    refetch: fetchItems,
+  } = useAdminFetch<ShopItem[]>('/api/admin/shop?view=items', {
+    select: (raw) => {
+      const payload = raw as { data?: ShopItem[] } | null;
+      return payload?.data ?? [];
+    },
+    onError: () => toast.error('Erreur de chargement'),
+  });
+  const items = data ?? [];
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/shop?view=items", { cache: "no-store" });
-      const json = await res.json();
-      setItems(json?.data ?? []);
-    } catch {
-      toast.error("Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const startCreate = () => {
     setEdit({ id: null, nome: "", descricao: "", imagem: "", preco: 0, estoque: 1, status: "ativo" });
@@ -379,7 +375,7 @@ function ItemsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[15px] font-bold text-white">Articles de la boutique</h3>
-          <p className="text-[12px] text-[#BEBECE]/50">{items.length} article{items.length !== 1 ? "s" : ""}</p>
+          <p className="text-[12px] text-admin-text-tertiary">{items.length} article{items.length !== 1 ? "s" : ""}</p>
         </div>
         <button
           type="button"
@@ -403,7 +399,7 @@ function ItemsTab() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">Nom</label>
+                  <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">Nom</label>
                   <input
                     type="text"
                     value={edit.nome}
@@ -413,7 +409,7 @@ function ItemsTab() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">Prix (coins)</label>
+                  <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">Prix (coins)</label>
                   <input
                     type="number"
                     min={0}
@@ -423,7 +419,7 @@ function ItemsTab() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">Stock</label>
+                  <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">Stock</label>
                   <input
                     type="number"
                     min={0}
@@ -434,7 +430,7 @@ function ItemsTab() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/60">Description (optionnel)</label>
+                <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-tertiary">Description (optionnel)</label>
                 <textarea
                   value={edit.descricao}
                   onChange={(e) => setEdit({ ...edit, descricao: e.target.value })}
@@ -476,22 +472,22 @@ function ItemsTab() {
 
       {/* Items list */}
       {loading ? (
-        <div className="py-8 text-center text-[13px] text-[#BEBECE]/50">Chargement...</div>
+        <div className="py-8 text-center text-[13px] text-admin-text-tertiary">Chargement...</div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[8px] border border-dashed border-white/10 bg-[#141433]/30 p-12 text-center">
           <Package className="h-8 w-8 text-[#BEBECE]/20" />
-          <p className="text-[13px] text-[#BEBECE]/50">Aucun article dans la boutique</p>
+          <p className="text-[13px] text-admin-text-tertiary">Aucun article dans la boutique</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[8px] border border-white/5">
           <table className="w-full min-w-[600px] text-left">
             <thead>
               <tr className="border-b border-white/5 bg-[#141433]/60">
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Article</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Prix</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Stock</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Statut</th>
-                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Actions</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Article</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Prix</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Stock</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Statut</th>
+                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -512,7 +508,7 @@ function ItemsTab() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[13px] font-bold text-[#FFC800]">{item.preco} coins</td>
-                  <td className="px-4 py-3 text-[13px] text-[#BEBECE]/70">{item.estoque}</td>
+                  <td className="px-4 py-3 text-[13px] text-admin-text-secondary">{item.estoque}</td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] font-bold uppercase ${item.status === "ativo" ? "text-[#0FD52F]" : "text-[#F92330]"}`}>
                       {item.status === "ativo" ? "Actif" : "Inactif"}
@@ -520,13 +516,13 @@ function ItemsTab() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button type="button" onClick={() => startEdit(item)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 hover:bg-[#2596FF]/10 hover:text-[#2596FF]" title="Modifier">
+                      <button type="button" onClick={() => startEdit(item)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary hover:bg-[#2596FF]/10 hover:text-admin-brand-blue" title="Modifier">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button type="button" onClick={() => handleToggleStatus(item)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 hover:bg-[#FFC800]/10 hover:text-[#FFC800]" title={item.status === "ativo" ? "Désactiver" : "Activer"}>
+                      <button type="button" onClick={() => handleToggleStatus(item)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary hover:bg-[#FFC800]/10 hover:text-[#FFC800]" title={item.status === "ativo" ? "Désactiver" : "Activer"}>
                         {item.status === "ativo" ? <XCircle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                       </button>
-                      <button type="button" onClick={() => setDeleteConfirmId(item.id)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-[#BEBECE]/60 hover:bg-[#F92330]/10 hover:text-[#F92330]" title="Supprimer">
+                      <button type="button" onClick={() => setDeleteConfirmId(item.id)} className="grid h-[36px] w-[36px] place-items-center rounded-[6px] text-admin-text-tertiary hover:bg-[#F92330]/10 hover:text-[#F92330]" title="Supprimer">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -558,33 +554,40 @@ function ItemsTab() {
 /* ================================================================== */
 
 function OrdersTab() {
-  const [orders, setOrders] = useState<ShopOrder[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  const ordersUrl = useMemo(() => {
+    const params = new URLSearchParams({ view: "orders", page: String(page) });
+    if (statusFilter) params.set("status", statusFilter);
+    return `/api/admin/shop?${params}`;
+  }, [page, statusFilter]);
+
+  const {
+    data,
+    loading,
+    refetch: reloadOrders,
+  } = useAdminFetch<{ orders: ShopOrder[]; total: number }>(ordersUrl, {
+    select: (raw) => {
+      const payload = raw as { data?: ShopOrder[]; total?: number } | null;
+      return { orders: payload?.data ?? [], total: payload?.total ?? 0 };
+    },
+    onError: () => toast.error('Erreur de chargement'),
+  });
+  const orders = data?.orders ?? [];
+  const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / 20));
 
-  const fetchOrders = useCallback(async (p = 1, status = statusFilter) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ view: "orders", page: String(p) });
-      if (status) params.set("status", status);
-      const res = await fetch(`/api/admin/shop?${params}`, { cache: "no-store" });
-      const json = await res.json();
-      setOrders(json?.data ?? []);
-      setTotal(json?.total ?? 0);
+  const fetchOrders = useCallback(
+    (p = 1, status = statusFilter) => {
+      setStatusFilter(status);
       setPage(p);
-    } catch {
-      toast.error("Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter]);
-
-  useEffect(() => { fetchOrders(1); }, [fetchOrders]);
+      // url change triggers the useAdminFetch effect — refetch is redundant for the common case
+      return Promise.resolve();
+    },
+    [statusFilter],
+  );
 
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
@@ -599,7 +602,7 @@ function OrdersTab() {
         newStatus === "entregue" ? "Commande marquée comme livrée" :
         newStatus === "cancelado" ? "Commande annulée" : "Statut mis à jour"
       );
-      fetchOrders(page);
+      void reloadOrders();
     } catch {
       toast.error("Erreur");
     } finally {
@@ -628,7 +631,7 @@ function OrdersTab() {
               type="button"
               onClick={() => { setStatusFilter(s); fetchOrders(1, s); }}
               className={`rounded-[4px] px-3 py-1.5 text-[11px] font-bold uppercase transition-colors ${
-                statusFilter === s ? "bg-[#2596FF] text-white" : "bg-white/5 text-[#BEBECE]/60 hover:text-white"
+                statusFilter === s ? "bg-[#2596FF] text-white" : "bg-white/5 text-admin-text-tertiary hover:text-white"
               }`}
             >
               {s === "" ? "Toutes" : s === "pendente" ? "En attente" : s === "entregue" ? "Livrées" : "Annulées"}
@@ -639,30 +642,30 @@ function OrdersTab() {
 
       {/* Orders table */}
       {loading ? (
-        <div className="py-8 text-center text-[13px] text-[#BEBECE]/50">Chargement...</div>
+        <div className="py-8 text-center text-[13px] text-admin-text-tertiary">Chargement...</div>
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[8px] border border-dashed border-white/10 bg-[#141433]/30 p-12 text-center">
           <ShoppingBag className="h-8 w-8 text-[#BEBECE]/20" />
-          <p className="text-[13px] text-[#BEBECE]/50">Aucune commande</p>
+          <p className="text-[13px] text-admin-text-tertiary">Aucune commande</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[8px] border border-white/5">
           <table className="w-full min-w-[700px] text-left">
             <thead>
               <tr className="border-b border-white/5 bg-[#141433]/60">
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">#</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Acheteur</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Article</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Prix</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Statut</th>
-                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Date</th>
-                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#BEBECE]/60">Actions</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">#</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Acheteur</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Article</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Prix</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Statut</th>
+                <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Date</th>
+                <th scope="col" className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">Actions</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id} className={`border-b border-white/[0.04] hover:bg-white/[0.02] ${order.status === "pendente" ? "bg-[#FFC800]/[0.03]" : ""}`}>
-                  <td className="px-4 py-3 text-[12px] text-[#BEBECE]/50">#{order.id}</td>
+                  <td className="px-4 py-3 text-[12px] text-admin-text-tertiary">#{order.id}</td>
                   <td className="px-4 py-3 text-[13px] font-semibold text-white">{order.user_nick || `#${order.user_id}`}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -672,14 +675,14 @@ function OrdersTab() {
                           <img src={order.item_imagem} alt="" className="h-full w-full object-contain image-pixelated" />
                         </div>
                       )}
-                      <span className="text-[13px] text-[#BEBECE]/70">{order.item_nome || `Item #${order.item_id}`}</span>
+                      <span className="text-[13px] text-admin-text-secondary">{order.item_nome || `Item #${order.item_id}`}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[13px] font-bold text-[#FFC800]">{order.preco}</td>
                   <td className="px-4 py-3">
                     <OrderStatusBadge status={order.status} />
                   </td>
-                  <td className="px-4 py-3 text-[12px] text-[#BEBECE]/50">
+                  <td className="px-4 py-3 text-[12px] text-admin-text-tertiary">
                     {"—"}
                   </td>
                   <td className="px-4 py-3">
@@ -730,13 +733,13 @@ function OrdersTab() {
       {/* Pagination */}
       {orders.length > 0 && (
         <div className="flex items-center justify-between">
-          <span className="text-[12px] text-[#BEBECE]/50">{total} commande{total !== 1 ? "s" : ""}</span>
+          <span className="text-[12px] text-admin-text-tertiary">{total} commande{total !== 1 ? "s" : ""}</span>
           <div className="flex items-center gap-1">
-            <button type="button" disabled={page <= 1 || loading} onClick={() => fetchOrders(page - 1)} className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/60 hover:bg-white/5 hover:text-white disabled:opacity-30">
+            <button type="button" disabled={page <= 1 || loading} onClick={() => fetchOrders(page - 1)} className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-admin-text-tertiary hover:bg-white/5 hover:text-white disabled:opacity-30">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="px-2 text-[12px] text-[#BEBECE]/60">{page}/{pageCount}</span>
-            <button type="button" disabled={page >= pageCount || loading} onClick={() => fetchOrders(page + 1)} className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-[#BEBECE]/60 hover:bg-white/5 hover:text-white disabled:opacity-30">
+            <span className="px-2 text-[12px] text-admin-text-tertiary">{page}/{pageCount}</span>
+            <button type="button" disabled={page >= pageCount || loading} onClick={() => fetchOrders(page + 1)} className="grid h-[32px] w-[32px] place-items-center rounded-[4px] text-admin-text-tertiary hover:bg-white/5 hover:text-white disabled:opacity-30">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

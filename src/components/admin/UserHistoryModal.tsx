@@ -63,9 +63,9 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
         const labels: Record<string, { text: string; color: string }> = {
             "user.ban": { text: "Banni", color: "bg-red-500/20 text-red-400" },
             "user.unban": { text: "Reactive", color: "bg-green-500/20 text-green-400" },
-            "user.role_change": { text: "Role modifie", color: "bg-[#2596FF]/20 text-[#2596FF]" },
+            "user.role_change": { text: "Role modifie", color: "bg-[#2596FF]/20 text-admin-brand-blue" },
         };
-        return labels[action] || { text: action, color: "bg-[#25254D] text-[color:var(--foreground)]/60" };
+        return labels[action] || { text: action, color: "bg-[#25254D] text-admin-text-tertiary" };
     };
 
     return (
@@ -76,7 +76,7 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                         variant="ghost"
                         size="sm"
                         title="Voir l'historique"
-                        className="h-[36px] w-[36px] rounded-[4px] text-[color:var(--foreground)]/60 hover:bg-[#25254D] hover:text-white"
+                        className="h-[36px] w-[36px] rounded-[4px] text-admin-text-tertiary hover:bg-[#25254D] hover:text-white"
                     >
                         <History className="h-4 w-4" />
                     </Button>
@@ -90,7 +90,7 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                 </DialogHeader>
 
                 {loading && (
-                    <div className="py-8 text-center text-sm text-[color:var(--foreground)]/50">
+                    <div className="py-8 text-center text-sm text-admin-text-tertiary">
                         Chargement...
                     </div>
                 )}
@@ -119,13 +119,13 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                             <TabsContent value="topics" className="mt-4">
                                 <ScrollArea className="max-h-[300px]">
                                     {data.topics.length === 0 ? (
-                                        <p className="py-4 text-center text-sm text-[color:var(--foreground)]/50">Aucun sujet</p>
+                                        <p className="py-4 text-center text-sm text-admin-text-tertiary">Aucun sujet</p>
                                     ) : (
                                         <ul className="space-y-1">
                                             {data.topics.map((topic) => (
                                                 <li key={topic.id} className="flex items-center justify-between rounded-[4px] bg-[#25254D] p-2.5">
                                                     <span className="text-sm font-semibold text-white">{topic.titulo}</span>
-                                                    <span className="text-[11px] text-[color:var(--foreground)]/45">{formatDateTime(topic.data)}</span>
+                                                    <span className="text-[11px] text-admin-text-tertiary">{formatDateTime(topic.data)}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -136,13 +136,13 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                             <TabsContent value="articles" className="mt-4">
                                 <ScrollArea className="max-h-[300px]">
                                     {data.articles.length === 0 ? (
-                                        <p className="py-4 text-center text-sm text-[color:var(--foreground)]/50">Aucun article</p>
+                                        <p className="py-4 text-center text-sm text-admin-text-tertiary">Aucun article</p>
                                     ) : (
                                         <ul className="space-y-1">
                                             {data.articles.map((article) => (
                                                 <li key={article.id} className="flex items-center justify-between rounded-[4px] bg-[#25254D] p-2.5">
                                                     <span className="text-sm font-semibold text-white">{article.titulo}</span>
-                                                    <span className="text-[11px] text-[color:var(--foreground)]/45">{formatDateTime(article.data)}</span>
+                                                    <span className="text-[11px] text-admin-text-tertiary">{formatDateTime(article.data)}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -153,19 +153,19 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                             <TabsContent value="comments" className="mt-4">
                                 <ScrollArea className="max-h-[300px]">
                                     {data.forumComments.length === 0 && data.newsComments.length === 0 ? (
-                                        <p className="py-4 text-center text-sm text-[color:var(--foreground)]/50">Aucun commentaire</p>
+                                        <p className="py-4 text-center text-sm text-admin-text-tertiary">Aucun commentaire</p>
                                     ) : (
                                         <ul className="space-y-1">
                                             {data.forumComments.map((c) => (
                                                 <li key={`forum-${c.id}`} className="flex items-center justify-between rounded-[4px] bg-[#25254D] p-2.5">
                                                     <span className="text-sm text-white">Commentaire sur sujet #{c.id_forum}</span>
-                                                    <span className="text-[11px] text-[color:var(--foreground)]/45">{formatDateTime(c.data)}</span>
+                                                    <span className="text-[11px] text-admin-text-tertiary">{formatDateTime(c.data)}</span>
                                                 </li>
                                             ))}
                                             {data.newsComments.map((c) => (
                                                 <li key={`news-${c.id}`} className="flex items-center justify-between rounded-[4px] bg-[#25254D] p-2.5">
                                                     <span className="text-sm text-white">Commentaire sur article #{c.id_noticia}</span>
-                                                    <span className="text-[11px] text-[color:var(--foreground)]/45">{formatDateTime(c.data)}</span>
+                                                    <span className="text-[11px] text-admin-text-tertiary">{formatDateTime(c.data)}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -176,7 +176,7 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                             <TabsContent value="sanctions" className="mt-4">
                                 <ScrollArea className="max-h-[300px]">
                                     {data.adminLogs.length === 0 ? (
-                                        <p className="py-4 text-center text-sm text-[color:var(--foreground)]/50">Aucune sanction</p>
+                                        <p className="py-4 text-center text-sm text-admin-text-tertiary">Aucune sanction</p>
                                     ) : (
                                         <ul className="space-y-1">
                                             {data.adminLogs.map((log) => {
@@ -187,9 +187,9 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
                                                             <Badge className={`${label.color} border-0`}>
                                                                 {label.text}
                                                             </Badge>
-                                                            <span className="text-xs text-[color:var(--foreground)]/50">par {log.admin_name}</span>
+                                                            <span className="text-xs text-admin-text-tertiary">par {log.admin_name}</span>
                                                         </div>
-                                                        <span className="text-[11px] text-[color:var(--foreground)]/45">{formatDateTime(log.created_at)}</span>
+                                                        <span className="text-[11px] text-admin-text-tertiary">{formatDateTime(log.created_at)}</span>
                                                     </li>
                                                 );
                                             })}

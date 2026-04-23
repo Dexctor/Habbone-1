@@ -92,11 +92,11 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               <h2 className="text-[20px] font-bold text-white">
                 Tableau de bord
               </h2>
-              <p className="text-[13px] text-[#BEBECE]/60">
+              <p className="text-[13px] text-admin-text-tertiary">
                 Bienvenue sur le panneau d&apos;administration HabbOne
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-[#BEBECE]/50">
+            <div className="flex items-center gap-2 text-[12px] text-admin-text-tertiary">
               <Clock className="h-3.5 w-3.5" />
               Dernière mise à jour : maintenant
             </div>
@@ -109,7 +109,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               value={formatNumber(totalUsers)}
               icon={<Users className="h-5 w-5" />}
               iconBg="bg-[#2596FF]/15"
-              iconColor="text-[#2596FF]"
+              iconColor="text-admin-brand-blue"
               onClick={() => setView('users')}
             />
             <StatCard
@@ -143,7 +143,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[15px] font-bold text-white">Activité récente</h3>
               {(props.recentActivity?.length ?? 0) > 0 && (
-                <span className="text-[12px] text-[#BEBECE]/50">
+                <span className="text-[12px] text-admin-text-tertiary">
                   {props.recentActivity?.length} événement{(props.recentActivity?.length ?? 0) > 1 ? 's' : ''}
                 </span>
               )}
@@ -152,7 +152,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             {(!props.recentActivity || props.recentActivity.length === 0) ? (
               <div className="py-8 text-center">
                 <Clock className="mx-auto mb-2 h-8 w-8 text-[#BEBECE]/20" />
-                <p className="text-[13px] text-[#BEBECE]/50">Aucune activité récente</p>
+                <p className="text-[13px] text-admin-text-tertiary">Aucune activité récente</p>
               </div>
             ) : (
               <div className="space-y-0">
@@ -307,7 +307,7 @@ function StatCard({
         </div>
       </div>
       <p className="mt-4 text-[28px] font-bold leading-none text-white">{value}</p>
-      <p className="mt-1.5 text-[12px] font-medium text-[#BEBECE]/70">{label}</p>
+      <p className="mt-1.5 text-[12px] font-medium text-admin-text-secondary">{label}</p>
     </button>
   );
 }
@@ -330,12 +330,12 @@ function QuickCard({
       className="group rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/30 hover:bg-[#141433]/80"
     >
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#2596FF]/10 text-[#2596FF] transition-colors group-hover:bg-[#2596FF]/20">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#2596FF]/10 text-admin-brand-blue transition-colors group-hover:bg-[#2596FF]/20">
           {icon}
         </span>
         <div>
           <h3 className="text-[14px] font-bold text-white">{title}</h3>
-          <p className="mt-0.5 text-[12px] text-[#BEBECE]/50">{description}</p>
+          <p className="mt-0.5 text-[12px] text-admin-text-tertiary">{description}</p>
         </div>
       </div>
     </button>
@@ -354,7 +354,7 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
   },
   news_updated: {
     label: 'Modifié',
-    color: 'bg-[#2596FF]/15 text-[#2596FF]',
+    color: 'bg-[#2596FF]/15 text-admin-brand-blue',
     icon: <Pencil className="h-4 w-4" />,
   },
   topic_created: {
@@ -379,7 +379,7 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
   },
   'user.role_change': {
     label: 'Rôle modifié',
-    color: 'bg-[#2596FF]/15 text-[#2596FF]',
+    color: 'bg-[#2596FF]/15 text-admin-brand-blue',
     icon: <Shield className="h-4 w-4" />,
   },
   'content.delete': {
@@ -389,7 +389,7 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
   },
   'content.update': {
     label: 'Modifié',
-    color: 'bg-[#2596FF]/15 text-[#2596FF]',
+    color: 'bg-[#2596FF]/15 text-admin-brand-blue',
     icon: <Pencil className="h-4 w-4" />,
   },
 };
@@ -408,7 +408,7 @@ function ActivityRow({ item }: { item: RecentActivityItem }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium text-white">{item.title}</p>
-        <p className="text-[11px] text-[#BEBECE]/50">{item.date}</p>
+        <p className="text-[11px] text-admin-text-tertiary">{item.date}</p>
       </div>
       <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${config.color}`}>
         {config.label}

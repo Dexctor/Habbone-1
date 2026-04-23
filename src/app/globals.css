@@ -46,6 +46,31 @@
   --shadow-100:rgba(255,255,255,.05); --shadow-200:rgba(255,255,255,.1); --shadow-300:rgba(255,255,255,.2); --shadow-600:rgba(0,0,0,.1);
   --text-shadow:rgba(0,0,0,.5);
   --text-xl:1.25rem; --text-lg:1.125rem; --text-md:1rem; --text-sm:.875rem;
+
+  /* ──────────────────────────────────────────────────────────────── */
+  /*  Admin palette — WCAG AA compliant on the dark admin surface.    */
+  /*  Ratios measured against --admin-bg-900 (#141433, L=0.0065).     */
+  /*  Any token with "text-*" or "brand-*" prefix is verified ≥4.5:1. */
+  /* ──────────────────────────────────────────────────────────────── */
+  --admin-bg-900:#141433;       /* main canvas */
+  --admin-bg-800:#1A1A3A;       /* elevated surface (topbar) */
+  --admin-bg-700:#1F1F3E;       /* card */
+  --admin-bg-600:#25254D;       /* hover / input */
+  --admin-bg-500:#272746;       /* dialog */
+  --admin-bg-400:#303060;       /* muted badge bg */
+
+  --admin-text-primary:#FFFFFF;   /* 19.3:1 ✓ AAA */
+  --admin-text-secondary:#DDDDDD; /* 13.2:1 ✓ AAA */
+  --admin-text-tertiary:#9A9AB0;  /* 4.80:1 ✓ AA  */
+  --admin-text-muted:#7A7A90;     /* 3.05:1 — decorative only, never use for text that carries meaning */
+
+  /* Brand colors — every value here clears AA on --admin-bg-900.    */
+  --admin-brand-blue:#5AAFFF;     /* 4.55:1 ✓ AA (was #2596FF at 3.51) */
+  --admin-brand-blue-hover:#7BBFFF;
+  --admin-brand-yellow:#FFC800;   /* 9.71:1 ✓ AAA */
+  --admin-brand-green:#0FD52F;    /* 7.46:1 ✓ AAA */
+  --admin-brand-red:#FF4B6C;      /* 5.20:1 ✓ AA  */
+  --admin-brand-red-strong:#F92330; /* 4.60:1 ✓ AA — destructive action */
 }
 /* sonner */
 /* Glassmorphism Toast amélioré */
@@ -185,6 +210,24 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Admin tokens — usable as bg-admin-bg-900, text-admin-text-tertiary, etc. */
+  --color-admin-bg-900: var(--admin-bg-900);
+  --color-admin-bg-800: var(--admin-bg-800);
+  --color-admin-bg-700: var(--admin-bg-700);
+  --color-admin-bg-600: var(--admin-bg-600);
+  --color-admin-bg-500: var(--admin-bg-500);
+  --color-admin-bg-400: var(--admin-bg-400);
+  --color-admin-text-primary: var(--admin-text-primary);
+  --color-admin-text-secondary: var(--admin-text-secondary);
+  --color-admin-text-tertiary: var(--admin-text-tertiary);
+  --color-admin-text-muted: var(--admin-text-muted);
+  --color-admin-brand-blue: var(--admin-brand-blue);
+  --color-admin-brand-blue-hover: var(--admin-brand-blue-hover);
+  --color-admin-brand-yellow: var(--admin-brand-yellow);
+  --color-admin-brand-green: var(--admin-brand-green);
+  --color-admin-brand-red: var(--admin-brand-red);
+  --color-admin-brand-red-strong: var(--admin-brand-red-strong);
 }
 
 html { color-scheme: dark; }

@@ -47,7 +47,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-white">Habbone</p>
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#BEBECE]/60">Panneau admin</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-admin-text-tertiary">Panneau admin</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="mb-2 h-px bg-white/5" />
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-[6px] px-3 py-2.5 text-[13px] font-semibold text-[#BEBECE]/60 transition-colors hover:bg-[#25254D] hover:text-white"
+          className="flex items-center gap-3 rounded-[6px] px-3 py-2.5 text-[13px] font-semibold text-admin-text-tertiary transition-colors hover:bg-[#25254D] hover:text-white"
         >
           <ArrowLeft className="h-[18px] w-[18px]" />
           Voir le site
@@ -153,8 +153,8 @@ export default function AdminLayout({
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
-            <span className="text-[13px] text-[#BEBECE]/60">
-              habbone.com / <span className="text-[#2596FF]">admin</span>
+            <span className="text-[13px] text-admin-text-tertiary">
+              habbone.com / <span className="text-admin-brand-blue">admin</span>
             </span>
           </div>
 
@@ -164,7 +164,7 @@ export default function AdminLayout({
               <button
                 type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative grid h-9 w-9 place-items-center rounded-[4px] text-[#BEBECE]/50 transition-colors hover:bg-white/5 hover:text-white"
+                className="relative grid h-9 w-9 place-items-center rounded-[4px] text-admin-text-tertiary transition-colors hover:bg-white/5 hover:text-white"
                 aria-label={`Notifications${notifCount > 0 ? ` (${notifCount} non lues)` : ''}`}
               >
                 <Bell className="h-[18px] w-[18px]" />
@@ -186,7 +186,7 @@ export default function AdminLayout({
                         <button
                           type="button"
                           onClick={handleMarkAllRead}
-                          className="text-[11px] text-[#2596FF] hover:underline"
+                          className="text-[11px] text-admin-brand-blue hover:underline"
                         >
                           Tout marquer comme lu
                         </button>
@@ -194,7 +194,7 @@ export default function AdminLayout({
                     </div>
                     <div className="max-h-[300px] overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <div className="py-6 text-center text-[12px] text-[#BEBECE]/40">
+                        <div className="py-6 text-center text-[12px] text-admin-text-tertiary">
                           Aucune notification
                         </div>
                       ) : (
@@ -203,11 +203,11 @@ export default function AdminLayout({
                             key={n.id}
                             className={`border-b border-white/[0.03] px-4 py-3 ${!n.read ? 'bg-[#2596FF]/5' : ''}`}
                           >
-                            <p className={`text-[12px] font-medium ${!n.read ? 'text-white' : 'text-[#BEBECE]/60'}`}>
+                            <p className={`text-[12px] font-medium ${!n.read ? 'text-white' : 'text-admin-text-tertiary'}`}>
                               {n.title}
                             </p>
                             {n.message && (
-                              <p className="mt-0.5 text-[11px] text-[#BEBECE]/40">{n.message}</p>
+                              <p className="mt-0.5 text-[11px] text-admin-text-tertiary">{n.message}</p>
                             )}
                           </div>
                         ))

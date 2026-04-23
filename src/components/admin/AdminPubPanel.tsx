@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, ExternalLink, Save, X } from "lucide-react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { useAdminFetch } from "@/hooks/useAdminFetch";
 
 type PubItem = {
   id: number;
@@ -22,25 +23,19 @@ type EditState = {
 };
 
 export default function AdminPubPanel() {
-  const [items, setItems] = useState<PubItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: items,
+    loading,
+    refetch: fetchItems,
+  } = useAdminFetch<PubItem[]>('/api/admin/pub', {
+    select: (raw) => {
+      const payload = raw as { data?: PubItem[] } | null;
+      return payload?.data ?? [];
+    },
+    onError: () => toast.error('Erreur de chargement'),
+  });
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/pub", { cache: "no-store" });
-      const json = await res.json();
-      setItems(json?.data ?? []);
-    } catch {
-      toast.error("Erreur de chargement");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const startCreate = () => {
     setEdit({ id: null, nome: "", link: "", imagem: "", status: "ativo" });
@@ -135,7 +130,7 @@ export default function AdminPubPanel() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-[16px] font-bold text-white">Gestion des publicites</h3>
-          <p className="text-[12px] text-[#BEBECE]/70">
+          <p className="text-[12px] text-admin-text-secondary">
             Les publicites s&apos;affichent sur la page d&apos;accueil.
           </p>
         </div>
@@ -157,28 +152,28 @@ export default function AdminPubPanel() {
           </h4>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/70">Nom</label>
+              <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">Nom</label>
               <input
                 type="text"
                 value={edit.nome}
                 onChange={(e) => setEdit({ ...edit, nome: e.target.value })}
                 placeholder="Nom du partenaire"
-                className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/70">Lien (URL)</label>
+              <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">Lien (URL)</label>
               <input
                 type="url"
                 value={edit.link}
                 onChange={(e) => setEdit({ ...edit, link: e.target.value })}
                 placeholder="https://..."
-                className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
               />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase text-[#BEBECE]/70">
+            <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">
               Image (chemin ou URL)
             </label>
             <input
@@ -186,12 +181,12 @@ export default function AdminPubPanel() {
               value={edit.imagem}
               onChange={(e) => setEdit({ ...edit, imagem: e.target.value })}
               placeholder="/uploads/image.png ou https://..."
-              className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
             />
           </div>
           {edit.imagem && (
             <div className="rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-2">
-              <p className="mb-1 text-[10px] uppercase text-[#BEBECE]/50">Apercu</p>
+              <p className="mb-1 text-[10px] uppercase text-admin-text-tertiary">Apercu</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={edit.imagem}
@@ -225,9 +220,9 @@ export default function AdminPubPanel() {
 
       {/* List */}
       {loading ? (
-        <div className="py-8 text-center text-[13px] text-[#BEBECE]/50">Chargement...</div>
-      ) : items.length === 0 ? (
-        <div className="py-8 text-center text-[13px] text-[#BEBECE]/50">
+        <div className="py-8 text-center text-[13px] text-admin-text-tertiary">Chargement...</div>
+      ) : !items || items.length === 0 ? (
+        <div className="py-8 text-center text-[13px] text-admin-text-tertiary">
           Aucune publicite configuree.
         </div>
       ) : (
@@ -266,7 +261,7 @@ export default function AdminPubPanel() {
                   href={item.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] text-[#2596FF] hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] text-admin-brand-blue hover:underline"
                 >
                   {item.link.length > 50 ? `${item.link.slice(0, 50)}...` : item.link}
                   <ExternalLink className="h-3 w-3" />

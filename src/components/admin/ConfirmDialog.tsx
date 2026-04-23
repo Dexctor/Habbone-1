@@ -15,6 +15,9 @@ interface ConfirmDialogProps {
   icon?: ReactNode;
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export default function ConfirmDialog({
   open,
   onConfirm,
@@ -27,17 +30,48 @@ export default function ConfirmDialog({
   loading = false,
   icon,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
-  // Focus confirm button on open
+  // Capture previously-focused element, focus the confirm button, restore on close.
   useEffect(() => {
-    if (open) confirmRef.current?.focus();
+    if (!open) return;
+    previouslyFocused.current = (document.activeElement as HTMLElement) ?? null;
+    confirmRef.current?.focus();
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
   }, [open]);
 
-  // Close on Escape
+  // Keyboard handling: Escape closes, Tab/Shift+Tab is trapped inside the dialog.
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) onCancel();
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Escape' && !loading) {
+        e.stopPropagation();
+        onCancel();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const container = dialogRef.current;
+      if (!container) return;
+      const focusable = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (el) => !el.hasAttribute('data-focus-guard'),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     },
     [loading, onCancel],
   );
@@ -53,7 +87,7 @@ export default function ConfirmDialog({
   const iconColors = {
     danger: 'bg-red-500/15 text-red-400',
     warning: 'bg-[#FFC800]/15 text-[#FFC800]',
-    default: 'bg-[#2596FF]/15 text-[#2596FF]',
+    default: 'bg-[#2596FF]/15 text-admin-brand-blue',
   };
 
   return (
@@ -64,11 +98,13 @@ export default function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
+      aria-describedby={description ? 'confirm-description' : undefined}
+      aria-busy={loading || undefined}
     >
       <div
+        ref={dialogRef}
         className="w-full max-w-[420px] rounded-[8px] border border-[#1F1F3E] bg-[#272746] p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={() => {}}
       >
         <div className="flex items-start gap-4">
           {icon && (
@@ -81,7 +117,9 @@ export default function ConfirmDialog({
               {title}
             </h3>
             {description && (
-              <p className="mt-2 text-[13px] leading-relaxed text-[#BEBECE]">{description}</p>
+              <p id="confirm-description" className="mt-2 text-[13px] leading-relaxed text-[#BEBECE]">
+                {description}
+              </p>
             )}
           </div>
         </div>

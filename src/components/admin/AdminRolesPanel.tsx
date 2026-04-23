@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
+import { useAdminFetch } from "@/hooks/useAdminFetch";
 
 type Role = {
   id: string;
@@ -28,8 +29,16 @@ type Role = {
 type EditableRole = Pick<Role, "id" | "name" | "description">;
 
 export default function AdminRolesPanel() {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    data: roles,
+    loading,
+    refetch: fetchRoles,
+  } = useAdminFetch<Role[]>('/api/admin/roles/list', {
+    select: (raw) => {
+      const payload = raw as { data?: Role[] } | null;
+      return Array.isArray(payload?.data) ? payload!.data! : [];
+    },
+  });
   const [creating, setCreating] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [editingRole, setEditingRole] = useState<EditableRole | null>(null);
@@ -41,24 +50,8 @@ export default function AdminRolesPanel() {
   const [adminAccess, setAdminAccess] = useState(false);
   const [appAccess, setAppAccess] = useState(true);
 
-  useEffect(() => {
-    fetchRoles().catch(() => undefined);
-  }, []);
-
-  const fetchRoles = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/roles/list", { cache: "no-store" });
-      const json = await res.json().catch(() => ({}));
-      setRoles(Array.isArray(json?.data) ? json.data : []);
-    } catch {
-      setRoles([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const adminCount = useMemo(() => roles.filter((r) => r.admin_access).length, [roles]);
+  const roleList = roles ?? [];
+  const adminCount = useMemo(() => roleList.filter((r) => r.admin_access).length, [roleList]);
   const hasAdminRoles = adminCount > 0;
 
   const handleCreateRole = async () => {
@@ -177,7 +170,7 @@ export default function AdminRolesPanel() {
     <div className="space-y-5">
       {/* Stats */}
       <div className="flex flex-wrap gap-3 text-xs text-[color:var(--foreground)]/55">
-        <span>{roles.length} role(s)</span>
+        <span>{roleList.length} role(s)</span>
         <span>-</span>
         <span>{adminCount} avec acces admin</span>
       </div>
@@ -194,14 +187,14 @@ export default function AdminRolesPanel() {
             <p className="text-xs text-[color:var(--foreground)]/55">Creer un role et definir ses acces.</p>
           </div>
           <ChevronDown
-            className={`h-4 w-4 text-[color:var(--foreground)]/50 transition-transform ${showCreate ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-admin-text-tertiary transition-transform ${showCreate ? "rotate-180" : ""}`}
           />
         </button>
 
         {showCreate && (
           <div className="mt-4 grid gap-3 border-t border-[#141433] pt-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="roleName" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Nom</Label>
+              <Label htmlFor="roleName" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Nom</Label>
               <Input
                 id="roleName"
                 placeholder="Ex. Responsable"
@@ -211,7 +204,7 @@ export default function AdminRolesPanel() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="roleDescription" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Description</Label>
+              <Label htmlFor="roleDescription" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Description</Label>
               <Input
                 id="roleDescription"
                 placeholder="Resume des responsabilites"
@@ -257,15 +250,15 @@ export default function AdminRolesPanel() {
 
       {/* Existing roles */}
       <div className="space-y-2">
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[color:var(--foreground)]/50">
-          {loading ? "Chargement..." : `${roles.length} role(s) existant(s)`}
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-admin-text-tertiary">
+          {loading ? "Chargement..." : `${roleList.length} role(s) existant(s)`}
         </p>
 
-        {roles.map((role) => (
+        {roleList.map((role) => (
           <RoleCard key={role.id} role={role} onSaveAccess={handleSaveAccess} onEdit={openEditDialog} />
         ))}
 
-        {!roles.length && !loading && (
+        {!roleList.length && !loading && (
           <div className="flex flex-col items-center justify-center gap-2 rounded-[4px] border border-dashed border-[#141433] p-8 text-center">
             <p className="text-sm text-[color:var(--foreground)]/55">Aucun role. Creez-en un ou importez les roles par defaut.</p>
           </div>
@@ -284,7 +277,7 @@ export default function AdminRolesPanel() {
           {editingRole && (
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="editRoleName" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Nom</Label>
+                <Label htmlFor="editRoleName" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Nom</Label>
                 <Input
                   id="editRoleName"
                   value={editingRole.name}
@@ -297,7 +290,7 @@ export default function AdminRolesPanel() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="editRoleDescription" className="text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--foreground)]/50">Description</Label>
+                <Label htmlFor="editRoleDescription" className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">Description</Label>
                 <Input
                   id="editRoleDescription"
                   value={editingRole.description ?? ""}
@@ -381,10 +374,10 @@ function RoleCard({
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Badge className={role.admin_access ? "border-0 bg-[#2596FF]/15 text-[#2596FF]" : "border-0 bg-[#25254D] text-[color:var(--foreground)]/50"}>
+          <Badge className={role.admin_access ? "border-0 bg-[#2596FF]/15 text-admin-brand-blue" : "border-0 bg-[#25254D] text-admin-text-tertiary"}>
             {role.admin_access ? "Admin" : "Pas admin"}
           </Badge>
-          <Badge className={role.app_access ? "border-0 bg-green-500/15 text-green-400" : "border-0 bg-[#25254D] text-[color:var(--foreground)]/50"}>
+          <Badge className={role.app_access ? "border-0 bg-green-500/15 text-green-400" : "border-0 bg-[#25254D] text-admin-text-tertiary"}>
             {role.app_access ? "App" : "Pas app"}
           </Badge>
         </div>
@@ -403,7 +396,7 @@ function RoleCard({
         />
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs text-[color:var(--foreground)]/40">
+      <div className="mt-3 flex items-center justify-between text-xs text-admin-text-tertiary">
         <span>ID: {role.id}</span>
         <div className="flex gap-2">
           {dirty ? (
@@ -457,7 +450,7 @@ function ToggleRow({
     <div className="flex items-center justify-between gap-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2.5">
       <div>
         <p className="text-xs font-semibold text-white">{label}</p>
-        {helper && <p className="text-[10px] text-[color:var(--foreground)]/45">{helper}</p>}
+        {helper && <p className="text-[10px] text-admin-text-tertiary">{helper}</p>}
       </div>
       <Switch checked={value} onCheckedChange={onChange} />
     </div>
