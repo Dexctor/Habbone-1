@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import UserHistoryModal from "@/components/admin/UserHistoryModal";
 import { rowActionReducer, type RowActionState } from "@/components/admin/row-action-state";
 import { useAdminFetch } from "@/hooks/useAdminFetch";
 import {
@@ -606,6 +607,12 @@ export default function AdminUsersPanel({
                         >
                           <Coins className="h-4 w-4" />
                         </button>
+
+                        {/* History */}
+                        <UserHistoryModal
+                          userId={user.id}
+                          userName={formatFullName(user)}
+                        />
 
                         {/* Ban / Unban */}
                         <button
