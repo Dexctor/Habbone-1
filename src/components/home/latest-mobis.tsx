@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 
@@ -53,6 +54,8 @@ export default function LatestBadges() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [tab, setTab] = useState<TabId>('mondial')
+  const [direction, setDirection] = useState<1 | -1>(1)
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     setLoading(true)
@@ -95,8 +98,21 @@ export default function LatestBadges() {
     ]
   }, [visibleItems])
 
-  const previousPage = () => setPage((c) => Math.max(0, c - 1))
-  const nextPage = () => setPage((c) => Math.min(pageCount - 1, c + 1))
+  const previousPage = () => {
+    setDirection(-1)
+    setPage((c) => Math.max(0, c - 1))
+  }
+  const nextPage = () => {
+    setDirection(1)
+    setPage((c) => Math.min(pageCount - 1, c + 1))
+  }
+  const switchTab = (next: TabId) => {
+    if (next === tab) return
+    // Direction based on tab order: mondial → fr → mobis
+    const order: TabId[] = ['mondial', 'fr', 'mobis']
+    setDirection(order.indexOf(next) > order.indexOf(tab) ? 1 : -1)
+    setTab(next)
+  }
 
   return (
     <section className="w-full">
@@ -113,7 +129,7 @@ export default function LatestBadges() {
                 key={t.id}
                 type="button"
                 title={t.tooltip}
-                onClick={() => setTab(t.id)}
+                onClick={() => switchTab(t.id)}
                 className={`grid h-[40px] w-[40px] place-items-center rounded-[3px] transition ${
                   tab === t.id
                     ? 'bg-[#2596FF] ring-1 ring-white/20'
@@ -138,40 +154,55 @@ export default function LatestBadges() {
             </div>
           ) : (
             <TooltipProvider delayDuration={150}>
-              <div className="grid grid-cols-6 gap-[3px]">
-                {visibleSlots.map((item, index) => (
-                  item ? (
-                    <TooltipPrimitive.Root key={`${item.code}-${index}`}>
-                      <TooltipPrimitive.Trigger asChild>
+              <div className="relative overflow-hidden">
+                <AnimatePresence mode="wait" initial={false} custom={direction}>
+                  <motion.div
+                    key={`${tab}-${clampedPage}`}
+                    custom={direction}
+                    initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 24 }}
+                    animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                    exit={reduce ? { opacity: 0 } : { opacity: 0, x: direction * -24 }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                    className="grid grid-cols-6 gap-[3px]"
+                  >
+                    {visibleSlots.map((item, index) => (
+                      item ? (
+                        <TooltipPrimitive.Root key={`${item.code}-${index}`}>
+                          <TooltipPrimitive.Trigger asChild>
+                            <motion.div
+                              initial={reduce ? false : { opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ duration: 0.2, delay: reduce ? 0 : Math.min(index * 0.012, 0.2) }}
+                              className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                              />
+                            </motion.div>
+                          </TooltipPrimitive.Trigger>
+                          <TooltipPrimitive.Portal>
+                            <TooltipPrimitive.Content
+                              sideOffset={6}
+                              className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
+                            >
+                              {item.name}
+                              <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
+                            </TooltipPrimitive.Content>
+                          </TooltipPrimitive.Portal>
+                        </TooltipPrimitive.Root>
+                      ) : (
                         <div
-                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] group transition hover:bg-[#303060]"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-[34px] w-[34px] image-pixelated object-contain opacity-80 transition group-hover:scale-110 group-hover:opacity-100"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                          />
-                        </div>
-                      </TooltipPrimitive.Trigger>
-                      <TooltipPrimitive.Portal>
-                        <TooltipPrimitive.Content
-                          sideOffset={6}
-                          className="z-50 rounded-md bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in fade-in-0 zoom-in-95"
-                        >
-                          {item.name}
-                          <TooltipPrimitive.Arrow className="fill-black" width={10} height={6} />
-                        </TooltipPrimitive.Content>
-                      </TooltipPrimitive.Portal>
-                    </TooltipPrimitive.Root>
-                  ) : (
-                    <div
-                      key={`empty-${index}`}
-                      className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
-                    />
-                  )
-                ))}
+                          key={`empty-${index}`}
+                          className="flex aspect-square w-full min-h-[64px] items-center justify-center rounded-[4px] border border-black/20 bg-[#1F1F3E] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] opacity-35"
+                        />
+                      )
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </TooltipProvider>
           )}
