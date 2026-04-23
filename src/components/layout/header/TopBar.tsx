@@ -215,19 +215,14 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
       <div className="container max-w-[1200px] mx-auto px-4">
         <div className="bar-top flex w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] items-center justify-between">
           <div className="left flex items-center flex-1 min-w-0">
-            {/* Habbo pixel-art style radio widget */}
+            {/* Radio widget — style cohérent avec le reste du site */}
             <div
-              className="radio-habbo relative flex items-center gap-[8px] px-[8px] py-[6px] bg-[#1F1F3E] border-2 border-[#141433]"
-              style={{
-                boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
-                imageRendering: 'pixelated',
-              }}
+              className={`relative flex items-center gap-3 rounded-md pl-2 pr-3 py-2 bg-gradient-to-b from-[#25254D] to-[#1F1F3E] ring-1 ring-white/5 transition-all ${
+                radio.isPlaying ? 'ring-[#2596FF]/30' : ''
+              }`}
             >
-              {/* DJ Avatar box — Habbo style card */}
-              <div
-                className="relative flex items-center justify-center w-[62px] h-[62px] shrink-0 bg-[#303060] border-2 border-[#141433]"
-                style={{ boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.3)' }}
-              >
+              {/* DJ Avatar */}
+              <div className="relative flex items-center justify-center w-[60px] h-[60px] rounded-md shrink-0 bg-gradient-to-b from-[#1F1F3E] to-[#141433] ring-1 ring-white/5 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   id="avatar-stream"
@@ -235,81 +230,75 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
                   alt="Habbo DJ"
                   className="image-pixelated h-[50px] w-auto"
                 />
-                {/* ON AIR pixel badge on avatar */}
+                {/* LIVE dot on avatar corner */}
                 {radio.isPlaying && (
-                  <span
-                    className="absolute -top-[6px] left-1/2 -translate-x-1/2 flex items-center gap-[3px] px-[4px] py-[1px] bg-[#F92330] border border-[#141433] text-white text-[8px] font-bold uppercase tracking-[0.1em]"
-                    style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.4)' }}
-                  >
-                    <span className="h-[5px] w-[5px] bg-white animate-pulse" />
-                    ON AIR
+                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0FD52F] opacity-70" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#0FD52F] ring-1 ring-[#141433]" />
                   </span>
                 )}
               </div>
 
-              {/* Info + controls column */}
-              <div className="info-stream flex flex-col gap-[4px] min-w-0">
+              {/* Info + controls */}
+              <div className="info-stream flex flex-col gap-1.5 min-w-0">
                 {/* Title row */}
-                <div className="flex items-center gap-[6px] min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/img/star-blue-mini.png"
-                    alt=""
-                    aria-hidden="true"
-                    className="image-pixelated h-[12px] w-[12px] shrink-0"
-                  />
-                  <span
-                    id="programming-stream"
-                    className="font-bold text-white text-[11px] uppercase tracking-[0.08em] truncate"
-                    style={{ textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}
-                  >
-                    HabbOne Radio
+                <div className="flex items-center gap-2 min-w-0">
+                  <i className="material-icons text-[16px] text-[#2596FF] shrink-0" aria-hidden>graphic_eq</i>
+                  <span className="flex items-baseline gap-1.5 text-[0.8rem] leading-tight min-w-0">
+                    <span id="programming-stream" className="font-bold text-white truncate">
+                      HabbOne Radio
+                    </span>
+                    <span className="text-[#BEBECE]/70 text-[0.7rem]">par</span>
+                    <span className="font-semibold text-[#FFC800] truncate">Decrypt</span>
                   </span>
-                  <span className="text-[#BEBECE] text-[10px] uppercase">par</span>
-                  <span
-                    className="font-bold text-[#FFC800] text-[11px] uppercase tracking-[0.04em] truncate"
-                    style={{ textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}
-                  >
-                    Decrypt
-                  </span>
+
+                  {/* Status badge */}
+                  {radio.isPlaying && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#0FD52F]/15 ring-1 ring-[#0FD52F]/30 text-[0.6rem] font-bold text-[#0FD52F] tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#0FD52F] animate-pulse" />
+                      LIVE
+                    </span>
+                  )}
+                  {radio.isLoading && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#FFC800]/15 ring-1 ring-[#FFC800]/30 text-[0.6rem] font-bold text-[#FFC800] tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FFC800] animate-pulse" />
+                      CHARGEMENT
+                    </span>
+                  )}
                 </div>
 
-                {/* Pixel equalizer bars */}
-                <div className="flex items-end gap-[2px] h-[12px]" aria-hidden="true">
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                {/* Equalizer bars when playing */}
+                <div className="flex items-end gap-[3px] h-[10px] px-1" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
                     <span
                       key={i}
-                      className={`w-[3px] ${
+                      className={`w-[2px] rounded-full ${
                         radio.isPlaying
-                          ? 'bg-[#0FD52F] radio-eq-bar'
+                          ? 'bg-[#2596FF] radio-eq-bar'
                           : 'bg-[#3a3a6a] h-[3px]'
                       }`}
                       style={
                         radio.isPlaying
                           ? {
-                              height: `${40 + (Math.sin(i * 1.2) + 1) * 30}%`,
-                              animationDelay: `${i * 120}ms`,
-                              imageRendering: 'pixelated',
+                              height: `${30 + (Math.sin(i * 0.9) + 1) * 35}%`,
+                              animationDelay: `${i * 100}ms`,
                             }
-                          : { imageRendering: 'pixelated' }
+                          : undefined
                       }
                     />
                   ))}
                 </div>
 
-                {/* Controls row — Habbo pixel buttons */}
-                <div className="flex items-center gap-[6px]">
-                  {/* Play / Pause — Habbo style button */}
+                {/* Controls row */}
+                <div className="flex items-center gap-2">
+                  {/* Play / Pause */}
                   <button
                     type="button"
-                    className={`relative flex items-center justify-center w-[28px] h-[28px] shrink-0 border-2 border-[#141433] text-white transition-transform active:translate-y-[1px] ${
+                    className={`relative flex items-center justify-center w-[30px] h-[30px] rounded-full text-white shrink-0 ring-1 transition-all ${
                       radio.isPlaying
-                        ? 'bg-[#F92330] hover:bg-[#E11036]'
-                        : 'bg-[#0FD52F] hover:bg-[#16B254]'
-                    } ${radio.isLoading ? 'cursor-wait opacity-70' : ''}`}
-                    style={{
-                      boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.3), 0 2px 0 rgba(0,0,0,0.4)',
-                    }}
+                        ? 'bg-[#F92330] hover:bg-[#E11036] ring-[#F92330]/40'
+                        : 'bg-[#2596FF] hover:bg-[#1D7FD9] ring-[#2596FF]/40'
+                    } ${radio.isLoading ? 'opacity-70 cursor-wait' : 'hover:scale-105 active:scale-95'}`}
                     onClick={radio.toggle}
                     aria-label={radio.isPlaying ? 'Arrêter la radio' : 'Lancer la radio'}
                     disabled={radio.isLoading}
@@ -319,36 +308,14 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
                     </i>
                   </button>
 
-                  {/* Status pixel label */}
-                  <span
-                    className={`hidden sm:inline-flex items-center gap-[4px] px-[6px] h-[22px] border-2 border-[#141433] text-[9px] font-bold uppercase tracking-[0.1em] ${
-                      radio.isPlaying
-                        ? 'bg-[#0FD52F] text-white'
-                        : radio.isLoading
-                          ? 'bg-[#FFC800] text-[#141433]'
-                          : 'bg-[#25254D] text-[#BEBECE]'
-                    }`}
-                    style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.25)' }}
-                  >
-                    <span
-                      className={`h-[6px] w-[6px] ${
-                        radio.isPlaying ? 'bg-white animate-pulse' : radio.isLoading ? 'bg-[#141433] animate-pulse' : 'bg-[#BEBECE]'
-                      }`}
-                    />
-                    {radio.isPlaying ? 'LIVE' : radio.isLoading ? 'LOAD' : 'OFF'}
-                  </span>
-
-                  {/* Volume — Habbo pixel slider */}
-                  <div
-                    className="hidden md:flex items-center gap-[6px] h-[22px] px-[6px] bg-[#141433] border-2 border-[#141433]"
-                    style={{ boxShadow: 'inset 0 2px 0 rgba(0,0,0,0.4), inset 0 -1px 0 rgba(255,255,255,0.03)' }}
-                  >
-                    <i className="material-icons text-[12px] text-[#BEBECE]" aria-hidden>
+                  {/* Volume */}
+                  <div className="hidden md:flex items-center gap-2 h-[28px] px-2.5 rounded-md bg-gradient-to-b from-[#1F1F3E] to-[#141433] ring-1 ring-white/5">
+                    <i className="material-icons text-[14px] text-[#BEBECE]" aria-hidden>
                       {radio.volume === 0 ? 'volume_off' : radio.volume < 50 ? 'volume_down' : 'volume_up'}
                     </i>
                     <input
                       type="range"
-                      className="volume-habbo appearance-none w-[100px] h-[6px] cursor-pointer bg-[#303060]"
+                      className="volume-slider appearance-none w-[110px] h-[4px] rounded-full cursor-pointer bg-[#3a3a6a]"
                       id="volume"
                       min={0}
                       max={100}
@@ -357,13 +324,10 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
                       step={1}
                       aria-label="Volume radio"
                       style={{
-                        backgroundImage: `linear-gradient(to right, #0FD52F 0%, #0FD52F ${radio.volume}%, #303060 ${radio.volume}%, #303060 100%)`,
+                        backgroundImage: `linear-gradient(to right, #2596FF 0%, #2596FF ${radio.volume}%, #3a3a6a ${radio.volume}%, #3a3a6a 100%)`,
                       }}
                     />
-                    <span
-                      className="text-[9px] font-bold text-[#FFC800] w-[22px] text-right tabular-nums uppercase"
-                      style={{ textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}
-                    >
+                    <span className="text-[0.65rem] font-mono text-[#BEBECE]/80 w-[22px] text-right tabular-nums">
                       {radio.volume}
                     </span>
                   </div>
