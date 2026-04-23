@@ -86,11 +86,22 @@ export const authOptions: NextAuthOptions = {
           } catch {}
         }
 
-        // Fallback: ADMIN_NICKS env var for bootstrapping
-        const adminNicks = (process.env.ADMIN_NICKS || '')
-          .split(',')
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
+        // Fallback: ADMIN_NICKS env var for bootstrapping.
+        // This is ONLY honoured until ADMIN_NICKS_UNTIL (unix timestamp, seconds).
+        // Rationale: once a real admin exists in Directus, the nick-based fallback
+        // should stop being a trust anchor — otherwise anyone who grabs the nick
+        // regains admin after rotation.
+        const adminNicksUntilRaw = process.env.ADMIN_NICKS_UNTIL || '';
+        const adminNicksUntil = Number.parseInt(adminNicksUntilRaw, 10);
+        const nicksFallbackActive =
+          Number.isFinite(adminNicksUntil) && adminNicksUntil * 1000 > Date.now();
+
+        const adminNicks = nicksFallbackActive
+          ? (process.env.ADMIN_NICKS || '')
+              .split(',')
+              .map((s) => s.trim().toLowerCase())
+              .filter(Boolean)
+          : [];
         const isAdminByNick = adminNicks.includes(String(user.nick || '').toLowerCase());
 
         const computedAdminAccess = directusAdminAccess || isAdminByNick;
@@ -110,38 +121,38 @@ export const authOptions: NextAuthOptions = {
           directusRoleId,
           directusRoleName,
           directusAdminAccess: computedAdminAccess,
-        } as any;
+        };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        (token as any).uid = (user as any).id;
-        (token as any).nick = (user as any).nick;
-        (token as any).avatar = (user as any).avatar;
-        (token as any).missao = (user as any).missao;
-        (token as any).hotel = (user as any).hotel ?? 'fr';
-        (token as any).role = (user as any).role ?? 'member';
-        (token as any).email = (user as any).email ?? null;
-        (token as any).directusRoleId = (user as any).directusRoleId ?? null;
-        (token as any).directusRoleName = (user as any).directusRoleName ?? null;
-        (token as any).directusAdminAccess = (user as any).directusAdminAccess === true;
+        token.uid = user.id;
+        token.nick = user.nick;
+        token.avatar = user.avatar;
+        token.missao = user.missao;
+        token.hotel = user.hotel ?? 'fr';
+        token.role = user.role ?? 'member';
+        token.email = user.email ?? null;
+        token.directusRoleId = user.directusRoleId ?? null;
+        token.directusRoleName = user.directusRoleName ?? null;
+        token.directusAdminAccess = user.directusAdminAccess === true;
       }
       return token;
     },
     async session({ session, token }) {
-      (session as any).user = {
-        id: (token as any).uid,
-        nick: (token as any).nick,
-        avatar: (token as any).avatar,
-        missao: (token as any).missao,
-        hotel: (token as any).hotel ?? 'fr',
-        role: (token as any).role,
-        email: (token as any).email,
-        directusRoleId: (token as any).directusRoleId ?? null,
-        directusRoleName: (token as any).directusRoleName ?? null,
-        directusAdminAccess: (token as any).directusAdminAccess === true,
+      session.user = {
+        id: token.uid,
+        nick: token.nick,
+        avatar: token.avatar,
+        missao: token.missao,
+        hotel: token.hotel ?? 'fr',
+        role: token.role,
+        email: token.email,
+        directusRoleId: token.directusRoleId ?? null,
+        directusRoleName: token.directusRoleName ?? null,
+        directusAdminAccess: token.directusAdminAccess === true,
       };
       return session;
     },

@@ -1,36 +1,34 @@
 import 'server-only';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { TAG_NEWS, TAG_NEWS_DETAIL, TAG_FORUM, TAG_FORUM_TOPIC, TAG_STORIES, TAG_HOME } from '@/lib/revalidate-tags';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { adminCount, adminCountUsers } from '@/server/directus/admin';
 import {
   adminListForumTopics,
   adminListForumPosts,
-  adminUpdateForumTopic,
-  adminDeleteForumTopic,
-  adminUpdateForumPost,
-  adminDeleteForumPost,
   adminListForumComments,
-  adminUpdateForumComment,
-  adminDeleteForumComment,
 } from '@/server/directus/forum';
 import {
   adminListNews,
   adminListNewsComments,
-  adminUpdateNews,
-  adminDeleteNews,
-  adminUpdateNewsComment,
-  adminDeleteNewsComment,
 } from '@/server/directus/news';
-import {
-  adminListStories,
-  adminUpdateStory,
-  adminDeleteStory,
-} from '@/server/directus/stories';
+import { adminListStories } from '@/server/directus/stories';
 import { getAdminLogs } from '@/server/directus/admin-logs';
+import {
+  updateTopicAction,
+  deleteTopicAction,
+  updatePostAction,
+  deletePostAction,
+  updateArticleAction,
+  deleteArticleAction,
+  updateForumCommentAction,
+  deleteForumCommentAction,
+  updateNewsCommentAction,
+  deleteNewsCommentAction,
+  updateStoryAction,
+  deleteStoryAction,
+} from '@/server/actions/admin-content';
 
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import type { RecentActivityItem } from '@/components/admin/AdminDashboard';
@@ -54,20 +52,13 @@ export const revalidate = 0;
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/login?from=/admin');
-  if ((session.user as any).role !== 'admin') redirect('/profile');
+  if (session.user.role !== 'admin') redirect('/profile');
   try {
     await assertAdmin();
   } catch {
     redirect('/profile');
   }
   return session;
-}
-
-function revalidatePublicFeeds() {
-  revalidateTag(TAG_HOME);
-  revalidateTag(TAG_NEWS);
-  revalidateTag(TAG_FORUM);
-  revalidateTag(TAG_STORIES);
 }
 
 export default async function AdminPage() {
@@ -87,172 +78,22 @@ export default async function AdminPage() {
     forumComments,
     newsComments,
   ] = await Promise.all([
-    adminListForumTopics(1000).catch(() => []),
-    adminListForumPosts(1000).catch(() => []),
-    adminListNews(1000).catch(() => []),
-    adminListStories(500).catch(() => []),
+    // Admin Content tab does local filtering / pagination, so we cap the payload
+    // at 200 per collection. Real counts still come from adminCount() below.
+    adminListForumTopics(200).catch(() => []),
+    adminListForumPosts(200).catch(() => []),
+    adminListNews(200).catch(() => []),
+    adminListStories(100).catch(() => []),
     adminCount('forum_topicos').catch(() => 0),
     adminCount('noticias').catch(() => 0),
     adminCountUsers().catch(() => 0),
     adminCount('directus_users').catch(() => 0),
     adminCount('forum_coment').catch(() => 0),
     adminCount('noticias_coment').catch(() => 0),
-    adminListForumComments(500).catch(() => []),
-    adminListNewsComments(500).catch(() => []),
+    adminListForumComments(100).catch(() => []),
+    adminListNewsComments(100).catch(() => []),
   ]);
   const commentsTotal = (forumCommentsCount || 0) + (newsCommentsCount || 0);
-
-  // Server actions
-  async function updateTopic(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const patch: any = {
-      titulo: String(formData.get('titulo') || ''),
-      imagem: String(formData.get('imagem') || ''),
-      conteudo: String(formData.get('conteudo') || ''),
-      fixo: !!formData.get('fixo'),
-      fechado: !!formData.get('fechado'),
-    };
-    await adminUpdateForumTopic(id, patch);
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-    revalidateTag(TAG_FORUM_TOPIC(id));
-    revalidateTag(TAG_HOME);
-  }
-
-  async function deleteTopic(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteForumTopic(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-    revalidateTag(TAG_FORUM_TOPIC(id));
-    revalidateTag(TAG_HOME);
-  }
-
-  async function updatePost(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const conteudo = String(formData.get('conteudo') || '');
-    await adminUpdateForumPost(id, { conteudo });
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-  }
-
-  async function deletePost(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteForumPost(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-  }
-
-  async function updateArticle(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const patch: any = {
-      titulo: String(formData.get('titulo') || ''),
-      descricao: String(formData.get('descricao') || ''),
-      imagem: String(formData.get('imagem') || ''),
-      noticia: String(formData.get('noticia') || ''),
-    };
-    await adminUpdateNews(id, patch);
-    revalidatePath('/admin');
-    revalidateTag(TAG_NEWS);
-    revalidateTag(TAG_NEWS_DETAIL(id));
-    revalidateTag(TAG_HOME);
-  }
-
-  async function deleteArticle(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteNews(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_NEWS);
-    revalidateTag(TAG_NEWS_DETAIL(id));
-    revalidateTag(TAG_HOME);
-  }
-
-  async function updateForumComment(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const comentario = String(formData.get('comentario') || '');
-    await adminUpdateForumComment(id, { comentario });
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-  }
-
-  async function deleteForumComment(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteForumComment(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_FORUM);
-  }
-
-  async function updateNewsComment(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const comentario = String(formData.get('comentario') || '');
-    await adminUpdateNewsComment(id, { comentario });
-    revalidatePath('/admin');
-    revalidateTag(TAG_NEWS);
-  }
-
-  async function deleteNewsComment(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteNewsComment(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_NEWS);
-  }
-
-  async function updateStory(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    const patch: any = {
-      status: String(formData.get('status') || 'public'),
-    };
-    if (formData.has('titulo')) patch.titulo = String(formData.get('titulo') || '');
-    if (formData.has('imagem')) patch.imagem = String(formData.get('imagem') || '');
-    await adminUpdateStory(id, patch);
-    revalidatePath('/admin');
-    revalidateTag(TAG_STORIES);
-    revalidateTag(TAG_HOME);
-  }
-
-  async function deleteStory(formData: FormData) {
-    'use server';
-    await requireAdmin();
-    const id = Number(formData.get('id') || 0);
-    if (!id) return;
-    await adminDeleteStory(id);
-    revalidatePath('/admin');
-    revalidateTag(TAG_STORIES);
-    revalidateTag(TAG_HOME);
-  }
 
   const summaryStats = [
     { label: 'Articles', value: newsCount },
@@ -360,7 +201,7 @@ export default async function AdminPage() {
 
   return (
     <AdminDashboard
-      currentAdminName={(session.user as any).nick}
+      currentAdminName={session.user.nick}
       stats={summaryStats}
       topics={topicsArray}
       posts={postsArray}
@@ -370,18 +211,18 @@ export default async function AdminPage() {
       stories={storiesArray}
       topicTitleById={topicTitleById}
       recentActivity={activityFeed}
-      updateTopic={updateTopic}
-      deleteTopic={deleteTopic}
-      updatePost={updatePost}
-      deletePost={deletePost}
-      updateArticle={updateArticle}
-      deleteArticle={deleteArticle}
-      updateForumComment={updateForumComment}
-      deleteForumComment={deleteForumComment}
-      updateNewsComment={updateNewsComment}
-      deleteNewsComment={deleteNewsComment}
-      updateStory={updateStory}
-      deleteStory={deleteStory}
+      updateTopic={updateTopicAction}
+      deleteTopic={deleteTopicAction}
+      updatePost={updatePostAction}
+      deletePost={deletePostAction}
+      updateArticle={updateArticleAction}
+      deleteArticle={deleteArticleAction}
+      updateForumComment={updateForumCommentAction}
+      deleteForumComment={deleteForumCommentAction}
+      updateNewsComment={updateNewsCommentAction}
+      deleteNewsComment={deleteNewsCommentAction}
+      updateStory={updateStoryAction}
+      deleteStory={deleteStoryAction}
     />
   );
 }

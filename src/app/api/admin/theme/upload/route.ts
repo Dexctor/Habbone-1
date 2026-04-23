@@ -7,6 +7,7 @@ import { withAdmin } from '@/server/api-helpers';
 import { directusUrl } from '@/server/directus/client';
 import { uploadFileToDirectus } from '@/server/directus/stories';
 import { isThemeStoredInDirectus, themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
+import { validateUploadedFile } from '@/server/upload-security';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -32,20 +33,20 @@ function extensionFromFile(file: File): string {
   return 'png';
 }
 
-async function uploadToLocalPublicDir(file: File, target: string): Promise<string> {
+async function uploadToLocalPublicDir(file: File, target: string, buffer: Buffer): Promise<string> {
   const ext = extensionFromFile(file);
   const fileName = `${target}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
   await mkdir(themeUploadDir, { recursive: true });
-  await writeFile(path.join(themeUploadDir, fileName), bytes);
+  await writeFile(path.join(themeUploadDir, fileName), buffer);
   return `/uploads/theme/${fileName}`;
 }
 
-async function uploadToDirectusAssets(file: File): Promise<string> {
+async function uploadToDirectusAssets(file: File, buffer: Buffer, detectedMime: string): Promise<string> {
   const fallbackExt = extensionFromFile(file);
   const sourceName = (file.name || '').trim();
   const filename = sourceName || `theme-${Date.now()}.${fallbackExt}`;
-  const uploaded = await uploadFileToDirectus(file, filename, file.type || 'application/octet-stream');
+  const safeFile = new File([new Uint8Array(buffer)], filename, { type: detectedMime });
+  const uploaded = await uploadFileToDirectus(safeFile, filename, detectedMime);
   const id = String(uploaded?.id || '').trim();
   if (!id) throw new Error('DIRECTUS_UPLOAD_NO_ID');
   return `${directusUrl}/assets/${encodeURIComponent(id)}`;
@@ -65,19 +66,19 @@ export const POST = withAdmin(async (req) => {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'FILE_REQUIRED', code: 'FILE_REQUIRED' }, { status: 400 });
   }
-  if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: 'INVALID_FILE_SIZE', code: 'INVALID_FILE_SIZE' }, { status: 400 });
-  }
-
-  const mimeType = (file.type || '').toLowerCase();
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    return NextResponse.json({ error: 'UNSUPPORTED_FILE_TYPE', code: 'UNSUPPORTED_FILE_TYPE' }, { status: 400 });
+  const validation = await validateUploadedFile(file, {
+    allowedMimes: ALLOWED_MIME_TYPES,
+    maxSize: MAX_FILE_SIZE,
+    allowSvg: true,
+  });
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 });
   }
 
   try {
     const uploadedUrl = isThemeStoredInDirectus()
-      ? await uploadToDirectusAssets(file)
-      : await uploadToLocalPublicDir(file, target);
+      ? await uploadToDirectusAssets(file, validation.buffer, validation.detectedMime)
+      : await uploadToLocalPublicDir(file, target, validation.buffer);
 
     const settings = await writeThemeSettings(
       target === 'logo'
@@ -92,10 +93,11 @@ export const POST = withAdmin(async (req) => {
         settings,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'THEME_UPLOAD_FAILED';
     return NextResponse.json(
-      { error: error?.message || 'THEME_UPLOAD_FAILED', code: 'THEME_UPLOAD_FAILED' },
+      { error: message, code: 'THEME_UPLOAD_FAILED' },
       { status: 500 },
     );
   }
-});
+}, { key: 'admin:theme:upload', limit: 10, windowMs: 60_000 });

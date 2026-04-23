@@ -1,14 +1,21 @@
 import 'server-only';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession, type Session } from 'next-auth';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { checkRateLimit } from '@/server/rate-limit';
 
+type ApiHandlerContext = {
+  session: Session | null;
+  user: Session['user'] | null;
+  nick: string;
+  params?: Record<string, string | undefined>;
+};
+
 type ApiHandler = (
   req: Request,
-  ctx: { session: any; user: any; nick: string; params?: any },
+  ctx: ApiHandlerContext,
 ) => Promise<NextResponse | Response>;
 
 type RateLimitConfig = {
@@ -57,7 +64,7 @@ export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
 
     // Get session for handler context
     const session = await getServerSession(authOptions);
-    const user = session?.user as any;
+    const user = session?.user ?? null;
     const nick = typeof user?.nick === 'string' ? user.nick.trim() : '';
     const params = routeCtx?.params ? await routeCtx.params : undefined;
 
@@ -93,7 +100,7 @@ export function withAuth(handler: ApiHandler, rateLimit?: RateLimitConfig) {
 
     // Auth check
     const session = await getServerSession(authOptions);
-    const user = session?.user as any;
+    const user = session?.user ?? null;
     const nick = typeof user?.nick === 'string' ? user.nick.trim() : '';
 
     if (!nick) {
