@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { rowActionReducer, type RowActionState } from "@/components/admin/row-action-state";
+import { useAdminFetch } from "@/hooks/useAdminFetch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -145,19 +146,18 @@ export default function AdminUsersPanel({
 
   const pageCount = Math.max(1, Math.ceil(total / LIMIT));
 
-  /* ── Computed stats ── */
-  const statsFromItems = useMemo(() => {
-    let actifs = 0;
-    let bannis = 0;
-    let inactifs = 0;
-    for (const u of items) {
-      const s = String(u.status || "").toLowerCase();
-      if (s === "suspended") bannis++;
-      else if (s === "inactive" || s === "draft") inactifs++;
-      else actifs++;
-    }
-    return { actifs, bannis, inactifs };
-  }, [items]);
+  /* ── Global stats (whole usuarios table, not just current page) ── */
+  type GlobalStats = { actifs: number; bannis: number; inactifs: number };
+  const {
+    data: globalStats,
+    refetch: refetchStats,
+  } = useAdminFetch<GlobalStats>("/api/admin/users/stats", {
+    select: (raw) => {
+      const p = raw as { actifs?: number; bannis?: number; inactifs?: number } | null;
+      return { actifs: p?.actifs ?? 0, bannis: p?.bannis ?? 0, inactifs: p?.inactifs ?? 0 };
+    },
+  });
+  const statsFromItems = globalStats ?? { actifs: 0, bannis: 0, inactifs: 0 };
 
   /* ── Fetch users ── */
   const getUsers = useCallback(async ({
@@ -278,7 +278,7 @@ export default function AdminUsersPanel({
         return;
       }
       toast.success(ban ? `${formatFullName(user)} a été banni` : `${formatFullName(user)} a été réactivé`);
-      await getUsers({ page });
+      await Promise.all([getUsers({ page }), refetchStats()]);
     } catch {
       toast.error("Impossible de mettre à jour le statut");
     } finally {
@@ -301,7 +301,7 @@ export default function AdminUsersPanel({
         return;
       }
       toast.success(`${formatFullName(user)} a été supprimé`);
-      await getUsers({ page });
+      await Promise.all([getUsers({ page }), refetchStats()]);
     } catch {
       toast.error("Suppression impossible");
     } finally {
