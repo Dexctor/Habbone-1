@@ -37,7 +37,7 @@ export const GET = withAdmin(async (req) => {
   // Use the service layer which handles DB column mapping + encoding fixes
   const items = await listShopItems(false);
   return NextResponse.json({ ok: true, data: items });
-});
+}, { key: 'admin:shop:read', limit: 120, windowMs: 60_000 });
 
 export const POST = withAdmin(async (req) => {
   const body = await req.json().catch(() => null);
@@ -98,4 +98,4 @@ export const POST = withAdmin(async (req) => {
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
-});
+}, { key: 'admin:shop:mutate', limit: 30, windowMs: 60_000 });

@@ -16,7 +16,7 @@ export const GET = withAdmin(async () => {
   ]);
 
   return NextResponse.json({ ok: true, data: notifications, unreadCount });
-});
+}, { key: 'admin:notifs:read', limit: 120, windowMs: 60_000 });
 
 export const POST = withAdmin(async (req) => {
   const body = await req.json().catch(() => null);
@@ -35,4 +35,4 @@ export const POST = withAdmin(async (req) => {
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
-});
+}, { key: 'admin:notifs:mutate', limit: 60, windowMs: 60_000 });

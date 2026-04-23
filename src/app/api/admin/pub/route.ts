@@ -19,7 +19,7 @@ export const GET = withAdmin(async () => {
   if (!res.ok) return NextResponse.json({ data: [] })
   const json = await res.json()
   return NextResponse.json({ data: json?.data ?? [] })
-});
+}, { key: 'admin:pub:read', limit: 120, windowMs: 60_000 });
 
 const CreateSchema = z.object({
   nome: z.string().min(1, 'Nom requis').max(100),

@@ -32,4 +32,4 @@ export const POST = withAdmin(async (req) => {
     const { message } = resolveHttpError(error, 'ROLE_CREATE_FAILED', 500);
     return NextResponse.json({ data, code: 'VIRTUAL_ROLE', error: message });
   }
-});
+}, { key: 'admin:roles:create', limit: 10, windowMs: 60_000 });

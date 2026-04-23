@@ -25,4 +25,4 @@ export const POST = withAdmin(async (req) => {
     const { message, status, code } = resolveHttpError(error, 'UPDATE_ROLE_FAILED', 500);
     return NextResponse.json({ error: message, code: code ?? 'UPDATE_ROLE_FAILED' }, { status });
   }
-});
+}, { key: 'admin:roles:update', limit: 20, windowMs: 60_000 });

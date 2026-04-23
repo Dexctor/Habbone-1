@@ -25,13 +25,14 @@ export const GET = withAdmin(async () => {
         },
       },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'THEME_READ_FAILED';
     return NextResponse.json(
-      { error: error?.message || 'THEME_READ_FAILED', code: 'THEME_READ_FAILED' },
+      { error: message, code: 'THEME_READ_FAILED' },
       { status: 500 },
     );
   }
-});
+}, { key: 'admin:theme:read', limit: 60, windowMs: 60_000 });
 
 export const POST = withAdmin(async (req) => {
   const parsed = Body.safeParse(await req.json().catch(() => null));
@@ -43,10 +44,11 @@ export const POST = withAdmin(async (req) => {
     const data = await writeThemeSettings(parsed.data);
     revalidateTag('theme');
     return NextResponse.json({ data });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'THEME_WRITE_FAILED';
     return NextResponse.json(
-      { error: error?.message || 'THEME_WRITE_FAILED', code: 'THEME_WRITE_FAILED' },
+      { error: message, code: 'THEME_WRITE_FAILED' },
       { status: 500 },
     );
   }
-});
+}, { key: 'admin:theme:write', limit: 20, windowMs: 60_000 });

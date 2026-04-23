@@ -25,4 +25,4 @@ export const GET = withAdmin(async () => {
     app_access: r.appAccess,
   }));
   return NextResponse.json({ data, meta: { virtual: true } });
-});
+}, { key: 'admin:roles:list', limit: 120, windowMs: 60_000 });

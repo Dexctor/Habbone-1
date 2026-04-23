@@ -29,4 +29,4 @@ export const POST = withAdmin(async () => {
       { status: 200 }
     );
   }
-});
+}, { key: 'admin:roles:seed', limit: 5, windowMs: 60_000 });
