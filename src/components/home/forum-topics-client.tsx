@@ -17,7 +17,8 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
   const visibleTopics = topics.slice(0, 7)
 
   return (
-    <section className="relative w-screen left-1/2 -translate-x-1/2 bg-[#25254D] py-16 lg:py-[72px]">
+    <section className="relative overflow-x-clip py-16 lg:py-[72px]">
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-screen -translate-x-1/2 bg-[#25254D]" />
       <div className="relative mx-auto w-full max-w-[1200px] px-4 sm:px-6">
         <div className="mb-12 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -54,10 +55,13 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
                   className="group block h-[122px] rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-[8px] transition hover:border-white/10 hover:bg-[#303060]"
                 >
                   <article className="flex h-full items-stretch gap-3">
-                    <div className="relative h-[106px] w-[106px] shrink-0 overflow-hidden rounded-[3px]">
+                    <div className="relative h-[106px] w-[106px] shrink-0 overflow-hidden rounded-[3px] bg-[#1F1F3E]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={image} alt="" className="h-full w-full object-cover" />
-                      <div className="absolute inset-0 bg-black/25" />
+                      <img
+                        src={image}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-contain p-2 image-pixelated"
+                      />
                     </div>
 
                     <div className="flex min-w-0 flex-1 flex-col py-1">
