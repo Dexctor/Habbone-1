@@ -15,7 +15,7 @@ type TabId = 'mondial' | 'fr' | 'mobis'
 const BADGE_API = 'https://www.habboassets.com/api/v1/badges'
 const FURNI_API = 'https://www.habboassets.com/api/v1/furniture'
 const GRID_COLS = 6
-const GRID_ROWS = 7
+const GRID_ROWS = 6
 const PAGE_SIZE = GRID_COLS * GRID_ROWS
 
 const TABS: { id: TabId; icon: string; tooltip: string }[] = [
@@ -138,7 +138,7 @@ export default function LatestBadges() {
             </div>
           ) : (
             <TooltipProvider delayDuration={150}>
-              <div className="grid grid-cols-6 gap-[8px]">
+              <div className="grid grid-cols-6 gap-[3px]">
                 {visibleSlots.map((item, index) => (
                   item ? (
                     <TooltipPrimitive.Root key={`${item.code}-${index}`}>
