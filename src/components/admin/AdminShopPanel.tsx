@@ -597,14 +597,18 @@ function OrdersTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "update_order", id: orderId, status: newStatus }),
       });
-      if (!res.ok) throw new Error("Échec");
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error((json as { error?: string })?.error || `HTTP ${res.status}`);
+      }
       toast.success(
         newStatus === "entregue" ? "Commande marquée comme livrée" :
         newStatus === "cancelado" ? "Commande annulée" : "Statut mis à jour"
       );
       void reloadOrders();
-    } catch {
-      toast.error("Erreur");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      toast.error(`Erreur: ${msg}`);
     } finally {
       setUpdatingId(null);
     }

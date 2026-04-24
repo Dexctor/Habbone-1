@@ -88,13 +88,24 @@ export const POST = withAdmin(async (req) => {
   if (action === 'update_order') {
     const id = Number(body.id);
     const status = body.status;
-    if (!id || !['pendente', 'entregue', 'cancelado'].includes(status)) {
-      return NextResponse.json({ error: 'Données invalides' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'ID manquant' }, { status: 400 });
     }
-    const order = await updateShopOrder(id, { status });
-    if (!order) return NextResponse.json({ error: 'Mise à jour échouée' }, { status: 500 });
-    revalidateTag('shop');
-    return NextResponse.json({ ok: true, data: order });
+    if (!['pendente', 'entregue', 'cancelado'].includes(status)) {
+      return NextResponse.json({ error: `Statut invalide: ${status}` }, { status: 400 });
+    }
+    try {
+      const order = await updateShopOrder(id, { status });
+      if (!order) {
+        return NextResponse.json({ error: 'Commande non trouvée ou Directus a rejeté la MAJ' }, { status: 500 });
+      }
+      revalidateTag('shop');
+      return NextResponse.json({ ok: true, data: order });
+    } catch (e: unknown) {
+      console.error('[admin:shop] update_order failed:', e);
+      const msg = e instanceof Error ? e.message : 'Erreur inconnue';
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
