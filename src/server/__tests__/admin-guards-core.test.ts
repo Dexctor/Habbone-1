@@ -80,6 +80,30 @@ describe('decideGuard — self action', () => {
       callerIsFounder: true,
       targetUserId: '1',
       target: { id: '1', isAdmin: true },
+      action: 'ban',
+    });
+    assert.equal(decision.ok, false);
+    if (!decision.ok) assert.equal(decision.code, 'SELF_ACTION_FORBIDDEN');
+  });
+
+  it('allows a founder to give themselves coins', () => {
+    const decision = decideGuard({
+      callerId: '1',
+      callerIsFounder: true,
+      targetUserId: '1',
+      target: { id: '1', isAdmin: true },
+      action: 'coins',
+    });
+    assert.equal(decision.ok, true);
+  });
+
+  it('blocks self-coins for a non-founder admin', () => {
+    const decision = decideGuard({
+      callerId: '1',
+      callerIsFounder: false,
+      targetUserId: '1',
+      target: { id: '1', isAdmin: true },
+      action: 'coins',
     });
     assert.equal(decision.ok, false);
     if (!decision.ok) assert.equal(decision.code, 'SELF_ACTION_FORBIDDEN');

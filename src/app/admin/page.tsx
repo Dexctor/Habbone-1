@@ -144,9 +144,20 @@ export default async function AdminPage() {
   }
 
   // Admin logs (last 10)
+  // MySQL stores DATETIME without a timezone suffix, and Directus returns it
+  // as "2026-04-24T09:38:20" which Date.parse interprets as LOCAL time. Force
+  // UTC by appending `Z` when missing, otherwise admin logs appear shifted by
+  // the local TZ offset (e.g. 2h in Europe/Paris summer).
+  const parseDirectusUtc = (s: string | null | undefined): Date | null => {
+    if (!s) return null;
+    const normalised = /[Z+-]\d\d?:?\d\d?$|Z$/i.test(s) ? s : `${s}Z`;
+    const d = new Date(normalised);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
   const adminLogs = await getAdminLogs({ limit: 10 }).catch(() => ({ data: [], total: 0 }));
   for (const log of adminLogs.data) {
-    const dateObj = log.created_at ? new Date(log.created_at) : null;
+    const dateObj = parseDirectusUtc(log.created_at);
     const adminLabel = log.admin_name ? ` par ${log.admin_name}` : '';
 
     let title = '';
