@@ -190,7 +190,14 @@ export default function BoutiqueClient({
       if (!res.ok) throw new Error(json?.error || 'Erreur')
 
       toast.success(json.message || 'Achat effectué !')
-      setCoins((prev) => prev - item.preco)
+      const newBalance = coins - item.preco
+      setCoins(newBalance)
+
+      // Broadcast the new balance so the header + any other component
+      // showing coins updates live without waiting for its cache to expire.
+      try {
+        window.dispatchEvent(new CustomEvent('habbone:coins', { detail: { balance: newBalance } }))
+      } catch { /* SSR noop */ }
 
       // Refresh items to update stock
       const refreshRes = await fetch('/api/shop/items', { cache: 'no-store' })
@@ -201,7 +208,7 @@ export default function BoutiqueClient({
     } finally {
       setBuying(null)
     }
-  }, [])
+  }, [coins])
 
   // Open confirm dialog
   const handleBuy = useCallback((itemId: number) => {

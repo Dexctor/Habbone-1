@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
 import { dur, easings } from '@/lib/motion-tokens'
 import { toastError, toastSuccess } from '@/lib/sonner'
-import { cachedValue } from '@/lib/client-cache'
+import { cachedValue, invalidateCache } from '@/lib/client-cache'
 import { useHabboProfile } from '@/lib/use-habbo-profile'
 import type { HabboProfileResponse } from '@/types/habbo'
 import type { SiteThemeSettings } from '@/lib/theme-settings'
@@ -160,6 +160,34 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
       })()
     return () => { cancelled = true }
   }, [status, sessionNick])
+
+  // Listen for live coins updates (shop purchase, admin coin grant, etc.).
+  // The emitter sends `detail.balance` when the new amount is known, otherwise
+  // we fall back to a cache invalidation + refetch.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionNick) return
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ balance?: number }>).detail
+      if (typeof detail?.balance === 'number') {
+        setCoins(detail.balance)
+        return
+      }
+      // No explicit balance provided — invalidate the cache and refetch
+      invalidateCache(`moedas:${sessionNick}`)
+      void (async () => {
+        try {
+          const response = await fetch('/api/user/moedas', { cache: 'no-store' })
+          const json = await response.json().catch(() => null)
+          if (response.ok) {
+            const value = typeof (json as any)?.moedas === 'number' ? (json as any).moedas : Number((json as any)?.moedas || 0)
+            setCoins(Number.isFinite(value) ? value : null)
+          }
+        } catch { }
+      })()
+    }
+    window.addEventListener('habbone:coins', handler)
+    return () => window.removeEventListener('habbone:coins', handler)
+  }, [sessionNick])
 
   const handleLogin = useCallback(async ({ nick, password }: LoginPayload) => {
     const trimmedNick = nick.trim()

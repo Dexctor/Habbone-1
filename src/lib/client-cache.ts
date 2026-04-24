@@ -6,6 +6,11 @@ type CacheEntry<T> = {
 
 const store = new Map<string, CacheEntry<any>>()
 
+/** Invalidate a cache entry so the next cachedValue call refetches. */
+export function invalidateCache(key: string): void {
+  store.delete(key)
+}
+
 export async function cachedValue<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
   const now = Date.now()
   const existing = store.get(key) as CacheEntry<T> | undefined

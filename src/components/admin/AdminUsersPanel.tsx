@@ -327,6 +327,20 @@ export default function AdminUsersPanel({
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Échec");
       toast.success(`${amount} HabbOneCoins envoyés à ${json?.nick || coinsModal.userName} (solde : ${json?.newBalance})`);
+
+      // Broadcast to any component showing the current user's balance
+      // (header, boutique, profile widget...) so they refresh without waiting
+      // for their TTL. We pass the new balance when the target IS the caller;
+      // otherwise we trigger a blind refetch so the caller's header stays in
+      // sync if they ever give coins to themselves.
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('habbone:coins', {
+            detail: typeof json?.newBalance === 'number' ? { balance: json.newBalance } : {},
+          }));
+        }
+      } catch { /* noop */ }
+
       setCoinsModal(null);
       setCoinsAmount("");
     } catch (e: unknown) {
