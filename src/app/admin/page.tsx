@@ -156,41 +156,102 @@ export default async function AdminPage() {
   };
 
   const adminLogs = await getAdminLogs({ limit: 10 }).catch(() => ({ data: [], total: 0 }));
+
+  // Helpers to pull values out of log.details without TypeScript hoops.
+  const getStr = (d: unknown, key: string): string | null => {
+    if (!d || typeof d !== 'object') return null;
+    const v = (d as Record<string, unknown>)[key];
+    return typeof v === 'string' && v.length > 0 ? v : null;
+  };
+  const getNum = (d: unknown, key: string): number | null => {
+    if (!d || typeof d !== 'object') return null;
+    const v = (d as Record<string, unknown>)[key];
+    return typeof v === 'number' ? v : null;
+  };
+  const formatCoins = (n: number): string => n.toLocaleString('fr-FR');
+  const contentTypeLabel = (t: string | null | undefined): string => {
+    switch (t) {
+      case 'article': return 'article';
+      case 'topic': return 'sujet';
+      case 'post': return 'message';
+      case 'comment': return 'commentaire';
+      default: return 'contenu';
+    }
+  };
+
   for (const log of adminLogs.data) {
     const dateObj = parseDirectusUtc(log.created_at);
-    const adminLabel = log.admin_name ? ` par ${log.admin_name}` : '';
+    const byWhom = log.admin_name ? ` par ${log.admin_name}` : '';
+    const nick = getStr(log.details, 'nick');
 
     let title = '';
     switch (log.action) {
       case 'user.ban':
-        title = `Utilisateur banni${adminLabel}`;
-        if (log.details && typeof log.details === 'object' && 'nick' in log.details) {
-          title = `Utilisateur banni : ${log.details.nick}${adminLabel}`;
-        }
+        title = nick
+          ? `${nick} a été banni${byWhom}`
+          : `Utilisateur banni${byWhom}`;
         break;
       case 'user.unban':
-        title = `Utilisateur réactivé${adminLabel}`;
-        if (log.details && typeof log.details === 'object' && 'nick' in log.details) {
-          title = `Utilisateur réactivé : ${log.details.nick}${adminLabel}`;
-        }
+        title = nick
+          ? `${nick} a été réactivé${byWhom}`
+          : `Utilisateur réactivé${byWhom}`;
         break;
       case 'user.delete':
-        title = `Utilisateur supprimé${adminLabel}`;
+        title = nick
+          ? `${nick} a été supprimé${byWhom}`
+          : `Utilisateur supprimé${byWhom}`;
         break;
-      case 'user.role_change':
-        title = `Rôle modifié${adminLabel}`;
-        if (log.details && typeof log.details === 'object' && 'nick' in log.details) {
-          title = `Rôle modifié : ${log.details.nick}${adminLabel}`;
+      case 'user.role_change': {
+        const newRole = getStr(log.details, 'new_role_name');
+        if (nick && newRole) {
+          title = `${nick} est maintenant « ${newRole} »${byWhom}`;
+        } else if (nick) {
+          title = `Rôle modifié pour ${nick}${byWhom}`;
+        } else {
+          title = `Rôle modifié${byWhom}`;
         }
         break;
-      case 'content.delete':
-        title = `Contenu supprimé${adminLabel}`;
+      }
+      case 'user.coins_grant': {
+        const amount = getNum(log.details, 'amount');
+        const newBalance = getNum(log.details, 'new_balance');
+        if (nick && amount !== null && newBalance !== null) {
+          title = `+${formatCoins(amount)} coins à ${nick} (solde : ${formatCoins(newBalance)})${byWhom}`;
+        } else if (nick && amount !== null) {
+          title = `+${formatCoins(amount)} coins à ${nick}${byWhom}`;
+        } else if (amount !== null) {
+          title = `+${formatCoins(amount)} coins offerts${byWhom}`;
+        } else {
+          title = `Coins offerts${byWhom}`;
+        }
         break;
-      case 'content.update':
-        title = `Contenu modifié${adminLabel}`;
+      }
+      case 'content.update': {
+        const titulo = getStr(log.details, 'titulo') || getStr(log.details, 'title');
+        const what = contentTypeLabel(log.target_type);
+        if (titulo) {
+          title = `${what.charAt(0).toUpperCase()}${what.slice(1)} modifié : « ${titulo} »${byWhom}`;
+        } else if (log.target_id) {
+          title = `${what.charAt(0).toUpperCase()}${what.slice(1)} #${log.target_id} modifié${byWhom}`;
+        } else {
+          title = `Contenu modifié${byWhom}`;
+        }
         break;
+      }
+      case 'content.delete': {
+        const titulo = getStr(log.details, 'titulo') || getStr(log.details, 'title');
+        const what = contentTypeLabel(log.target_type);
+        if (titulo) {
+          title = `${what.charAt(0).toUpperCase()}${what.slice(1)} supprimé : « ${titulo} »${byWhom}`;
+        } else if (log.target_id) {
+          title = `${what.charAt(0).toUpperCase()}${what.slice(1)} #${log.target_id} supprimé${byWhom}`;
+        } else {
+          title = `Contenu supprimé${byWhom}`;
+        }
+        break;
+      }
       default:
-        title = `Action : ${log.action}${adminLabel}`;
+        title = `Action administrateur${byWhom}`;
     }
 
     recentActivity.push({

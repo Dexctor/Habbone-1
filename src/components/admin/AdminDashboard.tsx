@@ -14,6 +14,7 @@ import {
   Pencil,
   Trash2,
   Clock,
+  Coins,
 } from 'lucide-react';
 import { useAdminView } from '@/components/admin/AdminContext';
 import AdminContentManager from '@/components/admin/AdminContentManager';
@@ -40,7 +41,10 @@ interface SummaryStat {
 
 export interface RecentActivityItem {
   id: string;
-  type: 'news_published' | 'news_updated' | 'topic_created' | 'user_ban' | 'user_unban' | 'user_delete' | 'user_role_change' | 'content_delete' | 'content_update';
+  // Couvre les actions synthétiques (news_published, topic_created) ET les
+  // enums admin_logs (user.ban, user.coins_grant, content.update, etc.).
+  // Le style/icône est résolu via ACTIVITY_CONFIG ci-dessous.
+  type: string;
   title: string;
   date: string;
   admin?: string;
@@ -382,6 +386,11 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
     color: 'bg-[#2596FF]/15 text-admin-brand-blue',
     icon: <Shield className="h-4 w-4" />,
   },
+  'user.coins_grant': {
+    label: 'Coins',
+    color: 'bg-[#FFC800]/15 text-[#FFC800]',
+    icon: <Coins className="h-4 w-4" />,
+  },
   'content.delete': {
     label: 'Supprimé',
     color: 'bg-[#F92330]/15 text-[#F92330]',
@@ -396,8 +405,10 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
 
 function ActivityRow({ item }: { item: RecentActivityItem }) {
   const config = ACTIVITY_CONFIG[item.type] ?? {
-    label: item.type,
-    color: 'bg-white/5 text-[#BEBECE]',
+    // Fallback volontairement neutre pour ne plus afficher 'user.coins_grant'
+    // ou autre clé technique brute dans le badge.
+    label: 'Action',
+    color: 'bg-white/5 text-admin-text-tertiary',
     icon: <Clock className="h-4 w-4" />,
   };
 
