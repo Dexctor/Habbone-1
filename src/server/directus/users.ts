@@ -2,9 +2,16 @@ import 'server-only';
 
 import type { HabboUserCore } from '@/lib/habbo';
 
-import { directusService, USERS_TABLE, rItems, rItem, cItem, uItem } from './client';
+import { directusService, rItems, rItem, cItem, uItem } from './client';
+import { TABLES, USE_V2 } from './tables';
 import { hashPassword } from './security';
 import type { HabboVerificationStatus } from './types';
+
+const USERS_TABLE = TABLES.users;
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
 type LegacyUserRecord = {
   id?: number | string | null;
@@ -28,9 +35,10 @@ type LegacyUserRecord = {
   habbo_name?: string | null;
   habbo_core_snapshot?: unknown;
   habbo_snapshot_at?: string | null;
+  moedas?: number | null;
 };
 
-const USER_FIELDS = [
+const LEGACY_USER_FIELDS = [
   'id',
   'nick',
   'senha',
@@ -49,7 +57,93 @@ const USER_FIELDS = [
   'habbo_verification_code',
   'habbo_verification_expires_at',
   'habbo_verified_at',
+  'habbo_name',
 ] as const;
+
+const V2_USER_FIELDS = [
+  'id',
+  'nick',
+  'password',
+  'email',
+  'avatar_url',
+  'background_url',
+  'mission',
+  'active',
+  'banned',
+  'directus_role_id',
+  'created_at',
+  'habbo_hotel',
+  'habbo_unique_id',
+  'habbo_verification_status',
+  'habbo_verification_code',
+  'habbo_verification_expires_at',
+  'habbo_verified_at',
+  'habbo_name',
+  'coins',
+] as const;
+
+const USER_FIELDS = USE_V2 ? V2_USER_FIELDS : LEGACY_USER_FIELDS;
+
+/* ------------------------------------------------------------------ */
+/*  v2 row -> legacy shape (for caller compatibility)                  */
+/* ------------------------------------------------------------------ */
+
+function v2ToLegacyRow(row: any): LegacyUserRecord & { id: number; moedas?: number } {
+  return {
+    id: Number(row.id),
+    nick: row.nick ?? null,
+    senha: row.password ?? null,
+    email: row.email ?? null,
+    avatar: row.avatar_url ?? null,
+    missao: row.mission ?? null,
+    ativado: row.active ? 's' : 'n',
+    banido: row.banned ? 's' : 'n',
+    status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
+    role: null,
+    directus_role_id: row.directus_role_id ?? null,
+    data_criacao: row.created_at ?? null,
+    habbo_hotel: row.habbo_hotel ?? null,
+    habbo_unique_id: row.habbo_unique_id ?? null,
+    habbo_verification_status: row.habbo_verification_status ?? null,
+    habbo_verification_code: row.habbo_verification_code ?? null,
+    habbo_verification_expires_at: row.habbo_verification_expires_at ?? null,
+    habbo_verified_at: row.habbo_verified_at ?? null,
+    habbo_name: row.habbo_name ?? null,
+    moedas: typeof row.coins === 'number' ? row.coins : null,
+  };
+}
+
+function mapRow(row: any) {
+  return USE_V2 ? v2ToLegacyRow(row) : row;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Legacy patch -> v2 patch                                           */
+/* ------------------------------------------------------------------ */
+
+function legacyPatchToV2(patch: Record<string, unknown>): Record<string, unknown> {
+  const v2: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) {
+    switch (k) {
+      case 'senha': v2.password = v; break;
+      case 'avatar': v2.avatar_url = v; break;
+      case 'missao': v2.mission = v; break;
+      case 'ativado': v2.active = v === 's' || v === true; break;
+      case 'banido': v2.banned = v === 's' || v === true; break;
+      case 'data_criacao': v2.created_at = v; break;
+      case 'role': /* drop — rely on directus_role_id */ break;
+      case 'moedas': v2.coins = v; break;
+      case 'habbo_core_snapshot': v2.habbo_core_snapshot = v; break;
+      case 'habbo_snapshot_at': v2.habbo_snapshot_at = v; break;
+      default: v2[k] = v; // most Habbo-related columns have the same name
+    }
+  }
+  return v2;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helpers (also used elsewhere in the app)                           */
+/* ------------------------------------------------------------------ */
 
 export function asTrue(v: unknown): boolean {
   const normalized = typeof v === 'string' ? v.trim().toLowerCase() : v;
@@ -88,8 +182,12 @@ export function normalizeHotelCode(hotel?: string | null): HabboHotelCode {
   return HOTEL_ALIASES[value] ?? 'fr';
 }
 
+/* ------------------------------------------------------------------ */
+/*  Reads                                                              */
+/* ------------------------------------------------------------------ */
+
 export async function listUsersByNick(nick: string) {
-  const raw = await directusService
+  const raw = (await directusService
     .request(
       rItems(USERS_TABLE as any, {
         filter: { nick: { _eq: nick } } as any,
@@ -97,8 +195,9 @@ export async function listUsersByNick(nick: string) {
         fields: USER_FIELDS,
       } as any),
     )
-    .catch(() => []);
-  return Array.isArray(raw) ? raw : [];
+    .catch(() => [])) as any[];
+  const rows = Array.isArray(raw) ? raw : [];
+  return rows.map(mapRow);
 }
 
 export async function getUserByNick(nick: string, hotel?: string | null) {
@@ -123,7 +222,7 @@ export async function getUserByNick(nick: string, hotel?: string | null) {
             _and: [{ nick: { _eq: nick } }, { habbo_hotel: { _eq: normalized } }],
           };
 
-  const raw = await directusService
+  const raw = (await directusService
     .request(
       rItems(USERS_TABLE as any, {
         filter: filter as any,
@@ -131,10 +230,22 @@ export async function getUserByNick(nick: string, hotel?: string | null) {
         fields: USER_FIELDS,
       } as any),
     )
-    .catch(() => []);
+    .catch(() => [])) as any[];
   const rows = Array.isArray(raw) ? raw : [];
-  return rows.length ? rows[0] : null;
+  return rows.length ? mapRow(rows[0]) : null;
 }
+
+export async function getUserById(userId: number) {
+  const raw = await directusService
+    .request(rItem(USERS_TABLE as any, userId as any, { fields: USER_FIELDS as any } as any))
+    .catch(() => null);
+  if (!raw) return null;
+  return mapRow(raw);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Create                                                             */
+/* ------------------------------------------------------------------ */
 
 export async function createUser(data: {
   nick: string;
@@ -149,6 +260,24 @@ export async function createUser(data: {
   verifiedAt?: string | null;
   ativado?: 's' | 'n';
 }) {
+  if (USE_V2) {
+    const payload: Record<string, unknown> = {
+      nick: data.nick,
+      password: hashPassword(data.senha),
+      email: data.email ?? null,
+      mission: data.missao ?? 'Mission Habbo: HabboOneRegister-0',
+      active: data.ativado === 's',
+      banned: false,
+      habbo_hotel: data.habboHotel ?? 'fr',
+      habbo_unique_id: data.habboUniqueId ?? null,
+      habbo_verification_status: data.verificationStatus ?? 'pending',
+      habbo_verification_code: data.verificationCode ?? null,
+      habbo_verification_expires_at: data.verificationExpiresAt ?? null,
+      habbo_verified_at: data.verifiedAt ?? null,
+    };
+    return directusService.request(cItem(USERS_TABLE as any, payload as any));
+  }
+
   const payload: LegacyUserRecord = {
     nick: data.nick,
     senha: hashPassword(data.senha),
@@ -167,26 +296,18 @@ export async function createUser(data: {
   return directusService.request(cItem(USERS_TABLE as any, payload as any));
 }
 
+/* ------------------------------------------------------------------ */
+/*  Password + verification updates                                    */
+/* ------------------------------------------------------------------ */
+
 export async function upgradePasswordToBcrypt(userId: number, plain: string) {
-  return directusService.request(
-    uItem(USERS_TABLE as any, userId as any, {
-      senha: hashPassword(plain),
-    }),
-  );
+  const payload = USE_V2 ? { password: hashPassword(plain) } : { senha: hashPassword(plain) };
+  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function changeUserPassword(userId: number, newPassword: string) {
-  return directusService.request(
-    uItem(USERS_TABLE as any, userId as any, {
-      senha: hashPassword(newPassword),
-    }),
-  );
-}
-
-export async function getUserById(userId: number) {
-  return directusService
-    .request(rItem(USERS_TABLE as any, userId as any, { fields: USER_FIELDS as any } as any))
-    .catch(() => null);
+  const payload = USE_V2 ? { password: hashPassword(newPassword) } : { senha: hashPassword(newPassword) };
+  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function updateUserVerification(
@@ -201,7 +322,8 @@ export async function updateUserVerification(
     ativado: 's' | 'n';
   }>,
 ) {
-  return directusService.request(uItem(USERS_TABLE as any, userId as any, patch as any));
+  const payload = USE_V2 ? legacyPatchToV2(patch as Record<string, unknown>) : patch;
+  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function markUserAsVerified(userId: number) {
@@ -226,7 +348,8 @@ export async function tryUpdateHabboSnapshotForUser(
       habbo_core_snapshot: core,
       habbo_snapshot_at: new Date().toISOString(),
     };
-    await directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
+    const mapped = USE_V2 ? legacyPatchToV2(payload as Record<string, unknown>) : payload;
+    await directusService.request(uItem(USERS_TABLE as any, userId as any, mapped as any));
     return true;
   } catch {
     return false;
@@ -234,10 +357,11 @@ export async function tryUpdateHabboSnapshotForUser(
 }
 
 export async function getUserMoedas(userId: number): Promise<number> {
+  const fields = USE_V2 ? ['coins'] : ['moedas'];
   const row = await directusService
-    .request(rItem(USERS_TABLE as any, userId as any, { fields: ['moedas'] as any } as any))
+    .request(rItem(USERS_TABLE as any, userId as any, { fields: fields as any } as any))
     .catch(() => null as any);
-  const value = (row as any)?.moedas;
+  const value = USE_V2 ? (row as any)?.coins : (row as any)?.moedas;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
 }

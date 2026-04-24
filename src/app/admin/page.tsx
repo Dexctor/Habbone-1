@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { adminCount, adminCountUsers } from '@/server/directus/admin';
+import { TABLES } from '@/server/directus/tables';
 import {
   adminListForumTopics,
   adminListForumPosts,
@@ -84,12 +85,12 @@ export default async function AdminPage() {
     adminListForumPosts(200).catch(() => []),
     adminListNews(200).catch(() => []),
     adminListStories(100).catch(() => []),
-    adminCount('forum_topicos').catch(() => 0),
-    adminCount('noticias').catch(() => 0),
+    adminCount(TABLES.forumTopics).catch(() => 0),
+    adminCount(TABLES.articles).catch(() => 0),
     adminCountUsers().catch(() => 0),
     adminCount('directus_users').catch(() => 0),
-    adminCount('forum_coment').catch(() => 0),
-    adminCount('noticias_coment').catch(() => 0),
+    adminCount(TABLES.forumComments).catch(() => 0),
+    adminCount(TABLES.articleComments).catch(() => 0),
     adminListForumComments(100).catch(() => []),
     adminListNewsComments(100).catch(() => []),
   ]);
@@ -143,9 +144,20 @@ export default async function AdminPage() {
   }
 
   // Admin logs (last 10)
+  // MySQL stores DATETIME without a timezone suffix, and Directus returns it
+  // as "2026-04-24T09:38:20" which Date.parse interprets as LOCAL time. Force
+  // UTC by appending `Z` when missing, otherwise admin logs appear shifted by
+  // the local TZ offset (e.g. 2h in Europe/Paris summer).
+  const parseDirectusUtc = (s: string | null | undefined): Date | null => {
+    if (!s) return null;
+    const normalised = /[Z+-]\d\d?:?\d\d?$|Z$/i.test(s) ? s : `${s}Z`;
+    const d = new Date(normalised);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
   const adminLogs = await getAdminLogs({ limit: 10 }).catch(() => ({ data: [], total: 0 }));
   for (const log of adminLogs.data) {
-    const dateObj = log.created_at ? new Date(log.created_at) : null;
+    const dateObj = parseDirectusUtc(log.created_at);
     const adminLabel = log.admin_name ? ` par ${log.admin_name}` : '';
 
     let title = '';

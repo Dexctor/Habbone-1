@@ -15,11 +15,14 @@ export type GuardDenyCode =
   | 'TARGET_NOT_FOUND'
   | 'ADMIN_TARGET_FORBIDDEN';
 
+export type GuardAction = 'ban' | 'unban' | 'delete' | 'role_change' | 'coins';
+
 export type GuardInputs = {
   callerId: string | null;
   callerIsFounder: boolean;
   targetUserId: string;
   target: { id: string; isAdmin: boolean } | null;
+  action?: GuardAction;
 };
 
 export function cleanUserId(id: string): string {
@@ -31,12 +34,18 @@ export function decideGuard(inputs: GuardInputs): GuardDecision {
   const targetId = cleanUserId(inputs.targetUserId);
 
   if (callerId && callerId === targetId) {
-    return {
-      ok: false,
-      code: 'SELF_ACTION_FORBIDDEN',
-      status: 400,
-      error: 'Action impossible sur son propre compte',
-    };
+    // Self-action: by default forbidden, but a founder can give themselves
+    // coins (no security impact, only the founder has this power anyway).
+    // Ban / delete / role_change on self remain blocked for everyone.
+    const selfCoinsAllowed = inputs.action === 'coins' && inputs.callerIsFounder;
+    if (!selfCoinsAllowed) {
+      return {
+        ok: false,
+        code: 'SELF_ACTION_FORBIDDEN',
+        status: 400,
+        error: 'Action impossible sur son propre compte',
+      };
+    }
   }
 
   if (!inputs.target) {

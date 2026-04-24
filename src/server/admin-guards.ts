@@ -61,6 +61,7 @@ export async function guardTargetUser(opts: {
     callerIsFounder: !!opts.callerIsFounder,
     targetUserId: opts.targetUserId,
     target: target ? { id: target.id, isAdmin: targetIsAdmin } : null,
+    action: opts.action,
   });
 
   if (!decision.ok) {

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { assertAdmin } from "@/server/authz";
-import { directusUrl, serviceToken, USERS_TABLE } from "@/server/directus/client";
+import { directusUrl, serviceToken } from "@/server/directus/client";
+import { TABLES, USE_V2 } from "@/server/directus/tables";
 
-async function fetchItems(table: string, filter: Record<string, any>, fields: string[], limit = 50): Promise<any[]> {
+const USERS_TABLE = TABLES.users;
+
+async function fetchItems(table: string, filter: Record<string, any>, fields: string[], sort: string, limit = 50): Promise<any[]> {
     const url = new URL(`${directusUrl}/items/${encodeURIComponent(table)}`);
     url.searchParams.set('fields', fields.join(','));
-    url.searchParams.set('sort', '-data');
+    url.searchParams.set('sort', sort);
     url.searchParams.set('limit', String(limit));
     for (const [key, val] of Object.entries(filter)) {
         if (typeof val === 'object' && val !== null) {
@@ -37,6 +40,25 @@ async function getUserNickById(userId: string): Promise<string | null> {
     return json?.data?.nick || null;
 }
 
+/**
+ * Normalise a v2 row into the legacy shape the frontend expects
+ * (titulo/comentario/autor/data).
+ */
+function normaliseRow(row: any, kind: 'topic' | 'article' | 'forumComment' | 'articleComment'): any {
+    if (!USE_V2) return row;
+    const unixData = row.created_at ? Math.floor(Date.parse(row.created_at) / 1000).toString() : row.published_at ? Math.floor(Date.parse(row.published_at) / 1000).toString() : null;
+    switch (kind) {
+        case 'topic':
+            return { id: row.id, titulo: row.title, data: unixData };
+        case 'article':
+            return { id: row.id, titulo: row.title, data: unixData };
+        case 'forumComment':
+            return { id: row.id, id_forum: row.topic, comentario: row.content, data: unixData };
+        case 'articleComment':
+            return { id: row.id, id_noticia: row.article, comentario: row.content, data: unixData };
+    }
+}
+
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -53,59 +75,83 @@ export async function GET(
             return NextResponse.json({ error: "User ID required" }, { status: 400 });
         }
 
-        // The userId is the numeric ID, but autor fields store the nick
-        // First resolve the nick, also try using userId directly as nick (for legacy:XX IDs)
         const cleanId = userId.startsWith('legacy:') ? userId.split(':')[1] : userId;
-        let nick = await getUserNickById(cleanId);
 
-        // If no nick found, the userId itself might be a nick
-        if (!nick) nick = cleanId;
+        // Build filter: v2 filters on user id, legacy on nick string
+        let filter: Record<string, any>;
+        let authorField: string;
+        let sortField: string;
+        let topicFields: string[];
+        let articleFields: string[];
+        let forumCommentFields: string[];
+        let articleCommentFields: string[];
 
-        // Fetch user activity by nick (autor field)
-        const [topics, articles, forumComments, newsComments] = await Promise.all([
-            fetchItems('forum_topicos', { autor: { _eq: nick } }, ['id', 'titulo', 'data']),
-            fetchItems('noticias', { autor: { _eq: nick } }, ['id', 'titulo', 'data']),
-            fetchItems('forum_coment', { autor: { _eq: nick } }, ['id', 'id_forum', 'comentario', 'data']),
-            fetchItems('noticias_coment', { autor: { _eq: nick } }, ['id', 'id_noticia', 'comentario', 'data']),
+        if (USE_V2) {
+            authorField = 'author';
+            sortField = '-created_at';
+            filter = { author: { _eq: Number(cleanId) } };
+            topicFields = ['id', 'title', 'created_at'];
+            articleFields = ['id', 'title', 'created_at', 'published_at'];
+            forumCommentFields = ['id', 'topic', 'content', 'created_at'];
+            articleCommentFields = ['id', 'article', 'content', 'created_at'];
+        } else {
+            authorField = 'autor';
+            sortField = '-data';
+            const nick = (await getUserNickById(cleanId)) || cleanId;
+            filter = { autor: { _eq: nick } };
+            topicFields = ['id', 'titulo', 'data'];
+            articleFields = ['id', 'titulo', 'data'];
+            forumCommentFields = ['id', 'id_forum', 'comentario', 'data'];
+            articleCommentFields = ['id', 'id_noticia', 'comentario', 'data'];
+        }
+
+        const [rawTopics, rawArticles, rawForumComments, rawArticleComments] = await Promise.all([
+            fetchItems(TABLES.forumTopics, filter, topicFields, sortField),
+            fetchItems(TABLES.articles, filter, articleFields, sortField),
+            fetchItems(TABLES.forumComments, filter, forumCommentFields, sortField),
+            fetchItems(TABLES.articleComments, filter, articleCommentFields, sortField),
         ]);
 
-        // Also try case-insensitive match if results are empty
-        let allTopics = topics;
-        let allArticles = articles;
-        let allForumComments = forumComments;
-        let allNewsComments = newsComments;
+        let topics = rawTopics.map((r) => normaliseRow(r, 'topic'));
+        let articles = rawArticles.map((r) => normaliseRow(r, 'article'));
+        let forumComments = rawForumComments.map((r) => normaliseRow(r, 'forumComment'));
+        let newsComments = rawArticleComments.map((r) => normaliseRow(r, 'articleComment'));
 
-        if (!topics.length && !articles.length && !forumComments.length && !newsComments.length && nick) {
-            // Try with different casing (e.g., "decrypt" vs "Decrypt")
-            const nickLower = nick.toLowerCase();
-            const nickCapital = nick.charAt(0).toUpperCase() + nick.slice(1).toLowerCase();
-            const altNick = nick === nickCapital ? nickLower : nickCapital;
+        // Legacy: try case-insensitive fallback if nothing found
+        if (!USE_V2 && !topics.length && !articles.length && !forumComments.length && !newsComments.length) {
+            const nick = String(filter.autor?._eq || '');
+            if (nick) {
+                const nickLower = nick.toLowerCase();
+                const nickCapital = nick.charAt(0).toUpperCase() + nick.slice(1).toLowerCase();
+                const altNick = nick === nickCapital ? nickLower : nickCapital;
+                const altFilter = { autor: { _eq: altNick } };
 
-            const [t2, a2, fc2, nc2] = await Promise.all([
-                fetchItems('forum_topicos', { autor: { _eq: altNick } }, ['id', 'titulo', 'data']),
-                fetchItems('noticias', { autor: { _eq: altNick } }, ['id', 'titulo', 'data']),
-                fetchItems('forum_coment', { autor: { _eq: altNick } }, ['id', 'id_forum', 'comentario', 'data']),
-                fetchItems('noticias_coment', { autor: { _eq: altNick } }, ['id', 'id_noticia', 'comentario', 'data']),
-            ]);
-            allTopics = [...topics, ...t2];
-            allArticles = [...articles, ...a2];
-            allForumComments = [...forumComments, ...fc2];
-            allNewsComments = [...newsComments, ...nc2];
+                const [t2, a2, fc2, nc2] = await Promise.all([
+                    fetchItems(TABLES.forumTopics, altFilter, topicFields, sortField),
+                    fetchItems(TABLES.articles, altFilter, articleFields, sortField),
+                    fetchItems(TABLES.forumComments, altFilter, forumCommentFields, sortField),
+                    fetchItems(TABLES.articleComments, altFilter, articleCommentFields, sortField),
+                ]);
+                topics = [...topics, ...t2];
+                articles = [...articles, ...a2];
+                forumComments = [...forumComments, ...fc2];
+                newsComments = [...newsComments, ...nc2];
+            }
         }
 
         return NextResponse.json({
             data: {
-                topics: allTopics,
-                articles: allArticles,
-                forumComments: allForumComments,
-                newsComments: allNewsComments,
+                topics,
+                articles,
+                forumComments,
+                newsComments,
                 adminLogs: [],
             },
             stats: {
-                topics: allTopics.length,
-                articles: allArticles.length,
-                forumComments: allForumComments.length,
-                newsComments: allNewsComments.length,
+                topics: topics.length,
+                articles: articles.length,
+                forumComments: forumComments.length,
+                newsComments: newsComments.length,
                 sanctions: 0,
             },
         });
