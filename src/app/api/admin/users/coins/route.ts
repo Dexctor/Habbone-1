@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
-import { directusUrl, serviceToken, USERS_TABLE } from '@/server/directus/client'
+import { directusUrl, serviceToken } from '@/server/directus/client'
+import { TABLES, USE_V2 } from '@/server/directus/tables'
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards'
 import { logAdminAction } from '@/server/directus/admin-logs'
 
 const MAX_BALANCE = 10_000_000
+const USERS_TABLE = TABLES.users
+const COINS_COL = USE_V2 ? 'coins' : 'moedas'
 
 const BodySchema = z.object({
   userId: z.string().min(1),
@@ -14,7 +17,7 @@ const BodySchema = z.object({
 
 async function getUserById(id: string) {
   const cleanId = id.startsWith('legacy:') ? id.split(':')[1] : id
-  const res = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}?fields=id,nick,moedas`, {
+  const res = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}?fields=id,nick,${COINS_COL}`, {
     headers: { Authorization: `Bearer ${serviceToken}` },
     cache: 'no-store',
   })
@@ -28,7 +31,7 @@ async function updateUserCoins(id: string, newBalance: number) {
   const res = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ moedas: newBalance }),
+    body: JSON.stringify({ [COINS_COL]: newBalance }),
   })
   if (!res.ok) return null
   const json = await res.json()
@@ -58,7 +61,7 @@ export const POST = withAdmin(async (req, { user: caller }) => {
     return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
   }
 
-  const currentBalance = Number(user.moedas) || 0
+  const currentBalance = Number(user[COINS_COL]) || 0
   const newBalance = currentBalance + amount
 
   if (newBalance > MAX_BALANCE) {
