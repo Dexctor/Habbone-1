@@ -2,9 +2,12 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
-import { directusUrl, serviceToken, USERS_TABLE } from '@/server/directus/client';
+import { directusUrl, serviceToken } from '@/server/directus/client';
+import { TABLES } from '@/server/directus/tables';
 import { getRoleById } from '@/server/directus/roles';
 import { cleanUserId, decideGuard, isFounderRoleName } from '@/server/admin-guards-core';
+
+const USERS_TABLE = TABLES.users;
 
 export type AdminGuardResult =
   | { ok: true; target: { id: string; nick: string; roleId: string | null; isAdmin: boolean } }

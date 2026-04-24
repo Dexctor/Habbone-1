@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { USERS_TABLE } from './client';
+import { TABLES } from './tables';
 import { directusCount } from './fetch';
 
 export async function adminCount(table: string): Promise<number> {
@@ -8,5 +8,5 @@ export async function adminCount(table: string): Promise<number> {
 }
 
 export function adminCountUsers(): Promise<number> {
-  return adminCount(USERS_TABLE);
+  return adminCount(TABLES.users);
 }

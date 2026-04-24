@@ -1,11 +1,11 @@
 import 'server-only';
 
-import { USERS_TABLE } from './client';
 import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 
 const BADGES_TABLE = TABLES.badges;
 const USER_BADGES_TABLE = TABLES.userBadges;
+const USERS_TABLE = TABLES.users;
 
 // Mapping: role name (lowercase) -> badge id
 const ROLE_BADGE_MAP: Record<string, number> = {
@@ -138,15 +138,57 @@ export function getRoleBadgeImage(roleName: string): string | null {
 
 /**
  * Get role badge images for a list of nicks (batch).
- * Note: users.ts refactor not done yet — this still reads the legacy `role`
- * string column on usuarios. When Session C lands, this will read directus_role
- * and resolve through directus_roles.name instead.
+ *
+ * Legacy: reads the `role` string column directly on usuarios.
+ * v2: reads directus_role_id (UUID) then resolves through directus_roles.name.
  */
 export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<string, string | null>> {
   const result: Record<string, string | null> = {};
   if (!nicks.length) return result;
 
   try {
+    if (USE_V2) {
+      // v2: fetch users with directus_role_id, then one batch lookup on directus_roles
+      const usersJson = await directusFetch<{
+        data: { nick: string; directus_role_id: string | null }[];
+      }>(`/items/${USERS_TABLE}`, {
+        params: {
+          'filter[nick][_in]': nicks.join(','),
+          fields: 'nick,directus_role_id',
+          limit: String(nicks.length),
+        },
+      });
+      const users = usersJson?.data ?? [];
+      const roleIds = Array.from(
+        new Set(users.map((u) => u.directus_role_id).filter((id): id is string => !!id)),
+      );
+
+      let roleNameById = new Map<string, string>();
+      if (roleIds.length > 0) {
+        const rolesJson = await directusFetch<{ data: { id: string; name: string }[] }>(
+          `/roles`,
+          {
+            params: {
+              'filter[id][_in]': roleIds.join(','),
+              fields: 'id,name',
+              limit: String(roleIds.length),
+            },
+          },
+        );
+        for (const r of rolesJson?.data ?? []) {
+          roleNameById.set(String(r.id), String(r.name || ''));
+        }
+      }
+
+      for (const u of users) {
+        const nick = String(u?.nick || '');
+        const roleName = u.directus_role_id ? roleNameById.get(u.directus_role_id) ?? '' : '';
+        if (nick) result[nick] = getRoleBadgeImage(roleName);
+      }
+      return result;
+    }
+
+    // Legacy
     const json = await directusFetch<{ data: { nick: string; role: string }[] }>(`/items/${USERS_TABLE}`, {
       params: {
         'filter[nick][_in]': nicks.join(','),
