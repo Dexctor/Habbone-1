@@ -34,10 +34,31 @@ function getCategoryLabel(category: CategoryId): string {
   return CATEGORY_LABELS[category]
 }
 
+// Conteneur de l'image : 300x150 desktop, full-width x150 mobile.
+// On choisit cover/contain selon le ratio réel de l'image pour éviter
+// l'étirement ou le crop massif. Seuils calibrés sur le ratio cible 2:1.
+const CONTAINER_RATIO = 300 / 150 // = 2
+
+type FitMode = 'cover' | 'contain'
+
+function pickFitMode(naturalWidth: number, naturalHeight: number): FitMode {
+  if (!naturalWidth || !naturalHeight) return 'cover'
+  // Image plus petite que le conteneur dans les deux dimensions → contain
+  // (sinon next/image upscale et ça pixellise).
+  if (naturalWidth < 280 && naturalHeight < 140) return 'contain'
+  const ratio = naturalWidth / naturalHeight
+  // Trop large (panoramique) ou trop verticale/carrée → contain pour tout
+  // garder visible. Sinon cover, le crop sera léger.
+  if (ratio > CONTAINER_RATIO * 1.35) return 'contain'
+  if (ratio < CONTAINER_RATIO * 0.75) return 'contain'
+  return 'cover'
+}
+
 export default function NewsPageClient({ articles }: { articles: any[] }) {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
+  const [fitModes, setFitModes] = useState<Record<number, FitMode>>({})
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -130,8 +151,18 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                       className={
                         isFallback
                           ? 'object-contain p-6 opacity-70 transition-transform duration-300 group-hover:scale-[1.04]'
-                          : 'object-cover transition-transform duration-300 group-hover:scale-[1.04]'
+                          : `${
+                              fitModes[article.id] === 'contain' ? 'object-contain p-2' : 'object-cover'
+                            } transition-transform duration-300 group-hover:scale-[1.04]`
                       }
+                      onLoad={(event) => {
+                        if (isFallback) return
+                        const target = event.currentTarget
+                        const mode = pickFitMode(target.naturalWidth, target.naturalHeight)
+                        setFitModes((prev) =>
+                          prev[article.id] === mode ? prev : { ...prev, [article.id]: mode },
+                        )
+                      }}
                       onError={() => setFailedImages((prev) => new Set(prev).add(article.id))}
                     />
                     {/* Léger voile en bas pour que la légende reste lisible si on
