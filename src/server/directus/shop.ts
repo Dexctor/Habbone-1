@@ -93,6 +93,14 @@ function mapShopItemToDb(data: Partial<ShopItem>): Record<string, unknown> {
   return db;
 }
 
+// v2 DB status → legacy status the UI expects ('pendente' | 'entregue' | 'cancelado')
+function dbStatusToApp(status: string | null | undefined): 'pendente' | 'entregue' | 'cancelado' {
+  if (status === 'delivered' || status === 'entregue') return 'entregue';
+  if (status === 'cancelled' || status === 'cancelado') return 'cancelado';
+  // 'pending' (v2), 'ativo' (legacy), null/unknown → default to pending
+  return 'pendente';
+}
+
 async function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): Promise<ShopOrder> {
   if (USE_V2) {
     const itemId = Number(row.item || 0);
@@ -107,7 +115,7 @@ async function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): P
       item_nome: item?.nome,
       item_imagem: item?.imagem,
       preco: item?.preco || 0,
-      status: (row.status as any) || 'pendente',
+      status: dbStatusToApp(row.status),
     };
   }
   const itemId = Number(row.id_item || 0);
@@ -120,7 +128,7 @@ async function mapDbToShopOrder(row: any, itemsCache?: Map<number, ShopItem>): P
     item_nome: item?.nome,
     item_imagem: item?.imagem,
     preco: item?.preco || 0,
-    status: row.status === 'ativo' ? 'pendente' : (row.status as any) || 'pendente',
+    status: dbStatusToApp(row.status),
   };
 }
 
@@ -331,8 +339,12 @@ export async function updateShopOrder(id: number, data: Partial<ShopOrder>): Pro
   try {
     const dbData: Record<string, unknown> = {};
     if (data.status) dbData.status = appStatusToDb(data.status);
-    const row = await directus.request(uItem(SHOP_ORDERS_TABLE, id, dbData));
-    return (row || null) as ShopOrder | null;
+    const row = (await directus.request(uItem(SHOP_ORDERS_TABLE, id, dbData))) as any;
+    if (!row) return null;
+    // Map the raw DB row (v2 English or legacy Portuguese) back to the ShopOrder
+    // shape the UI speaks. Without this the admin panel sees 'pending'/'delivered'
+    // and never matches its 'pendente'/'entregue' checks for action buttons.
+    return mapDbToShopOrder(row);
   } catch (error) {
     console.error('[Shop] Failed to update order:', error);
     return null;

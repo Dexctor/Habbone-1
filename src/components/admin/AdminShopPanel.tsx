@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import type { ShopItem, ShopOrder } from "@/types/shop";
 import { useAdminFetch } from "@/hooks/useAdminFetch";
+import { mediaUrl } from "@/lib/media-url";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -498,7 +499,7 @@ function ItemsTab() {
                       <div className="h-[40px] w-[40px] shrink-0 overflow-hidden rounded-[4px] bg-[#303060]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={item.imagem}
+                          src={mediaUrl(item.imagem) || item.imagem}
                           alt={item.nome}
                           className="h-full w-full object-contain image-pixelated"
                           onError={(e) => { (e.target as HTMLImageElement).src = "/img/box.png"; }}
@@ -676,7 +677,12 @@ function OrdersTab() {
                       {order.item_imagem && (
                         <div className="h-[28px] w-[28px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={order.item_imagem} alt="" className="h-full w-full object-contain image-pixelated" />
+                          <img
+                            src={mediaUrl(order.item_imagem) || order.item_imagem}
+                            alt=""
+                            className="h-full w-full object-contain image-pixelated"
+                            onError={(e) => { (e.target as HTMLImageElement).src = "/img/box.png"; }}
+                          />
                         </div>
                       )}
                       <span className="text-[13px] text-admin-text-secondary">{order.item_nome || `Item #${order.item_id}`}</span>
