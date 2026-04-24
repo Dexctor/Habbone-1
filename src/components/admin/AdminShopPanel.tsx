@@ -576,7 +576,16 @@ function OrdersTab() {
     },
     onError: () => toast.error('Erreur de chargement'),
   });
-  const orders = data?.orders ?? [];
+
+  // Mirror the hook data into a local state so we can mutate individual rows
+  // (optimistic/dynamic updates after status changes) without waiting for a
+  // full reload.
+  const [localOrders, setLocalOrders] = useState<ShopOrder[]>([]);
+  useEffect(() => {
+    setLocalOrders(data?.orders ?? []);
+  }, [data?.orders]);
+
+  const orders = localOrders;
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / 20));
 
@@ -591,7 +600,18 @@ function OrdersTab() {
   );
 
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+    // Capture la ligne actuelle pour pouvoir rollback en cas d'échec
+    const previous = orders.find((o) => o.id === orderId);
+    if (!previous) return;
+
     setUpdatingId(orderId);
+
+    // Optimistic update — l'utilisateur voit le changement instantanément.
+    // Le serveur est mis à jour en arrière-plan, sans full refetch.
+    setLocalOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus as ShopOrder["status"] } : o)),
+    );
+
     try {
       const res = await fetch("/api/admin/shop", {
         method: "POST",
@@ -602,12 +622,21 @@ function OrdersTab() {
       if (!res.ok) {
         throw new Error((json as { error?: string })?.error || `HTTP ${res.status}`);
       }
+
+      // Si le serveur renvoie la row mise à jour, on la merge pour rester
+      // synchronisé (ex: si `delivered_at` est ajouté côté API).
+      const updated = (json as { data?: ShopOrder })?.data;
+      if (updated) {
+        setLocalOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...updated } : o)));
+      }
+
       toast.success(
         newStatus === "entregue" ? "Commande marquée comme livrée" :
         newStatus === "cancelado" ? "Commande annulée" : "Statut mis à jour"
       );
-      void reloadOrders();
     } catch (e: unknown) {
+      // Rollback : on restaure l'état d'origine de la ligne
+      setLocalOrders((prev) => prev.map((o) => (o.id === orderId ? previous : o)));
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
       toast.error(`Erreur: ${msg}`);
     } finally {
