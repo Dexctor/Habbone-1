@@ -3,8 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 import { listShopItems } from '@/server/directus/shop';
 import { directusFetch } from '@/server/directus/fetch';
-import { USERS_TABLE } from '@/server/directus/client';
+import { TABLES, USE_V2 } from '@/server/directus/tables';
 import BoutiqueClient from './boutique-client';
+
+const USERS_TABLE = TABLES.users;
+const COINS_COL = USE_V2 ? 'coins' : 'moedas';
 
 export const revalidate = 300;
 
@@ -27,11 +30,11 @@ export default async function BoutiquePage() {
     try {
       const userId = Number(user.id);
       if (userId > 0) {
-        const json = await directusFetch<{ data: { moedas?: number } }>(
+        const json = await directusFetch<{ data: Record<string, unknown> }>(
           `/items/${encodeURIComponent(USERS_TABLE)}/${userId}`,
-          { params: { fields: 'moedas' } }
+          { params: { fields: COINS_COL } }
         );
-        coins = Number(json?.data?.moedas) || 0;
+        coins = Number(json?.data?.[COINS_COL]) || 0;
       }
     } catch { /* silent */ }
   }

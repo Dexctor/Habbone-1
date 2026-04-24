@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
-import { directusUrl, serviceToken, USERS_TABLE } from '@/server/directus/client'
+import { directusUrl, serviceToken } from '@/server/directus/client'
+import { TABLES } from '@/server/directus/tables'
 import { getUserBadges } from '@/server/directus/badges'
+
+const USERS_TABLE = TABLES.users
 
 export const dynamic = 'force-dynamic'
 
