@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { directusService as directus, rItems, rItem, cItem, uItem, dItem, directusUrl, serviceToken, USERS_TABLE } from './client';
+import { directusService as directus, rItems, rItem, cItem, uItem, dItem, directusUrl, serviceToken } from './client';
 import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 import { resolveUserId, resolveUserNicks, nowIso, unixSecondsToIso } from './user-cache';
@@ -11,6 +11,7 @@ export type { ShopItem, ShopOrder, AdminNotification };
 const SHOP_ITEMS_TABLE = TABLES.shopItems;
 const SHOP_ORDERS_TABLE = TABLES.shopOrders;
 const ADMIN_NOTIFICATIONS_TABLE = TABLES.adminNotifications;
+const USERS_TABLE = TABLES.users;
 
 const ITEMS_FIELDS = USE_V2
   ? ['id', 'name', 'description', 'image', 'price_coins', 'stock', 'active']
@@ -352,9 +353,7 @@ export async function purchaseItem(userId: number, userNick: string, itemId: num
   if (item.status !== 'ativo') return { ok: false, error: 'Article indisponible' };
   if (item.estoque <= 0) return { ok: false, error: 'Rupture de stock' };
 
-  // Users stay in legacy table until Session C; here we fetch through USERS_TABLE
-  // which points to `usuarios` today and will point to `users` once users.ts
-  // migration lands. Column names: id, nick, moedas (legacy) vs id, nick, coins (v2)
+  // Column names: id, nick, moedas (legacy) vs id, nick, coins (v2)
   const coinsCol = USE_V2 ? 'coins' : 'moedas';
   const userRes = await fetch(
     `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}?fields=id,nick,${coinsCol}`,
