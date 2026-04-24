@@ -11,14 +11,14 @@ const PAGE_SIZE = 10
 
 type CategoryId = 'novidades' | 'raros' | 'habbo' | 'guides' | 'packs' | 'habbone'
 
-const CATEGORY_FILTERS: Array<{ id: CategoryId; label: string }> = [
-  { id: 'novidades', label: 'NOUVEAUTES' },
-  { id: 'raros', label: 'RARES' },
-  { id: 'habbo', label: 'HABBO' },
-  { id: 'guides', label: 'GUIDE DE JEUX' },
-  { id: 'packs', label: 'PACKS' },
-  { id: 'habbone', label: 'HABBONE' },
-]
+const CATEGORY_LABELS: Record<CategoryId, string> = {
+  novidades: 'NOUVEAUTES',
+  raros: 'RARES',
+  habbo: 'HABBO',
+  guides: 'GUIDE DE JEUX',
+  packs: 'PACKS',
+  habbone: 'HABBONE',
+}
 
 function getArticleCategory(article: any): CategoryId {
   const cat = String(article?.category || article?.categoria || '').toLowerCase()
@@ -31,33 +31,23 @@ function getArticleCategory(article: any): CategoryId {
 }
 
 function getCategoryLabel(category: CategoryId): string {
-  return CATEGORY_FILTERS.find((entry) => entry.id === category)?.label || 'NOUVEAUTES'
+  return CATEGORY_LABELS[category]
 }
 
 export default function NewsPageClient({ articles }: { articles: any[] }) {
   const [query, setQuery] = useState('')
-  const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null)
   const [page, setPage] = useState(0)
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
 
   const filtered = useMemo(() => {
-    let result = articles
     const term = query.trim().toLowerCase()
-
-    if (term) {
-      result = result.filter((article) => {
-        const title = stripHtml(article?.titulo || '').toLowerCase()
-        const desc = stripHtml(article?.descricao || article?.noticia || '').toLowerCase()
-        return title.includes(term) || desc.includes(term)
-      })
-    }
-
-    if (activeCategory) {
-      result = result.filter((article) => getArticleCategory(article) === activeCategory)
-    }
-
-    return result
-  }, [articles, query, activeCategory])
+    if (!term) return articles
+    return articles.filter((article) => {
+      const title = stripHtml(article?.titulo || '').toLowerCase()
+      const desc = stripHtml(article?.descricao || article?.noticia || '').toLowerCase()
+      return title.includes(term) || desc.includes(term)
+    })
+  }, [articles, query])
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const clampedPage = Math.min(page, pageCount - 1)
@@ -65,7 +55,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-8 sm:px-8">
-      <section className="space-y-3 rounded-[4px] bg-[#2C2C4F]">
+      <section className="rounded-[4px] bg-[#2C2C4F]">
         <div className="flex flex-col gap-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,36 +89,12 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
             </div>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {CATEGORY_FILTERS.map((category) => {
-            const active = activeCategory === category.id
-            return (
-              <button
-                key={category.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => {
-                  setPage(0)
-                  setActiveCategory((current) => (current === category.id ? null : category.id))
-                }}
-                className={`rounded-[2px] border px-2.5 py-1 text-[9px] font-normal uppercase tracking-[0.08em] transition ${
-                  active
-                    ? 'border-[#2596FF] bg-[#2596FF] text-white'
-                    : 'border-white/5 bg-[#1F1F3E] text-[#BEBECE] hover:bg-[#25254D] hover:text-[#DDD]'
-                }`}
-              >
-                {category.label}
-              </button>
-            )
-          })}
-        </div>
       </section>
 
       <section className="space-y-[10px]">
         {visible.length === 0 ? (
           <div className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-6 py-14 text-center text-sm font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-            Aucun article trouve.
+            Aucun article trouvé.
           </div>
         ) : (
           visible.map((article) => {
@@ -148,16 +114,30 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                 className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-[20px] py-[25px]"
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-                  <div className="relative h-[150px] w-full shrink-0 overflow-hidden rounded-[6px] md:w-[300px]">
+                  {/* Image preview — taille verrouillée à 150×300 (md+), même rendu sur mobile.
+                      Le fond gradient + l'inset shadow donnent de la profondeur même quand
+                      l'image est petite, transparente ou en fallback. */}
+                  <Link
+                    href={`/news/${article.id}`}
+                    aria-label={title}
+                    className="group relative h-[150px] w-full shrink-0 overflow-hidden rounded-[6px] bg-gradient-to-br from-[#1F1F3E] via-[#25254D] to-[#303060] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_-30px_60px_-20px_rgba(0,0,0,0.4)] md:w-[300px]"
+                  >
                     <Image
                       src={cardImage}
                       alt={title}
                       fill
                       sizes="(max-width: 768px) 100vw, 300px"
-                      className={isFallback ? 'object-contain p-4' : 'object-cover'}
+                      className={
+                        isFallback
+                          ? 'object-contain p-6 opacity-70 transition-transform duration-300 group-hover:scale-[1.04]'
+                          : 'object-cover transition-transform duration-300 group-hover:scale-[1.04]'
+                      }
                       onError={() => setFailedImages((prev) => new Set(prev).add(article.id))}
                     />
-                  </div>
+                    {/* Léger voile en bas pour que la légende reste lisible si on
+                        ajoute un overlay un jour, et pour adoucir le bord. */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
+                  </Link>
 
                   <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <Link
@@ -167,7 +147,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                       {title}
                     </Link>
                     <p className="line-clamp-3 text-[14px] font-normal leading-[1.45] text-[#DDD]">
-                      {previewText || 'Apercu indisponible.'}
+                      {previewText || 'Aperçu indisponible.'}
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <Link
@@ -190,13 +170,13 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
       </section>
 
       {pageCount > 1 ? (
-        <nav className="flex items-center justify-center gap-4 py-3" aria-label="Pagination des actualites">
+        <nav className="flex items-center justify-center gap-4 py-3" aria-label="Pagination des actualités">
           <button
             type="button"
             onClick={() => setPage((value) => Math.max(0, value - 1))}
             disabled={clampedPage === 0}
             className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Page precedente"
+            aria-label="Page précédente"
           >
             <i className="material-icons text-[18px]" aria-hidden>chevron_left</i>
           </button>
