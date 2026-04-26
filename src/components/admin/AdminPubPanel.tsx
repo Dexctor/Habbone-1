@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Trash2, Pencil, Plus, ExternalLink, Save, X } from "lucide-react";
+import { Trash2, Pencil, Plus, ExternalLink, Save, X, Upload } from "lucide-react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { useAdminFetch } from "@/hooks/useAdminFetch";
+import { mediaUrl } from "@/lib/media-url";
 
 type PubItem = {
   id: number;
@@ -36,6 +37,32 @@ export default function AdminPubPanel() {
   });
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Upload une image vers Directus et stocke l'UUID dans le champ `imagem`.
+  // mediaUrl() résoudra l'UUID en /assets/<uuid> côté lecture.
+  const handleUpload = async (file: File) => {
+    if (!edit) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok || !json?.id) {
+        toast.error(json?.error || "Échec de l'upload");
+        return;
+      }
+      setEdit((prev) => (prev ? { ...prev, imagem: json.id } : prev));
+      toast.success("Image téléversée");
+    } catch {
+      toast.error("Erreur réseau pendant l'upload");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const startCreate = () => {
     setEdit({ id: null, nome: "", link: "", imagem: "", status: "ativo" });
@@ -174,23 +201,47 @@ export default function AdminPubPanel() {
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">
-              Image (chemin ou URL)
+              Image
             </label>
-            <input
-              type="text"
-              value={edit.imagem}
-              onChange={(e) => setEdit({ ...edit, imagem: e.target.value })}
-              placeholder="/uploads/image.png ou https://..."
-              className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={edit.imagem}
+                onChange={(e) => setEdit({ ...edit, imagem: e.target.value })}
+                placeholder="UUID Directus, URL https://… ou clique sur Téléverser"
+                className="flex-1 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleUpload(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-[4px] border border-[#141433] bg-[#25254D] px-3 text-[12px] font-bold text-white hover:bg-[#303060] disabled:opacity-50"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? "Envoi..." : "Téléverser"}
+              </button>
+            </div>
+            <p className="mt-1 text-[10px] text-admin-text-tertiary">
+              PNG, JPEG, WebP ou GIF — max 5 Mo. L&apos;image est stockée sur Directus.
+            </p>
           </div>
           {edit.imagem && (
             <div className="rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-2">
-              <p className="mb-1 text-[10px] uppercase text-admin-text-tertiary">Apercu</p>
+              <p className="mb-1 text-[10px] uppercase text-admin-text-tertiary">Aperçu</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={edit.imagem}
-                alt="Apercu"
+                src={mediaUrl(edit.imagem) || edit.imagem}
+                alt="Aperçu"
                 className="max-h-[150px] rounded-[3px] object-contain"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
@@ -240,7 +291,7 @@ export default function AdminPubPanel() {
               <div className="h-[50px] w-[80px] shrink-0 overflow-hidden rounded-[3px] bg-[#141433]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.imagem}
+                  src={mediaUrl(item.imagem) || item.imagem}
                   alt={item.nome}
                   className="h-full w-full object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
