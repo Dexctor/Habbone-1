@@ -32,10 +32,32 @@ import {
   AlignCenter,
   AlignRight,
   Smile,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const low = createLowlight(common);
+
+// Couleurs alignées sur globals.css → .article-content h1..h6
+// (vert / orange / bleu / rouge / violet / noir)
+const HEADING_BUTTONS: {
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  color: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { level: 1, color: "#0FD42F", label: "Titre 1 (vert)", Icon: Heading1 },
+  { level: 2, color: "#FFAF00", label: "Titre 2 (orange)", Icon: Heading2 },
+  { level: 3, color: "#2976E8", label: "Titre 3 (bleu)", Icon: Heading3 },
+  { level: 4, color: "#E11036", label: "Titre 4 (rouge)", Icon: Heading4 },
+  { level: 5, color: "#141433", label: "Titre 5 (violet)", Icon: Heading5 },
+  { level: 6, color: "#000000", label: "Titre 6 (noir)", Icon: Heading6 },
+];
 
 type Variant = "full" | "simple" | "comment";
 
@@ -108,8 +130,11 @@ export default function RichEditor({
     },
     editorProps: {
       attributes: {
+        // En variant "full" on applique article-content : les <h1>..<h6>
+        // s'affichent immédiatement avec leur bandeau coloré (WYSIWYG),
+        // identique au rendu de la page publique.
         class:
-          `max-w-none ${variant === "comment" ? "min-h-[100px]" : "min-h-[200px]"} rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-600)] p-3 focus:outline-none`,
+          `${variant === "full" ? "article-content " : ""}max-w-none ${variant === "comment" ? "min-h-[100px]" : "min-h-[200px]"} rounded-md border border-[color:var(--bg-800)] bg-[color:var(--bg-600)] p-3 focus:outline-none`,
       },
     },
   });
@@ -140,6 +165,25 @@ export default function RichEditor({
         )}
         {variant === "full" && (
           <>
+            {/* ── Titres colorés H1..H6 (bandeaux pleine largeur) ─── */}
+            {HEADING_BUTTONS.map(({ level, color, label, Icon }) => (
+              <ToolbarButton
+                key={level}
+                active={editor?.isActive("heading", { level })}
+                label={label}
+                onClick={toggle(() => editor?.chain().focus().toggleHeading({ level }).run())}
+              >
+                <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span
+                    className="absolute -bottom-1 left-1/2 h-1 w-3 -translate-x-1/2 rounded-[1px]"
+                    style={{ backgroundColor: color }}
+                    aria-hidden
+                  />
+                </span>
+              </ToolbarButton>
+            ))}
+            <div className="mx-1 h-4 w-px bg-[color:var(--bg-600)]" aria-hidden />
             <ToolbarButton active={editor?.isActive("strike")} label="Barré" onClick={toggle(() => editor?.chain().focus().toggleStrike().run())}>
               <Strikethrough className="h-3.5 w-3.5" />
             </ToolbarButton>
