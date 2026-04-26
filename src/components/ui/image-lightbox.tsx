@@ -11,13 +11,19 @@ import { toast } from "sonner";
 const ROOMID_REGEX = /(^|[\s>])(:roomid)[\s ]+(\d{1,12})\b/gi;
 
 async function copyToClipboard(text: string): Promise<boolean> {
+  console.log("[RoomID] copyToClipboard called with:", text);
+  console.log("[RoomID] navigator.clipboard available?", !!navigator.clipboard);
+  console.log("[RoomID] window.isSecureContext?", window.isSecureContext);
+
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
+      console.log("[RoomID] ✅ navigator.clipboard.writeText OK");
       return true;
     }
-  } catch {
-    /* fallback below */
+    console.log("[RoomID] navigator.clipboard.writeText not available, trying fallback");
+  } catch (err) {
+    console.warn("[RoomID] navigator.clipboard.writeText threw:", err);
   }
   // Fallback pour navigateurs anciens / contexte non-secure
   try {
@@ -29,8 +35,10 @@ async function copyToClipboard(text: string): Promise<boolean> {
     ta.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
+    console.log("[RoomID] execCommand fallback result:", ok);
     return ok;
-  } catch {
+  } catch (err) {
+    console.error("[RoomID] execCommand fallback threw:", err);
     return false;
   }
 }
@@ -64,10 +72,12 @@ export default function ContentWithLightbox({
 
   const handleClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
+    console.log("[RoomID] click event captured. target:", target.tagName, target);
 
     // RoomID chip — copie ":roomid <id>" dans le presse-papier au clic.
     // closest() couvre le cas où le clic tombe sur l'icône ::before ou le texte.
     const chip = target.closest<HTMLAnchorElement>("a.roomid-chip");
+    console.log("[RoomID] chip found?", !!chip, chip);
     if (chip) {
       // preventDefault doit s'exécuter immédiatement (sans attendre la
       // promesse) sinon le navigateur a le temps de traiter href="#..." et
@@ -75,20 +85,30 @@ export default function ContentWithLightbox({
       e.preventDefault();
       e.stopPropagation();
       const id = (chip.dataset.roomid || "").replace(/[^0-9]/g, "");
-      if (!id) return;
+      console.log("[RoomID] extracted id:", id, "from data-roomid:", chip.dataset.roomid);
+      if (!id) {
+        console.warn("[RoomID] no valid id, aborting");
+        return;
+      }
       const text = `:roomid ${id}`;
+      console.log("[RoomID] about to copy:", text);
       void copyToClipboard(text).then((ok) => {
+        console.log("[RoomID] copy result:", ok);
         if (ok) {
           flashChipCopied(chip);
+          console.log("[RoomID] calling toast.success");
           toast.success("RoomID copiée !", {
             description: text,
             duration: 2500,
           });
         } else {
+          console.log("[RoomID] calling toast.error");
           toast.error("Impossible de copier dans le presse-papier", {
             description: "Sélectionne le texte manuellement et fais Ctrl+C.",
           });
         }
+      }).catch((err) => {
+        console.error("[RoomID] copy promise rejected:", err);
       });
       return;
     }
@@ -103,11 +123,18 @@ export default function ContentWithLightbox({
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      console.warn("[RoomID] containerRef is null, cannot attach listener");
+      return;
+    }
+    console.log("[RoomID] attaching click listener to:", el);
     // Capture phase pour intercepter le clic AVANT que le navigateur
     // traite le href="#..." et déclenche un scroll vers l'ancre.
     el.addEventListener("click", handleClick, true);
-    return () => el.removeEventListener("click", handleClick, true);
+    return () => {
+      console.log("[RoomID] removing click listener");
+      el.removeEventListener("click", handleClick, true);
+    };
   }, [handleClick]);
 
   // Auto-transformation : scanne le HTML rendu et remplace toute occurrence
@@ -117,6 +144,12 @@ export default function ContentWithLightbox({
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
+
+    console.log("[RoomID] auto-transform useEffect running, html length:", html.length);
+    console.log("[RoomID] html preview (1st 200 chars):", html.slice(0, 200));
+    const hasInHtml = ROOMID_REGEX.test(html);
+    ROOMID_REGEX.lastIndex = 0;
+    console.log("[RoomID] regex test on raw html:", hasInHtml);
 
     // On parcourt uniquement les nœuds TEXTE (TreeWalker), pour ne pas
     // toucher les <a class="roomid-chip"> déjà existants ni le contenu des
@@ -139,7 +172,16 @@ export default function ContentWithLightbox({
       targets.push(n as Text);
       n = walker.nextNode();
     }
+    console.log("[RoomID] text nodes matched by regex:", targets.length);
+    targets.forEach((t, i) => {
+      console.log(`[RoomID]   #${i}:`, JSON.stringify(t.nodeValue));
+    });
 
+    // Aussi : compter les chips DÉJÀ présents dans le HTML
+    const existingChips = root.querySelectorAll("a.roomid-chip");
+    console.log("[RoomID] existing chips in DOM (already clickable):", existingChips.length);
+
+    let chipsCreated = 0;
     for (const textNode of targets) {
       const original = textNode.nodeValue || "";
       ROOMID_REGEX.lastIndex = 0;
@@ -167,6 +209,7 @@ export default function ContentWithLightbox({
         chip.setAttribute("rel", "nofollow noopener noreferrer");
         chip.textContent = `:roomid ${id}`;
         fragment.appendChild(chip);
+        chipsCreated++;
         lastIndex = start + full.length;
       }
       if (lastIndex < original.length) {
@@ -174,6 +217,13 @@ export default function ContentWithLightbox({
       }
       textNode.parentNode?.replaceChild(fragment, textNode);
     }
+    console.log("[RoomID] chips créés par auto-transform:", chipsCreated);
+    const finalChips = root.querySelectorAll("a.roomid-chip");
+    console.log("[RoomID] chips totaux après transform:", finalChips.length);
+    finalChips.forEach((c, i) => {
+      const a = c as HTMLAnchorElement;
+      console.log(`[RoomID]   chip #${i}: data-roomid="${a.dataset.roomid}", text="${a.textContent}", innerHTML.length=${a.innerHTML.length}`);
+    });
   }, [html]);
 
   // Close on Escape
