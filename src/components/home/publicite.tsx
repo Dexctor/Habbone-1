@@ -1,5 +1,7 @@
+import { unstable_cache } from 'next/cache'
 import { directusUrl, serviceToken } from '@/server/directus/client'
 import { mediaUrl } from '@/lib/media-url'
+import { TABLES, USE_V2 } from '@/server/directus/tables'
 import PubliciteClient, { type Partner } from './publicite-client'
 
 const FALLBACK_PARTNERS: Partner[] = [
@@ -12,11 +14,16 @@ const FALLBACK_PARTNERS: Partner[] = [
 
 async function fetchPartners(): Promise<Partner[]> {
   try {
-    const url = new URL(`${directusUrl}/items/parceiros`)
-    url.searchParams.set('fields', 'id,nome,link,imagem,status')
+    const fields = USE_V2 ? 'id,name,link,image,active' : 'id,nome,link,imagem,status'
+    const filterField = USE_V2 ? 'active' : 'status'
+    const filterValue = USE_V2 ? 'true' : 'ativo'
+    const filterOp = USE_V2 ? '_eq' : '_eq'
+
+    const url = new URL(`${directusUrl}/items/${encodeURIComponent(TABLES.sponsors)}`)
+    url.searchParams.set('fields', fields)
     url.searchParams.set('sort', '-id')
     url.searchParams.set('limit', '20')
-    url.searchParams.set('filter[status][_eq]', 'ativo')
+    url.searchParams.set(`filter[${filterField}][${filterOp}]`, filterValue)
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${serviceToken}` },
       cache: 'no-store',
@@ -29,8 +36,8 @@ async function fetchPartners(): Promise<Partner[]> {
 
     return rows
       .map((row: any) => ({
-        name: String(row?.nome || '').trim(),
-        banner: mediaUrl(row?.imagem || ''),
+        name: String((USE_V2 ? row?.name : row?.nome) || '').trim(),
+        banner: mediaUrl((USE_V2 ? row?.image : row?.imagem) || ''),
         href: String(row?.link || '#').trim(),
       }))
       .filter((p) => p.name && p.banner)
@@ -39,7 +46,15 @@ async function fetchPartners(): Promise<Partner[]> {
   }
 }
 
+// Cache avec tag 'pub' pour pouvoir invalider depuis /api/admin/pub
+// (revalidateTag('pub')) sans attendre l'expiration de revalidate=300.
+const getCachedPartners = unstable_cache(
+  fetchPartners,
+  ['publicite-partners'],
+  { tags: ['pub', 'home'], revalidate: 300 },
+)
+
 export default async function Publicite() {
-  const partners = await fetchPartners()
+  const partners = await getCachedPartners()
   return <PubliciteClient partners={partners} />
 }

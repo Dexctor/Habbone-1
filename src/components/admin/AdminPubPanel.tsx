@@ -189,12 +189,12 @@ export default function AdminPubPanel() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">Lien (URL)</label>
+              <label className="mb-1 block text-[11px] font-bold uppercase text-admin-text-secondary">Lien</label>
               <input
-                type="url"
+                type="text"
                 value={edit.link}
                 onChange={(e) => setEdit({ ...edit, link: e.target.value })}
-                placeholder="https://..."
+                placeholder="https://… ou discord.gg/xxxx"
                 className="w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
               />
             </div>

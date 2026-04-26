@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
 import { directusUrl, serviceToken } from '@/server/directus/client'
 import { TABLES, USE_V2 } from '@/server/directus/tables'
 
 export const dynamic = 'force-dynamic';
+
+// Accepte URLs absolues (http/https), schemes Discord (discord.gg, discord.com),
+// ou un chemin relatif. Préfixe automatiquement https:// si manquant.
+function normalizeLink(input: string): string {
+  const trimmed = String(input || '').trim()
+  if (!trimmed) return trimmed
+  // Already has a scheme
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed
+  // Looks like a domain (contains a dot, no spaces)
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(trimmed) && !/\s/.test(trimmed)) {
+    return `https://${trimmed}`
+  }
+  return trimmed
+}
 
 const TABLE = TABLES.sponsors;
 
@@ -59,9 +73,12 @@ export const GET = withAdmin(async () => {
   return NextResponse.json({ data });
 }, { key: 'admin:pub:read', limit: 120, windowMs: 60_000 });
 
+// Validation tolérante du lien : on n'exige pas .url() strict pour ne pas
+// rejeter "discord.gg/xxx" ou un domaine sans scheme. La normalisation
+// (préfixe https://) est faite côté serveur avant l'écriture en base.
 const CreateSchema = z.object({
   nome: z.string().min(1, 'Nom requis').max(100),
-  link: z.string().url('URL invalide').max(500),
+  link: z.string().min(1, 'Lien requis').max(500),
   imagem: z.string().min(1, 'Image requise').max(500),
   status: z.enum(['ativo', 'inativo']).optional().default('ativo'),
 });
@@ -69,7 +86,7 @@ const CreateSchema = z.object({
 const UpdateSchema = z.object({
   id: z.number().int().positive(),
   nome: z.string().min(1).max(100).optional(),
-  link: z.string().url().max(500).optional(),
+  link: z.string().min(1).max(500).optional(),
   imagem: z.string().min(1).max(500).optional(),
   status: z.enum(['ativo', 'inativo']).optional(),
 });
@@ -85,6 +102,15 @@ export const POST = withAdmin(async (req) => {
 
   const action = String(body?.action || 'create');
 
+  // Helper: invalider le cache home (tag) ET la page elle-même
+  // (revalidate=300 sur app/page.tsx). Sans ça, la home reste figée
+  // jusqu'à 5 min après une modif.
+  const invalidatePub = () => {
+    revalidateTag('pub');
+    revalidateTag('home');
+    revalidatePath('/');
+  };
+
   if (action === 'delete') {
     const parsed = DeleteSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'INVALID_BODY' }, { status: 400 });
@@ -93,8 +119,7 @@ export const POST = withAdmin(async (req) => {
       headers: { Authorization: `Bearer ${serviceToken}` },
     });
     if (!res.ok && res.status !== 204) return NextResponse.json({ error: 'DELETE_FAILED' }, { status: 500 });
-    revalidateTag('pub');
-    revalidateTag('home');
+    invalidatePub();
     return NextResponse.json({ ok: true });
   }
 
@@ -102,6 +127,7 @@ export const POST = withAdmin(async (req) => {
     const parsed = UpdateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'INVALID_BODY' }, { status: 400 });
     const { id, ...patch } = parsed.data;
+    if (patch.link !== undefined) patch.link = normalizeLink(patch.link);
     const dbPatch = appToDb(patch);
     const res = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}/${id}`, {
       method: 'PATCH',
@@ -110,8 +136,7 @@ export const POST = withAdmin(async (req) => {
     });
     if (!res.ok) return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 });
     const json = await res.json();
-    revalidateTag('pub');
-    revalidateTag('home');
+    invalidatePub();
     return NextResponse.json({ ok: true, data: json?.data ? mapDbRow(json.data) : null });
   }
 
@@ -121,9 +146,10 @@ export const POST = withAdmin(async (req) => {
     const msg = parsed.error.issues[0]?.message || 'Donnees invalides';
     return NextResponse.json({ error: msg }, { status: 400 });
   }
+  const data = { ...parsed.data, link: normalizeLink(parsed.data.link) };
   const payload = USE_V2
-    ? { ...appToDb(parsed.data), sort: 0 }
-    : { ...parsed.data, autor: 'admin', data: Math.floor(Date.now() / 1000) };
+    ? { ...appToDb(data), sort: 0 }
+    : { ...data, autor: 'admin', data: Math.floor(Date.now() / 1000) };
   const res = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
@@ -131,7 +157,6 @@ export const POST = withAdmin(async (req) => {
   });
   if (!res.ok) return NextResponse.json({ error: 'CREATE_FAILED' }, { status: 500 });
   const json = await res.json();
-  revalidateTag('pub');
-  revalidateTag('home');
+  invalidatePub();
   return NextResponse.json({ ok: true, data: json?.data ? mapDbRow(json.data) : null });
 }, { key: 'admin:pub', limit: 30, windowMs: 60_000 });
