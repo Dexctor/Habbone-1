@@ -4,35 +4,27 @@ import { mediaUrl } from '@/lib/media-url'
 import { TABLES, USE_V2 } from '@/server/directus/tables'
 import PubliciteClient, { type Partner } from './publicite-client'
 
-const FALLBACK_PARTNERS: Partner[] = [
-  {
-    name: 'Kihabbo, un monde different',
-    banner: '/uploads/news-a182f4b65f.png',
-    href: 'https://discord.gg/zCFvdHsAry',
-  },
-]
-
 async function fetchPartners(): Promise<Partner[]> {
   try {
     const fields = USE_V2 ? 'id,name,link,image,active' : 'id,nome,link,imagem,status'
     const filterField = USE_V2 ? 'active' : 'status'
     const filterValue = USE_V2 ? 'true' : 'ativo'
-    const filterOp = USE_V2 ? '_eq' : '_eq'
 
     const url = new URL(`${directusUrl}/items/${encodeURIComponent(TABLES.sponsors)}`)
     url.searchParams.set('fields', fields)
     url.searchParams.set('sort', '-id')
     url.searchParams.set('limit', '20')
-    url.searchParams.set(`filter[${filterField}][${filterOp}]`, filterValue)
+    url.searchParams.set(`filter[${filterField}][_eq]`, filterValue)
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${serviceToken}` },
       cache: 'no-store',
     })
-    if (!res.ok) return FALLBACK_PARTNERS
+    // En cas d'erreur réseau / DB : on retourne une liste vide. L'état
+    // vide est géré côté client (PubliciteClient) avec un message propre.
+    if (!res.ok) return []
     const json = await res.json()
     const rows = json?.data ?? []
-
-    if (!Array.isArray(rows) || rows.length === 0) return FALLBACK_PARTNERS
+    if (!Array.isArray(rows)) return []
 
     return rows
       .map((row: any) => ({
@@ -42,7 +34,7 @@ async function fetchPartners(): Promise<Partner[]> {
       }))
       .filter((p) => p.name && p.banner)
   } catch {
-    return FALLBACK_PARTNERS
+    return []
   }
 }
 
