@@ -39,6 +39,23 @@ export default function ContentWithLightbox({
   const containerRef = useRef<HTMLDivElement>(null);
   const [src, setSrc] = useState<string | null>(null);
 
+  // Anime un flash vert "Copié !" sur le chip pour confirmer visuellement
+  // la copie, en plus du toast (utile si Sonner ne s'affiche pas pour une
+  // raison quelconque, ou pour rassurer l'utilisateur sur son geste).
+  const flashChipCopied = (chip: HTMLAnchorElement) => {
+    chip.classList.add("roomid-chip--copied");
+    const before = chip.getAttribute("data-original-text") ?? chip.textContent ?? "";
+    if (!chip.hasAttribute("data-original-text")) {
+      chip.setAttribute("data-original-text", before);
+    }
+    chip.textContent = "Copié !";
+    window.setTimeout(() => {
+      chip.classList.remove("roomid-chip--copied");
+      const orig = chip.getAttribute("data-original-text");
+      if (orig) chip.textContent = orig;
+    }, 1200);
+  };
+
   const handleClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
 
@@ -46,13 +63,26 @@ export default function ContentWithLightbox({
     // closest() couvre le cas où le clic tombe sur l'icône ::before ou le texte.
     const chip = target.closest<HTMLAnchorElement>("a.roomid-chip");
     if (chip) {
+      // preventDefault doit s'exécuter immédiatement (sans attendre la
+      // promesse) sinon le navigateur a le temps de traiter href="#..." et
+      // de scroller vers une ancre.
       e.preventDefault();
       e.stopPropagation();
       const id = (chip.dataset.roomid || "").replace(/[^0-9]/g, "");
       if (!id) return;
-      void copyToClipboard(`:roomid ${id}`).then((ok) => {
-        if (ok) toast.success(`:roomid ${id} copié !`);
-        else toast.error("Impossible de copier dans le presse-papier");
+      const text = `:roomid ${id}`;
+      void copyToClipboard(text).then((ok) => {
+        if (ok) {
+          flashChipCopied(chip);
+          toast.success("RoomID copiée !", {
+            description: text,
+            duration: 2500,
+          });
+        } else {
+          toast.error("Impossible de copier dans le presse-papier", {
+            description: "Sélectionne le texte manuellement et fais Ctrl+C.",
+          });
+        }
       });
       return;
     }
@@ -68,8 +98,10 @@ export default function ContentWithLightbox({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    el.addEventListener("click", handleClick);
-    return () => el.removeEventListener("click", handleClick);
+    // Capture phase pour intercepter le clic AVANT que le navigateur
+    // traite le href="#..." et déclenche un scroll vers l'ancre.
+    el.addEventListener("click", handleClick, true);
+    return () => el.removeEventListener("click", handleClick, true);
   }, [handleClick]);
 
   // Close on Escape

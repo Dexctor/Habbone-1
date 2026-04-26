@@ -458,6 +458,17 @@ img.image-pixelated:not([class*="object-"]) {
 .article-content .roomid-chip:active {
   transform: translateY(1px);
 }
+/* État "copié !" — flash vert pendant ~1.2s après un clic */
+.article-content .roomid-chip--copied {
+  background: #0FD42F !important;
+  border-color: #0FD42F !important;
+  color: #fff !important;
+}
+.article-content .roomid-chip--copied::before {
+  /* Remplace l'icône porte par une coche pendant le flash. */
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+}
 /* Icône porte injectée en CSS (SVG inline) — pas besoin que l'admin la
    tape, le bouton de la toolbar n'insère que le texte ":roomid <id>". */
 .article-content .roomid-chip::before {
