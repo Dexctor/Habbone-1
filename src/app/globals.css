@@ -431,3 +431,46 @@ img.image-pixelated:not([class*="object-"]) {
 /* Lists */
 .article-content ul, .article-content ol { padding-left: 1.5em; margin-bottom: 0.75em; }
 .article-content li { margin-bottom: 0.3em; }
+
+/* RoomID chip — clic = copie ":roomid <id>" dans le presse-papier (handler
+   JS sur la page lecteur). Style fidèle au visuel Habbo : bg sombre, texte
+   blanc gras, icône porte à gauche. */
+.article-content .roomid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #1F1F3E;
+  border: 1px solid #141433;
+  border-radius: 4px;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none !important;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.article-content .roomid-chip:hover {
+  background: #25254D;
+}
+.article-content .roomid-chip:active {
+  transform: translateY(1px);
+}
+/* Icône porte injectée en CSS (SVG inline) — pas besoin que l'admin la
+   tape, le bouton de la toolbar n'insère que le texte ":roomid <id>". */
+.article-content .roomid-chip::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M13 4h3a2 2 0 0 1 2 2v14'/><path d='M2 20h3'/><path d='M13 20h9'/><path d='M10 12v.01'/><path d='M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M13 4h3a2 2 0 0 1 2 2v14'/><path d='M2 20h3'/><path d='M13 20h9'/><path d='M10 12v.01'/><path d='M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z'/></svg>");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  flex-shrink: 0;
+}

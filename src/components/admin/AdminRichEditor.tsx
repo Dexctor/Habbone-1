@@ -35,6 +35,7 @@ import {
     Heading4,
     Heading5,
     Heading6,
+    DoorOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -175,6 +176,20 @@ export default function AdminRichEditor({
                 </ToolbarButton>
                 <ToolbarButton active={editor.isActive("link")} label="Lien" onClick={(e) => { e.preventDefault(); const url = prompt("URL du lien"); if (url) editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run(); }}>
                     <LinkIcon className="h-3.5 w-3.5" />
+                </ToolbarButton>
+                <ToolbarButton
+                    label="Insérer une RoomID Habbo"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        const raw = prompt("ID de la room Habbo (chiffres uniquement) :");
+                        if (!raw) return;
+                        const id = raw.trim().replace(/[^0-9]/g, "");
+                        if (!id) return;
+                        const chip = `<a href="#roomid-${id}" data-roomid="${id}" class="roomid-chip" rel="nofollow noopener">:roomid ${id}</a>&nbsp;`;
+                        editor.chain().focus().insertContent(chip).run();
+                    }}
+                >
+                    <DoorOpen className="h-3.5 w-3.5" />
                 </ToolbarButton>
                 <div className="w-px h-4 bg-[color:var(--bg-600)]" />
                 <ToolbarButton active={editor.isActive({ textAlign: "left" })} label="Gauche" onClick={toggle(() => editor.chain().focus().setTextAlign("left").run())}>

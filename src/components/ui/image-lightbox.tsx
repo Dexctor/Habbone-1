@@ -2,6 +2,32 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fallback below */
+  }
+  // Fallback pour navigateurs anciens / contexte non-secure
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 export default function ContentWithLightbox({
   html,
@@ -15,6 +41,22 @@ export default function ContentWithLightbox({
 
   const handleClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
+
+    // RoomID chip — copie ":roomid <id>" dans le presse-papier au clic.
+    // closest() couvre le cas où le clic tombe sur l'icône ::before ou le texte.
+    const chip = target.closest<HTMLAnchorElement>("a.roomid-chip");
+    if (chip) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = (chip.dataset.roomid || "").replace(/[^0-9]/g, "");
+      if (!id) return;
+      void copyToClipboard(`:roomid ${id}`).then((ok) => {
+        if (ok) toast.success(`:roomid ${id} copié !`);
+        else toast.error("Impossible de copier dans le presse-papier");
+      });
+      return;
+    }
+
     if (target.tagName === "IMG") {
       e.preventDefault();
       e.stopPropagation();

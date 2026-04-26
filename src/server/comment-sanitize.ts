@@ -64,7 +64,9 @@ export function sanitizeRichContentHtml(html: string): string {
       'hr', 'sub', 'sup', 'mark',
     ],
     allowedAttributes: {
-      a: ['href', 'title', 'rel', 'target'],
+      // Sur les <a>, on autorise data-roomid (chiffres uniquement) et la
+      // classe roomid-chip pour les chips RoomID Habbo cliquables.
+      a: ['href', 'title', 'rel', 'target', 'class', 'data-roomid'],
       img: ['src', 'alt', 'width', 'height'],
       span: ['class', 'style'],
       div: ['class'],
@@ -72,6 +74,9 @@ export function sanitizeRichContentHtml(html: string): string {
       th: ['colspan', 'rowspan'],
       code: ['class'],
       pre: ['class'],
+    },
+    allowedClasses: {
+      a: ['roomid-chip'],
     },
     allowedStyles: {
       span: {
@@ -85,7 +90,18 @@ export function sanitizeRichContentHtml(html: string): string {
       img: ['http', 'https', 'data'],
     },
     transformTags: {
-      a: sanitizeHtml.simpleTransform('a', { rel: 'nofollow noopener noreferrer' }),
+      a: (tagName, attribs) => {
+        const next: Record<string, string> = { ...attribs };
+        next.rel = 'nofollow noopener noreferrer';
+        // Si data-roomid est présent, on n'accepte que des chiffres. Sinon
+        // on retire l'attribut pour ne pas laisser passer du contenu arbitraire.
+        if (next['data-roomid']) {
+          const cleaned = String(next['data-roomid']).replace(/[^0-9]/g, '').slice(0, 12);
+          if (cleaned) next['data-roomid'] = cleaned;
+          else delete next['data-roomid'];
+        }
+        return { tagName, attribs: next };
+      },
     },
   }));
 }

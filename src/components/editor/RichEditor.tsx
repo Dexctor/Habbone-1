@@ -38,6 +38,7 @@ import {
   Heading4,
   Heading5,
   Heading6,
+  DoorOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -242,6 +243,23 @@ export default function RichEditor({
             />
             <ToolbarButton active={editor?.isActive("link")} label="Lien (Ctrl+K)" onClick={(e) => { e.preventDefault(); setLinkUrl(editor?.getAttributes("link")?.href || ""); setShowLinkModal(true); }}>
               <LinkIcon className="h-3.5 w-3.5" />
+            </ToolbarButton>
+            <ToolbarButton
+              label="Insérer une RoomID Habbo"
+              onClick={(e) => {
+                e.preventDefault();
+                const raw = prompt("ID de la room Habbo (chiffres uniquement) :");
+                if (!raw) return;
+                const id = raw.trim().replace(/[^0-9]/g, "");
+                if (!id) return;
+                // Le HTML inséré sera reconnu côté lecture par RoomIdClickHandler
+                // qui copiera ":roomid <id>" au clic. data-roomid garde l'ID
+                // intact même si l'admin édite ensuite le texte affiché.
+                const chip = `<a href="#roomid-${id}" data-roomid="${id}" class="roomid-chip" rel="nofollow noopener">:roomid ${id}</a>&nbsp;`;
+                editor?.chain().focus().insertContent(chip).run();
+              }}
+            >
+              <DoorOpen className="h-3.5 w-3.5" />
             </ToolbarButton>
           </>
         )}
