@@ -84,8 +84,22 @@ export default function ContentWithLightbox({
       // de scroller vers une ancre.
       e.preventDefault();
       e.stopPropagation();
-      const id = (chip.dataset.roomid || "").replace(/[^0-9]/g, "");
-      console.log("[RoomID] extracted id:", id, "from data-roomid:", chip.dataset.roomid);
+      // L'ID peut venir de 3 endroits, par ordre de fiabilité :
+      //  1. data-roomid (notre format canonique)
+      //  2. href="#roomid-12345" (fallback si TipTap/sanitizer a strippé data-*)
+      //  3. textContent ":roomid 12345" (dernier recours)
+      let id = (chip.dataset.roomid || "").replace(/[^0-9]/g, "");
+      if (!id) {
+        const href = chip.getAttribute("href") || "";
+        const m = href.match(/#roomid-(\d+)/i);
+        if (m) id = m[1];
+      }
+      if (!id) {
+        const txt = chip.textContent || "";
+        const m = txt.match(/(\d{1,12})/);
+        if (m) id = m[1];
+      }
+      console.log("[RoomID] extracted id:", id, "from data-roomid:", chip.dataset.roomid, "href:", chip.getAttribute("href"), "text:", chip.textContent);
       if (!id) {
         console.warn("[RoomID] no valid id, aborting");
         return;
