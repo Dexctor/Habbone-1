@@ -10,7 +10,7 @@ type Props = {
   hotel?: string;
 };
 
-type RankingEntry = { rank: number; score: number } | null;
+type RankingEntry = { rank: number | null; score: number } | null;
 
 type Rankings = {
   achievements: RankingEntry;
@@ -73,31 +73,31 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
   const rows: { icon: string; label: string; entry: RankingEntry; tone: string }[] = [
     {
       icon: "/img/medal.png",
-      label: "Achievements top 250",
+      label: "Win-Win top",
       entry: rankings?.achievements ?? null,
       tone: "bg-[#16B254] text-white",
     },
     {
       icon: "/img/badges.gif",
-      label: "Badge top 250",
+      label: "Badge top",
       entry: rankings?.badges ?? null,
       tone: "bg-[#16B254] text-white",
     },
     {
       icon: "/img/badges.gif",
-      label: "Unique badge top 50",
+      label: "Unique badge top",
       entry: rankings?.uniqueBadges ?? null,
       tone: "bg-[#16B254] text-white",
     },
     {
       icon: "/img/star.png",
-      label: "Star Gems top 250",
+      label: "Star Gems top",
       entry: rankings?.starGems ?? null,
       tone: "bg-[#16B254] text-white",
     },
   ];
 
-  const hasAnyRank = rows.some((r) => r.entry !== null);
+  const hasAnyData = rows.some((r) => r.entry !== null);
 
   return (
     <section className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-4">
@@ -112,9 +112,9 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
           <div className="py-4 text-center text-[12px] text-[#BEBECE]/70">
             Chargement des classements...
           </div>
-        ) : !hasAnyRank ? (
+        ) : !hasAnyData ? (
           <div className="py-3 text-center text-[12px] text-[#BEBECE]/70">
-            Pas classé dans le top 250 mondial
+            Aucune donnée de classement
           </div>
         ) : (
           rows.map((row) => (
@@ -128,9 +128,15 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
                 <span className="text-[12px] text-[#DDD]">{row.label} :</span>
               </div>
               {row.entry ? (
-                <span className={`rounded-[4px] px-2.5 py-1 text-[11px] font-bold ${row.tone}`}>
-                  #{row.entry.rank} ({formatNumber(row.entry.score)})
-                </span>
+                row.entry.rank !== null ? (
+                  <span className={`rounded-[4px] px-2.5 py-1 text-[11px] font-bold ${row.tone}`}>
+                    #{row.entry.rank} ({formatNumber(row.entry.score)})
+                  </span>
+                ) : (
+                  <span className="rounded-[4px] bg-white/10 px-2.5 py-1 text-[11px] font-bold text-[#BEBECE]">
+                    Non classé ({formatNumber(row.entry.score)})
+                  </span>
+                )
               ) : (
                 <span className="rounded-[4px] bg-white/5 px-2.5 py-1 text-[11px] text-[#BEBECE]/50">
                   —

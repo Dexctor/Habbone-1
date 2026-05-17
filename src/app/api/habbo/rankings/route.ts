@@ -4,10 +4,10 @@ import { cached } from '@/server/redis';
 export const dynamic = 'force-dynamic';
 
 export type HabboRankings = {
-  achievements: { rank: number; score: number } | null;
-  badges: { rank: number; score: number } | null;
-  uniqueBadges: { rank: number; score: number } | null;
-  starGems: { rank: number; score: number } | null;
+  achievements: { rank: number | null; score: number } | null;
+  badges: { rank: number | null; score: number } | null;
+  uniqueBadges: { rank: number | null; score: number } | null;
+  starGems: { rank: number | null; score: number } | null;
 };
 
 const RANKINGS_TTL = 60 * 30; // 30 minutes (HabboWidgets updates hourly)
@@ -18,6 +18,12 @@ const RANKINGS_TTL = 60 * 30; // 30 minutes (HabboWidgets updates hourly)
  *   <a href="/badges/achievements/fr">Achievements top 250</a>:
  *   <strong class="label label-success"># 14</strong>
  *   (1765)
+ *
+ * When the player is not ranked, the rank shows "# N/A" but the score in
+ * parentheses is still the player's actual count. We must scope the regex
+ * tightly so it only reads inside the column block (otherwise it bleeds into
+ * other "# N" / "(NNNN)" matches further down the page — badges, ratings, etc.
+ * — which is what caused the wrong values previously).
  */
 function parseRankings(html: string): HabboRankings {
   const rankings: HabboRankings = {
@@ -27,18 +33,32 @@ function parseRankings(html: string): HabboRankings {
     starGems: null,
   };
 
-  // Generic extractor: find a link href matching path, then the next "# N" label and "(NNNN)" count
-  function extract(pathSegment: string): { rank: number; score: number } | null {
-    // Look for the block starting with the path, then capture # N and (score)
-    const pattern = new RegExp(
-      `${pathSegment}[^]*?#\\s*(\\d+)[^]*?\\((\\d+)\\)`,
+  function extract(pathSegment: string): { rank: number | null; score: number } | null {
+    // Scope to a small window after the link, up to the closing </div> of the .col block.
+    // This prevents the regex from continuing into unrelated content when the rank is "N/A".
+    const blockPattern = new RegExp(
+      `${pathSegment}[\\s\\S]{0,400}?<\\/div>`,
       'i',
     );
-    const match = html.match(pattern);
-    if (!match) return null;
-    const rank = Number(match[1]);
-    const score = Number(match[2]);
-    if (!Number.isFinite(rank) || !Number.isFinite(score)) return null;
+    const blockMatch = html.match(blockPattern);
+    if (!blockMatch) return null;
+    const block = blockMatch[0];
+
+    // Rank: either "# 123" (ranked) or "# N/A" (not ranked).
+    const rankMatch = block.match(/#\s*(\d+|N\/A)/i);
+    // Score: the "(NNNN)" right after the label.
+    const scoreMatch = block.match(/\((\d+)\)/);
+
+    if (!scoreMatch) return null;
+    const score = Number(scoreMatch[1]);
+    if (!Number.isFinite(score)) return null;
+
+    let rank: number | null = null;
+    if (rankMatch && rankMatch[1].toUpperCase() !== 'N/A') {
+      const parsed = Number(rankMatch[1]);
+      if (Number.isFinite(parsed)) rank = parsed;
+    }
+
     return { rank, score };
   }
 
