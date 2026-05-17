@@ -140,7 +140,30 @@ export async function setAdminUserRole(userId: string, roleId: string): Promise<
   const role = await getRoleById(roleId).catch(() => null);
   const roleName = (role as any)?.name || roleId;
 
-  await setLegacyUserRoleId(cleanId, roleId, roleName);
+  let writeResult: any = null;
+  try {
+    writeResult = await setLegacyUserRoleId(cleanId, roleId, roleName);
+  } catch (e: any) {
+    console.error('[setAdminUserRole] setLegacyUserRoleId failed', {
+      userId: cleanId,
+      roleId,
+      roleName,
+      error: e?.message || String(e),
+    });
+    return { error: 'ROLE_WRITE_FAILED', code: 'ROLE_WRITE_FAILED', status: 500 };
+  }
+
+  // Verify the write actually applied (some Directus configs may 200 without
+  // persisting if a hook or permission filter silently drops the patch).
+  const persistedRoleId = (writeResult as any)?.directus_role_id ?? null;
+  if (persistedRoleId !== roleId) {
+    console.warn('[setAdminUserRole] write did not persist as expected', {
+      userId: cleanId,
+      requestedRoleId: roleId,
+      persistedRoleId,
+      roleName,
+    });
+  }
 
   // Auto-assign role badge (non-blocking)
   void ensureRoleBadge(Number(cleanId), roleName);

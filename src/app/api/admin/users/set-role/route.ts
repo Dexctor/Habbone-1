@@ -19,13 +19,25 @@ export const POST = withAdmin(async (req, { user }) => {
 
   const callerIsFounder = isCallerFounder(user);
 
+  console.info('[admin:set-role] incoming', {
+    callerId: user?.id,
+    callerNick: user?.nick,
+    callerRoleName: (user as any)?.directusRoleName,
+    callerIsFounder,
+    targetUserId: userId,
+    requestedRoleId: roleId,
+  });
+
   const guard = await guardTargetUser({
     callerId: user?.id,
     callerIsFounder,
     targetUserId: userId,
     action: 'role_change',
   });
-  if (!guard.ok) return guard.response;
+  if (!guard.ok) {
+    console.warn('[admin:set-role] blocked by guard');
+    return guard.response;
+  }
 
   let newRole: Awaited<ReturnType<typeof getRoleById>> | null = null;
   try {
