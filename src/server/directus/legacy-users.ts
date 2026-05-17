@@ -216,13 +216,39 @@ export async function setLegacyUserRole(userId: number | string, roleName: strin
 }
 
 export async function setLegacyUserRoleId(userId: number | string, directusRoleId: string, roleName?: string) {
-  if (USE_V2) {
-    const payload = { directus_role_id: directusRoleId };
-    return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
+  // Bypass the @directus/sdk and PATCH directly. We hit a case in prod where
+  // the SDK accepted the call, returned success, but the row never changed.
+  // A raw PATCH gives us a real HTTP status + response body to surface errors.
+  const payload: Record<string, unknown> = USE_V2
+    ? { directus_role_id: directusRoleId }
+    : roleName
+      ? { directus_role_id: directusRoleId, role: roleName }
+      : { directus_role_id: directusRoleId };
+
+  const url = `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${encodeURIComponent(String(userId))}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${serviceToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    console.error('[setLegacyUserRoleId] Directus PATCH failed', {
+      userId,
+      status: res.status,
+      response: text.slice(0, 500),
+    });
+    throw new Error(`DIRECTUS_PATCH_FAILED_${res.status}`);
   }
-  const payload: Partial<LegacyUserLite> = { directus_role_id: directusRoleId };
-  if (roleName) payload.role = roleName;
-  return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
+  try {
+    return JSON.parse(text)?.data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function setLegacyUserBanStatus(userId: number | string, banned: boolean) {
