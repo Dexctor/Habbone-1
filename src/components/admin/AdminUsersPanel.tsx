@@ -242,6 +242,8 @@ export default function AdminUsersPanel({
 
   const onSaveRole = async (userId: string, nextRoleId: string) => {
     dispatchRowAction({ type: 'start', action: 'saveRole', userId });
+    // eslint-disable-next-line no-console
+    console.info('[client][saveRole] sending', { userId, nextRoleId });
     try {
       const response = await fetch("/api/admin/users/set-role", {
         method: "POST",
@@ -249,7 +251,11 @@ export default function AdminUsersPanel({
         cache: "no-store",
         body: JSON.stringify({ userId, roleId: nextRoleId }),
       });
+      // eslint-disable-next-line no-console
+      console.info('[client][saveRole] response', { status: response.status, ok: response.ok, url: response.url });
       const json = await response.json().catch(() => ({}));
+      // eslint-disable-next-line no-console
+      console.info('[client][saveRole] body', json);
       if (!response.ok) {
         toast.error(json?.error || "Échec de la mise à jour du rôle");
         return;
@@ -257,7 +263,9 @@ export default function AdminUsersPanel({
       const roleName = roles.find((r) => r.id === nextRoleId)?.name || nextRoleId;
       toast.success(`Rôle changé en « ${roleName} »`);
       await getUsers({ page });
-    } catch {
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('[client][saveRole] threw', e);
       toast.error("Impossible de mettre à jour le rôle");
     } finally {
       dispatchRowAction({ type: 'end', action: 'saveRole' });
