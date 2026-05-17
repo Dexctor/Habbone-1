@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { setAdminUserRole } from '@/server/services/admin-users';
@@ -59,6 +60,9 @@ export const POST = withAdmin(async (req, { user }) => {
         new_admin_access: newRole?.admin_access === true,
       },
     });
+
+    // Invalidate the public team page so the role change is reflected immediately.
+    revalidatePath('/team');
 
     return NextResponse.json({ data: true });
   } catch (e: unknown) {
