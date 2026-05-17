@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { deleteAdminUser } from '@/server/services/admin-users';
@@ -39,6 +40,9 @@ export const POST = withAdmin(async (req, { user }) => {
       target_id: guard.target.id,
       details: { nick: guard.target.nick },
     });
+
+    // Invalidate the public team page (a deleted staff must disappear from /team).
+    revalidatePath('/team');
 
     return NextResponse.json({ data: true });
   } catch (error: unknown) {

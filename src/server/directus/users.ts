@@ -310,6 +310,10 @@ export async function changeUserPassword(userId: number, newPassword: string) {
   return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
+export async function updateUserTwitter(userId: number, twitter: string | null) {
+  return directusService.request(uItem(USERS_TABLE as any, userId as any, { twitter } as any));
+}
+
 export async function updateUserVerification(
   userId: number,
   patch: Partial<{

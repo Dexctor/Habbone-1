@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Lock, Eye, EyeOff } from 'lucide-react'
+import { Lock, Eye, EyeOff, Twitter } from 'lucide-react'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -15,6 +15,30 @@ export default function SettingsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
+
+  const [twitter, setTwitter] = useState('')
+  const [twitterInitial, setTwitterInitial] = useState('')
+  const [twitterLoading, setTwitterLoading] = useState(true)
+  const [twitterSubmitting, setTwitterSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (status !== 'authenticated') return
+    let cancelled = false
+    setTwitterLoading(true)
+    fetch('/api/user/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (cancelled) return
+        const value = j?.profile?.twitter ?? ''
+        setTwitter(value)
+        setTwitterInitial(value)
+      })
+      .catch(() => { /* silent */ })
+      .finally(() => {
+        if (!cancelled) setTwitterLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [status])
 
   if (status === 'loading') {
     return (
@@ -64,6 +88,30 @@ export default function SettingsPage() {
     }
   }
 
+  const handleTwitterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (twitterSubmitting) return
+    setTwitterSubmitting(true)
+    try {
+      const trimmed = twitter.trim()
+      const res = await fetch('/api/user/update-twitter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ twitter: trimmed || null }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Erreur')
+      const saved = (data?.twitter ?? '') as string
+      setTwitter(saved)
+      setTwitterInitial(saved)
+      toast.success(saved ? 'Pseudo Twitter mis a jour' : 'Pseudo Twitter retire')
+    } catch (err: any) {
+      toast.error(err?.message || 'Impossible de mettre a jour le Twitter')
+    } finally {
+      setTwitterSubmitting(false)
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-[600px] space-y-6 px-4 py-10 sm:px-6">
       <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
@@ -74,6 +122,51 @@ export default function SettingsPage() {
           </h1>
         </div>
       </header>
+
+      <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <Twitter className="h-5 w-5 text-[#2596FF]" />
+          <h2 className="text-[16px] font-bold text-white">Profil public</h2>
+        </div>
+
+        <p className="mb-5 text-[13px] text-[#BEBECE]/70">
+          Ajoute ton pseudo Twitter (X) pour qu&apos;il apparaisse sur la page <span className="font-bold text-[#2596FF]">Equipe</span> si tu fais partie du staff.
+        </p>
+
+        <form onSubmit={handleTwitterSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
+              Pseudo Twitter
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#BEBECE]/60">@</span>
+              <input
+                type="text"
+                value={twitter.replace(/^@+/, '')}
+                onChange={(e) => setTwitter(e.target.value.replace(/^@+/, ''))}
+                disabled={twitterLoading || twitterSubmitting}
+                placeholder="moncompte"
+                maxLength={15}
+                autoComplete="off"
+                className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] pl-8 pr-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none disabled:opacity-50"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-[#BEBECE]/50">
+              1 a 15 caracteres : lettres, chiffres et underscore. Laisser vide pour retirer.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={twitterLoading || twitterSubmitting || twitter.trim() === twitterInitial.trim()}
+              className="inline-flex h-[45px] items-center rounded-[4px] bg-[#2596FF] px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-[#2976E8] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {twitterSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      </section>
 
       <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
         <div className="mb-5 flex items-center gap-3">
