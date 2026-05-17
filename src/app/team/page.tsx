@@ -5,7 +5,11 @@ import { CalendarClock, Twitter } from 'lucide-react'
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 
-export const revalidate = 0 // always fresh - reflects role changes immediately
+// Force fully-dynamic rendering: bypass the full-route cache and the CDN edge
+// cache so role/ban changes from the admin panel are reflected immediately.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 function habboAvatarUrl(nick: string) {
   return buildHabboAvatarUrl(nick, {
