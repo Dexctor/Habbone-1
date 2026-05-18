@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'habbone.fr', pathname: '/**' },
       // Directus API (production)
       { protocol: 'https', hostname: 'api.habbone.fr', pathname: '/**' },
+      // Supabase Storage (migration target)
+      { protocol: 'https', hostname: '**.supabase.co', pathname: '/storage/v1/object/public/**' },
       // Local Directus dev server
       { protocol: 'http', hostname: 'localhost', port: '8055', pathname: '/**' },
     ],

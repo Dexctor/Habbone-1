@@ -26,6 +26,22 @@ describe('mediaUrl', () => {
       process.env.NEXT_PUBLIC_DIRECTUS_URL = previousDirectus;
     }
   });
+
+  it('can route UUID assets to Supabase Storage when media backend is enabled', () => {
+    const previousBackend = process.env.NEXT_PUBLIC_MEDIA_BACKEND;
+    const previousSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_MEDIA_BACKEND = 'supabase';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = ' https://llchawllmqntkkwrozcp.supabase.co ';
+    try {
+      assert.equal(
+        mediaUrl('9fa48287-c18b-4334-9a78-4f21dfbfaa60'),
+        'https://llchawllmqntkkwrozcp.supabase.co/storage/v1/object/public/directus-uploads/9fa48287-c18b-4334-9a78-4f21dfbfaa60',
+      );
+    } finally {
+      process.env.NEXT_PUBLIC_MEDIA_BACKEND = previousBackend;
+      process.env.NEXT_PUBLIC_SUPABASE_URL = previousSupabaseUrl;
+    }
+  });
 });
 
 describe('normalizeHtmlMediaUrls', () => {

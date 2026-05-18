@@ -6,6 +6,18 @@ function getLegacyMediaBase() {
     return (process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || '').trim();
 }
 
+function getSupabaseUploadsBase() {
+    const explicit = (process.env.NEXT_PUBLIC_SUPABASE_UPLOADS_BASE || '').trim();
+    if (explicit) return explicit.replace(/\/$/, '');
+
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/$/, '');
+    return supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/directus-uploads` : '';
+}
+
+function getMediaBackend() {
+    return (process.env.NEXT_PUBLIC_MEDIA_BACKEND || process.env.DATA_BACKEND || '').trim().toLowerCase();
+}
+
 /**
  * Vérifie qu'une URL absolue est syntaxiquement valide.
  * Retourne '' si l'URL est invalide pour permettre le fallback côté composant.
@@ -33,6 +45,10 @@ export function mediaUrl(idOrPath?: string) {
             idOrPath
         );
     if (isUUID) {
+        const supabaseUploadsBase = getMediaBackend() === 'supabase' ? getSupabaseUploadsBase() : '';
+        if (supabaseUploadsBase) {
+            return validateUrl(`${supabaseUploadsBase}/${idOrPath}`);
+        }
         const directusUrl = getDirectusUrl();
         if (!directusUrl) return '';
         return validateUrl(`${directusUrl}/assets/${idOrPath}`);

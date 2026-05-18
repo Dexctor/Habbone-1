@@ -3,6 +3,8 @@ import 'server-only';
 import { directusService, rItems } from './client';
 import { countLikesByComment, getCommentLikeReadConfig } from './likes-core';
 import { TABLES, USE_V2 } from './tables';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseLikes from '@/server/supabase/likes';
 
 /**
  * Generic function to get likes count for comments
@@ -30,6 +32,8 @@ export async function getLikesMapForComments(
  * Get likes map for news comments
  */
 export function getLikesMapForNewsComments(commentIds: number[]): Promise<Record<number, number>> {
+    if (isSupabaseDataEnabled()) return supabaseLikes.getLikesMapForNewsComments(commentIds);
+
     const config = getCommentLikeReadConfig('news', USE_V2);
     return getLikesMapForComments(TABLES.articleCommentLikes || config.table, commentIds, config.commentField);
 }
@@ -38,6 +42,8 @@ export function getLikesMapForNewsComments(commentIds: number[]): Promise<Record
  * Get likes map for forum comments
  */
 export function getLikesMapForTopicComments(commentIds: number[]): Promise<Record<number, number>> {
+    if (isSupabaseDataEnabled()) return supabaseLikes.getLikesMapForTopicComments(commentIds);
+
     const config = getCommentLikeReadConfig('forum', USE_V2);
     return getLikesMapForComments(TABLES.forumCommentLikes || config.table, commentIds, config.commentField);
 }

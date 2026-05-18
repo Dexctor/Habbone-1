@@ -5,6 +5,8 @@ import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 import type { NewsRecord, NewsCommentRecord } from './types';
 import { stripHtml } from '@/lib/text-utils';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseNews from '@/server/supabase/news';
 
 const NEWS_BADGE_IMAGE_RE =
   /(?:https?:)?\/\/[^"'\s>]*\/c_images\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]{2,})\.(?:gif|png)\b/gi;
@@ -297,6 +299,8 @@ export async function createNewsComment(input: {
   content: string;
   status?: string | null;
 }): Promise<NewsCommentRecord> {
+  if (isSupabaseDataEnabled()) return supabaseNews.createNewsComment(input);
+
   if (USE_V2) {
     const authorId = await resolveAuthorId(input.author);
     const payload: Record<string, unknown> = {
@@ -320,6 +324,8 @@ export async function createNewsComment(input: {
 }
 
 export async function toggleNewsCommentLike(commentId: number, author: string) {
+  if (isSupabaseDataEnabled()) return supabaseNews.toggleNewsCommentLike(commentId, author);
+
   const safeAuthor = String(author || '').trim();
   if (!safeAuthor) throw new Error('AUTHOR_REQUIRED');
 
@@ -358,6 +364,8 @@ export async function toggleNewsCommentLike(commentId: number, author: string) {
 // ============ PUBLIC FETCHER FUNCTIONS ============
 
 export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.getPublicNews(query);
+
   const q = typeof query === 'string' ? query.trim() : '';
   const rows = (await directusService.request(
     rItems(TABLES.articles, {
@@ -372,6 +380,8 @@ export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
 }
 
 export async function getPublicNewsById(id: number): Promise<NewsRecord> {
+  if (isSupabaseDataEnabled()) return supabaseNews.getPublicNewsById(id);
+
   const row = (await directusService.request(
     rItem(TABLES.articles, id, { fields: NEWS_SELECT_FIELDS } as any),
   )) as any;
@@ -380,6 +390,8 @@ export async function getPublicNewsById(id: number): Promise<NewsRecord> {
 }
 
 export async function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.listPublicNewsForCards(limit);
+
   const rows = (await directusService.request(
     rItems(TABLES.articles, {
       fields: NEWS_CARD_FIELDS,
@@ -392,6 +404,8 @@ export async function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> 
 }
 
 export async function getPublicNewsComments(newsId: number): Promise<NewsCommentRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.getPublicNewsComments(newsId);
+
   try {
     const params: Record<string, string> = {
       fields: NEWS_COMMENT_SELECT,
@@ -409,6 +423,8 @@ export async function getPublicNewsComments(newsId: number): Promise<NewsComment
 }
 
 export async function listPublicNewsBadges(limitNews = 160, limitBadges = 220): Promise<NewsBadgeItem[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.listPublicNewsBadges(limitNews, limitBadges);
+
   let rows: Array<{ id: number; titulo?: string | null; noticia?: string | null; data?: string | null }> = [];
   try {
     const json = await directusFetch<{ data: any[] }>(`/items/${TABLES.articles}`, {
