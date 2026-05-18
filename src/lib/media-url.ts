@@ -1,4 +1,10 @@
-const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_URL || '';
+function getDirectusUrl() {
+    return process.env.NEXT_PUBLIC_DIRECTUS_URL || '';
+}
+
+function getLegacyMediaBase() {
+    return process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || '';
+}
 
 /**
  * Vérifie qu'une URL absolue est syntaxiquement valide.
@@ -26,6 +32,7 @@ export function mediaUrl(idOrPath?: string) {
             idOrPath
         );
     if (isUUID) {
+        const directusUrl = getDirectusUrl();
         if (!directusUrl) return '';
         return validateUrl(`${directusUrl}/assets/${idOrPath}`);
     }
@@ -36,7 +43,7 @@ export function mediaUrl(idOrPath?: string) {
             const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
             const isUploads = u.pathname.startsWith('/uploads/');
             if (isLocalhost && isUploads) {
-                const legacy = process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || '';
+                const legacy = getLegacyMediaBase();
                 if (legacy) return validateUrl(`${legacy}${u.pathname}`);
             }
         } catch {
@@ -46,6 +53,25 @@ export function mediaUrl(idOrPath?: string) {
     }
 
     const path = idOrPath.startsWith('/') ? idOrPath : `/${idOrPath}`;
-    const base = process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || directusUrl || '';
+    const base = getLegacyMediaBase() || getDirectusUrl() || '';
     return validateUrl(`${base}${path}`);
+}
+
+export function normalizeHtmlMediaUrls(html: string): string {
+    if (!html) return '';
+
+    return html.replace(
+        /(<img\b[^>]*?\bsrc\s*=\s*)(["'])([^"']+)(\2)/gi,
+        (match, prefix: string, quote: string, src: string, suffix: string) => {
+            const value = String(src || '').trim();
+            const isLegacyUpload =
+                value.startsWith('/uploads/') ||
+                value.startsWith('uploads/') ||
+                /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/uploads\//i.test(value);
+
+            if (!isLegacyUpload) return match;
+            const normalized = mediaUrl(value);
+            return normalized ? `${prefix}${quote}${normalized}${suffix}` : match;
+        },
+    );
 }

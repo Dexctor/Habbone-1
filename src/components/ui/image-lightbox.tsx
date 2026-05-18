@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeHtmlMediaUrls } from "@/lib/media-url";
 
 // Regex pour détecter ":roomid 12345" en texte brut (espace classique ou
 // insécable, 1 à 12 chiffres). On garde le \b à la fin pour ne pas matcher
@@ -44,6 +45,7 @@ export default function ContentWithLightbox({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [src, setSrc] = useState<string | null>(null);
+  const normalizedHtml = normalizeHtmlMediaUrls(html);
 
   // Anime un flash vert "Copié !" sur le chip pour confirmer visuellement
   // la copie, en plus du toast (utile si Sonner ne s'affiche pas pour une
@@ -206,7 +208,7 @@ export default function ContentWithLightbox({
         ref={containerRef}
         className={className}
         data-lightbox-container=""
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: normalizedHtml }}
       />
 
       <style>{`
