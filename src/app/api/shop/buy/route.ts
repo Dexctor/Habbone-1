@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { withAuth } from '@/server/api-helpers';
 import { purchaseItem } from '@/server/directus/shop';
+import { invalidateShop } from '@/server/cache-policy';
 
 const BodySchema = z.object({
   itemId: z.number().int().min(1),
@@ -28,11 +28,12 @@ export const POST = withAuth(async (req, { user, nick }) => {
     return NextResponse.json({ error: result.error || 'Erreur' }, { status: 400 });
   }
 
-  revalidateTag('shop');
+  invalidateShop();
 
   return NextResponse.json({
     ok: true,
     order: result.order,
+    balance: result.balance,
     message: 'Achat effectué ! L\'admin va te livrer le mobi.',
   });
 }, { key: 'shop:buy', limit: 10, windowMs: 60_000 })

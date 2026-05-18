@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
-import { directusUrl, serviceToken } from '@/server/directus/client'
-
-const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
-const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
+import { getDirectusAssetUrl, uploadDirectusAsset } from '@/server/directus/assets'
+import { fileFromValidatedUpload, validatePublicImageUpload } from '@/server/upload-policy'
 
 export const POST = withAuth(async (req) => {
   try {
@@ -13,38 +11,19 @@ export const POST = withAuth(async (req) => {
       return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
     }
 
-    if (!ALLOWED_MIME_SET.has(file.type)) {
-      return NextResponse.json({ error: 'Type de fichier invalide (png, jpg, gif, webp)' }, { status: 400 })
+    const validation = await validatePublicImageUpload(file)
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 })
     }
 
-    if (file.size > MAX_FILE_BYTES) {
-      return NextResponse.json({ error: 'Fichier trop volumineux (max 5MB)' }, { status: 400 })
-    }
-
-    const safeName = file.name?.trim() || `image-${Date.now()}`
-    const uploadForm = new FormData()
-    uploadForm.set('file', file, safeName)
-    uploadForm.set('title', safeName)
-
-    const response = await fetch(`${directusUrl}/files`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      body: uploadForm,
-    })
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => '')
-      return NextResponse.json({ error: 'Upload échoué', detail: body }, { status: 502 })
-    }
-
-    const json = (await response.json().catch(() => ({}))) as Record<string, any>
-    const data = (json?.data ?? json) as Record<string, any>
-    const id = data?.id ?? null
+    const { filename, file: safeFile } = fileFromValidatedUpload(file, validation, `image-${Date.now()}`)
+    const uploaded = await uploadDirectusAsset(safeFile, filename, validation.detectedMime)
+    const id = String(uploaded?.id || '').trim()
     if (!id) {
       return NextResponse.json({ error: 'Upload échoué (pas d\'ID)' }, { status: 502 })
     }
 
-    const imageUrl = `${directusUrl}/assets/${id}`
+    const imageUrl = getDirectusAssetUrl(id)
     return NextResponse.json({ ok: true, url: imageUrl, id: String(id) })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)

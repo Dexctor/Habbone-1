@@ -1,9 +1,16 @@
 import 'server-only';
 
-import { directusService as directus, rItems, rItem, cItem, uItem, dItem, directusUrl, serviceToken } from './client';
+import { directusService as directus, rItems, rItem, cItem, uItem, dItem } from './client';
 import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 import { resolveUserId, resolveUserNicks, nowIso, unixSecondsToIso } from './user-cache';
+import {
+  buildDirectusConditionalPatchBody,
+  hasDirectusUpdatedRows,
+  type DirectusAtomicFilter,
+} from './shop-atomic-core';
+import { purchaseItemCore, type PurchaseResult, type PurchaseUserSnapshot } from './shop-purchase-core';
+import { withRedisLock } from '@/server/redis';
 import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
 
 export type { ShopItem, ShopOrder, AdminNotification };
@@ -12,6 +19,8 @@ const SHOP_ITEMS_TABLE = TABLES.shopItems;
 const SHOP_ORDERS_TABLE = TABLES.shopOrders;
 const ADMIN_NOTIFICATIONS_TABLE = TABLES.adminNotifications;
 const USERS_TABLE = TABLES.users;
+const USER_COINS_COL = USE_V2 ? 'coins' : 'moedas';
+const ITEM_STOCK_COL = USE_V2 ? 'stock' : 'qtd_disponivel';
 
 const ITEMS_FIELDS = USE_V2
   ? ['id', 'name', 'description', 'image', 'price_coins', 'stock', 'active']
@@ -355,60 +364,90 @@ export async function updateShopOrder(id: number, data: Partial<ShopOrder>): Pro
 /*  Purchase logic                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function purchaseItem(userId: number, userNick: string, itemId: number): Promise<{
-  ok: boolean;
-  error?: string;
-  order?: ShopOrder;
-}> {
-  const item = await getShopItem(itemId);
-  if (!item) return { ok: false, error: 'Article introuvable' };
-  if (item.status !== 'ativo') return { ok: false, error: 'Article indisponible' };
-  if (item.estoque <= 0) return { ok: false, error: 'Rupture de stock' };
+async function patchOneByFilter(
+  table: string,
+  filter: DirectusAtomicFilter,
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  const response = await directusFetch<unknown>(`/items/${encodeURIComponent(table)}`, {
+    method: 'PATCH',
+    params: {
+      fields: 'id',
+      limit: '1',
+    },
+    body: buildDirectusConditionalPatchBody(filter, patch),
+  }).catch(() => null);
 
-  // Column names: id, nick, moedas (legacy) vs id, nick, coins (v2)
-  const coinsCol = USE_V2 ? 'coins' : 'moedas';
-  const userRes = await fetch(
-    `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}?fields=id,nick,${coinsCol}`,
-    { headers: { Authorization: `Bearer ${serviceToken}` }, cache: 'no-store' },
-  );
-  if (!userRes.ok) return { ok: false, error: 'Utilisateur introuvable' };
-  const userData = (await userRes.json())?.data;
-  if (!userData) return { ok: false, error: 'Utilisateur introuvable' };
+  return hasDirectusUpdatedRows(response);
+}
 
-  const currentCoins = Number(userData[coinsCol]) || 0;
-  if (currentCoins < item.preco) {
-    return { ok: false, error: `Coins insuffisants (${currentCoins}/${item.preco})` };
+async function patchUserCoins(
+  userId: number,
+  balance: number,
+  options?: { expectedCoins?: number; reason?: 'charge' | 'refund' },
+): Promise<boolean> {
+  const filter: DirectusAtomicFilter = {
+    id: { _eq: userId },
+  };
+  if (typeof options?.expectedCoins === 'number') {
+    filter[USER_COINS_COL] = { _eq: options.expectedCoins };
   }
 
-  const newBalance = currentCoins - item.preco;
-  const patchRes = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${userId}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ [coinsCol]: newBalance }),
+  return patchOneByFilter(USERS_TABLE, filter, { [USER_COINS_COL]: balance });
+}
+
+async function patchItemStock(
+  itemId: number,
+  stock: number,
+  options?: { expectedStock?: number; reason?: 'purchase' | 'restore' },
+): Promise<boolean> {
+  const filter: DirectusAtomicFilter = {
+    id: { _eq: itemId },
+  };
+  if (typeof options?.expectedStock === 'number') {
+    filter[ITEM_STOCK_COL] = { _eq: options.expectedStock };
+  }
+
+  return patchOneByFilter(SHOP_ITEMS_TABLE, filter, { [ITEM_STOCK_COL]: stock });
+}
+
+async function getPurchaseUser(userId: number): Promise<PurchaseUserSnapshot | null> {
+  const userData = (await directusFetch<{ data?: Record<string, unknown> }>(
+    `/items/${encodeURIComponent(USERS_TABLE)}/${userId}`,
+    { params: { fields: `id,nick,${USER_COINS_COL}` } },
+  ).catch(() => null))?.data;
+  if (!userData) return null;
+  return {
+    id: Number(userData.id || userId),
+    nick: userData.nick ? String(userData.nick) : null,
+    coins: Number(userData[USER_COINS_COL]) || 0,
+  };
+}
+
+export async function purchaseItem(userId: number, userNick: string, itemId: number): Promise<PurchaseResult<ShopOrder>> {
+  const run = () => purchaseItemCore(userId, userNick, itemId, {
+    getItem: getShopItem,
+    getUser: getPurchaseUser,
+    setUserCoins: patchUserCoins,
+    updateItemStock: patchItemStock,
+    createOrder: createShopOrder,
+    notify: ({ item, userNick: buyerNick }) => createAdminNotification({
+      type: 'shop_order',
+      title: `Nouvelle commande : ${item.nome}`,
+      message: `${buyerNick} a acheté "${item.nome}" pour ${item.preco} coins`,
+      link: '/admin',
+    }).then(() => undefined),
+    logCritical: (message, context) => console.error(message, context),
   });
-  if (!patchRes.ok) return { ok: false, error: 'Erreur lors du paiement' };
 
-  await updateShopItem(item.id, { estoque: Math.max(0, item.estoque - 1) });
-
-  const order = await createShopOrder({
-    user_id: userId,
-    user_nick: userNick || userData.nick || 'Inconnu',
-    item_id: item.id,
-    item_nome: item.nome,
-    item_imagem: item.imagem,
-    preco: item.preco,
-  });
-
-  if (!order) return { ok: false, error: 'Erreur lors de la commande' };
-
-  await createAdminNotification({
-    type: 'shop_order',
-    title: `Nouvelle commande : ${item.nome}`,
-    message: `${userNick || userData.nick} a acheté "${item.nome}" pour ${item.preco} coins`,
-    link: '/admin',
-  });
-
-  return { ok: true, order };
+  try {
+    return await withRedisLock(`shop:item:${itemId}`, 10_000, run, { waitMs: 5000, retryMs: 50 });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'REDIS_LOCK_TIMEOUT') {
+      return { ok: false, error: 'Achat déjà en cours pour cet article, réessaie dans quelques secondes.' };
+    }
+    throw error;
+  }
 }
 
 /* ------------------------------------------------------------------ */

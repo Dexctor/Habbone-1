@@ -1,11 +1,13 @@
 import 'server-only';
 import Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://37.59.101.4:6379';
+const REDIS_URL = (process.env.REDIS_URL || '').trim();
 
 let redis: Redis | null = null;
 
-function getRedis(): Redis | null {
+export function getRedis(): Redis | null {
+  if (!REDIS_URL) return null;
   if (redis) return redis;
   try {
     redis = new Redis(REDIS_URL, {
@@ -20,6 +22,59 @@ function getRedis(): Redis | null {
     return redis;
   } catch {
     return null;
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withRedisLock<T>(
+  key: string,
+  ttlMs: number,
+  task: () => Promise<T>,
+  options?: { waitMs?: number; retryMs?: number },
+): Promise<T> {
+  const r = getRedis();
+  if (!r) return task();
+
+  const token = randomUUID();
+  const lockKey = `lock:${key}`;
+  const waitUntil = Date.now() + Math.max(0, options?.waitMs ?? 5000);
+  const retryMs = Math.max(10, options?.retryMs ?? 50);
+
+  let locked = false;
+  try {
+    while (Date.now() <= waitUntil) {
+      const result = await r.set(lockKey, token, 'PX', Math.max(1000, ttlMs), 'NX');
+      if (result === 'OK') {
+        locked = true;
+        break;
+      }
+      await sleep(retryMs);
+    }
+
+    if (!locked) {
+      throw new Error('REDIS_LOCK_TIMEOUT');
+    }
+
+    return await task();
+  } catch (error) {
+    if (!locked && error instanceof Error && error.message !== 'REDIS_LOCK_TIMEOUT') {
+      return task();
+    }
+    throw error;
+  } finally {
+    if (locked) {
+      try {
+        await r.eval(
+          "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+          1,
+          lockKey,
+          token,
+        );
+      } catch {}
+    }
   }
 }
 

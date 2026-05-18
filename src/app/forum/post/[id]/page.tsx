@@ -4,6 +4,7 @@ import {
 } from '@/server/directus/forum';
 import { getLikesMapForTopicComments } from '@/server/directus/likes';
 import { formatDateTimeSmart } from '@/lib/date-utils';
+import { sanitizeCommentHtml, sanitizeRichContentHtml } from '@/server/comment-sanitize';
 
 export const revalidate = 300;
 
@@ -17,6 +18,7 @@ export default async function PostPage(props: { params: Promise<{ id: string }> 
   // 2) Charge les commentaires du TOPIC de ce post
   const topicId = Number(post.id_topico);
   const comments = await getPublicTopicComments(topicId);
+  const safePostContent = sanitizeRichContentHtml(post.conteudo || '');
 
   // 3) Compteur de likes par commentaire (batch)
   const likesMap = await getLikesMapForTopicComments(
@@ -30,7 +32,7 @@ export default async function PostPage(props: { params: Promise<{ id: string }> 
         <div className="text-xs opacity-60">{formatDateTimeSmart(post.data)}</div>
         <div
           className="mt-3 prose prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.conteudo || "" }}
+          dangerouslySetInnerHTML={{ __html: safePostContent }}
         />
       </article>
 
@@ -46,7 +48,7 @@ export default async function PostPage(props: { params: Promise<{ id: string }> 
               </div>
               <div
                 className="prose prose-sm prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: c.comentario }}
+                dangerouslySetInnerHTML={{ __html: sanitizeCommentHtml(c.comentario || '') }}
               />
             </li>
           ))}

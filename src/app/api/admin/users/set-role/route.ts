@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { setAdminUserRole } from '@/server/services/admin-users';
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards';
 import { logAdminAction } from '@/server/directus/admin-logs';
 import { getRoleById } from '@/server/directus/roles';
+import { invalidateTeam } from '@/server/cache-policy';
 
 const Body = z.object({ userId: z.string().min(1), roleId: z.string().min(1) });
 
@@ -74,7 +74,7 @@ export const POST = withAdmin(async (req, { user }) => {
     });
 
     // Invalidate the public team page so the role change is reflected immediately.
-    revalidatePath('/team');
+    invalidateTeam();
 
     return NextResponse.json({ data: true });
   } catch (e: unknown) {

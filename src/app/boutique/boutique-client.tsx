@@ -190,7 +190,7 @@ export default function BoutiqueClient({
       if (!res.ok) throw new Error(json?.error || 'Erreur')
 
       toast.success(json.message || 'Achat effectué !')
-      const newBalance = coins - item.preco
+      const newBalance = typeof json?.balance === 'number' ? json.balance : coins - item.preco
       setCoins(newBalance)
 
       // Broadcast the new balance so the header + any other component

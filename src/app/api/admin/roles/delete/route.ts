@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
-import { directusUrl, serviceToken } from '@/server/directus/client';
-import { TABLES } from '@/server/directus/tables';
 import { logAdminAction } from '@/server/directus/admin-logs';
+import { countRoleMembers, deleteRole } from '@/server/directus/roles';
 
 const Body = z.object({ roleId: z.string().min(1) });
 
@@ -19,27 +18,16 @@ export const POST = withAdmin(async (req, { user }) => {
   // admin panel should make this unreachable (button disabled) but we keep
   // the server check as a net.
   try {
-    const params = new URLSearchParams();
-    params.set('filter[directus_role_id][_eq]', roleId);
-    params.set('limit', '0');
-    params.set('meta', 'total_count');
-    const countRes = await fetch(
-      `${directusUrl}/items/${encodeURIComponent(TABLES.users)}?${params}`,
-      { headers: { Authorization: `Bearer ${serviceToken}` }, cache: 'no-store' },
-    );
-    if (countRes.ok) {
-      const countJson = (await countRes.json()) as { meta?: { total_count?: number } };
-      const total = Number(countJson.meta?.total_count ?? 0);
-      if (total > 0) {
-        return NextResponse.json(
-          {
-            error: `Ce rôle est assigné à ${total} utilisateur(s). Réaffectez-les avant de supprimer.`,
-            code: 'ROLE_IN_USE',
-            membersCount: total,
-          },
-          { status: 409 },
-        );
-      }
+    const total = await countRoleMembers(roleId);
+    if (total > 0) {
+      return NextResponse.json(
+        {
+          error: `Ce rôle est assigné à ${total} utilisateur(s). Réaffectez-les avant de supprimer.`,
+          code: 'ROLE_IN_USE',
+          membersCount: total,
+        },
+        { status: 409 },
+      );
     }
   } catch (e) {
     console.error('[admin:roles:delete] pre-check failed:', e);
@@ -47,13 +35,9 @@ export const POST = withAdmin(async (req, { user }) => {
   }
 
   try {
-    const res = await fetch(`${directusUrl}/roles/${roleId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${serviceToken}` },
-    });
-    if (!res.ok && res.status !== 204) {
-      const body = await res.text().catch(() => '');
-      console.error('[admin:roles:delete] Directus DELETE failed', res.status, body);
+    const deleted = await deleteRole(roleId);
+    if (!deleted) {
+      console.error('[admin:roles:delete] Directus DELETE failed');
       return NextResponse.json(
         { error: 'Suppression impossible', code: 'DELETE_FAILED' },
         { status: 500 },

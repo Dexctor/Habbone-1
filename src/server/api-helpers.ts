@@ -5,6 +5,7 @@ import { getServerSession, type Session } from 'next-auth';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
 import { checkRateLimit } from '@/server/rate-limit';
+import { isSameOriginMutation } from '@/server/request-security';
 
 type ApiHandlerContext = {
   session: Session | null;
@@ -41,9 +42,13 @@ type RateLimitConfig = {
  */
 export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
+    if (!isSameOriginMutation(req)) {
+      return NextResponse.json({ error: 'Origine invalide', code: 'INVALID_ORIGIN' }, { status: 403 });
+    }
+
     // Rate limit check
     if (rateLimit) {
-      const rl = checkRateLimit(req, rateLimit);
+      const rl = await checkRateLimit(req, rateLimit);
       if (!rl.ok) {
         return NextResponse.json(
           { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
@@ -87,9 +92,13 @@ export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
  */
 export function withAuth(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
+    if (!isSameOriginMutation(req)) {
+      return NextResponse.json({ error: 'Origine invalide', code: 'INVALID_ORIGIN' }, { status: 403 });
+    }
+
     // Rate limit check
     if (rateLimit) {
-      const rl = checkRateLimit(req, rateLimit);
+      const rl = await checkRateLimit(req, rateLimit);
       if (!rl.ok) {
         return NextResponse.json(
           { error: 'Trop de requêtes', code: 'RATE_LIMITED' },

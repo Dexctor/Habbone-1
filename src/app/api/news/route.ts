@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/auth'
+import { withAuth } from '@/server/api-helpers'
 import { adminCreateNews } from '@/server/directus/news'
-import { checkRateLimit } from '@/server/rate-limit'
 import { sanitizeRichContentHtml, sanitizePlainText } from '@/server/comment-sanitize'
+import { invalidateNews } from '@/server/cache-policy'
 
 export const dynamic = 'force-dynamic';
 
@@ -16,20 +14,8 @@ const NewsBodySchema = z.object({
   imagem: z.string().max(500).nullable().optional(),
 })
 
-export async function POST(req: Request): Promise<NextResponse> {
+export const POST = withAuth(async (req, { nick }): Promise<NextResponse> => {
   try {
-    const rl = checkRateLimit(req, { key: 'news:create', limit: 5, windowMs: 10 * 60 * 1000 })
-    if (!rl.ok) {
-      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rl.headers })
-    }
-
-    const session = await getServerSession(authOptions)
-    const user = session?.user as { nick?: string | null } | undefined
-    const nick = typeof user?.nick === 'string' ? user.nick.trim() : ''
-    if (!nick) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
     const body = await req.json().catch(() => null)
     const parsed = NewsBodySchema.safeParse(body)
     if (!parsed.success) {
@@ -55,8 +41,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     })
 
     const id = article && typeof article === 'object' ? (article as any).id : null
-    revalidateTag('news')
-    revalidateTag('home')
+    invalidateNews({ home: true })
     return NextResponse.json({ ok: true, id: id != null ? Number(id) : null })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
@@ -65,4 +50,4 @@ export async function POST(req: Request): Promise<NextResponse> {
       { status: 500 }
     )
   }
-}
+}, { key: 'news:create', limit: 5, windowMs: 10 * 60 * 1000 })

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { deleteAdminUser } from '@/server/services/admin-users';
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards';
 import { logAdminAction } from '@/server/directus/admin-logs';
+import { invalidateTeam } from '@/server/cache-policy';
 
 const BodySchema = z.object({
   userId: z.string().min(1),
@@ -42,7 +42,7 @@ export const POST = withAdmin(async (req, { user }) => {
     });
 
     // Invalidate the public team page (a deleted staff must disappear from /team).
-    revalidatePath('/team');
+    invalidateTeam();
 
     return NextResponse.json({ data: true });
   } catch (error: unknown) {

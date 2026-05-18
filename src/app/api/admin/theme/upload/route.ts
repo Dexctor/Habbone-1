@@ -2,39 +2,18 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { withAdmin } from '@/server/api-helpers';
-import { directusUrl } from '@/server/directus/client';
-import { uploadFileToDirectus } from '@/server/directus/stories';
+import { getDirectusAssetUrl, uploadDirectusAsset } from '@/server/directus/assets';
 import { isThemeStoredInDirectus, themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
-import { validateUploadedFile } from '@/server/upload-security';
+import { extensionForMime, fileFromValidatedUpload, validateThemeImageUpload } from '@/server/upload-policy';
+import { invalidateTheme } from '@/server/cache-policy';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/gif',
-  'image/svg+xml',
-]);
 const TARGETS = new Set(['logo', 'background']);
 
 export const runtime = 'nodejs';
 
-function extensionFromFile(file: File): string {
-  const mimeType = (file.type || '').toLowerCase();
-  if (mimeType === 'image/png') return 'png';
-  if (mimeType === 'image/jpeg') return 'jpg';
-  if (mimeType === 'image/webp') return 'webp';
-  if (mimeType === 'image/gif') return 'gif';
-  if (mimeType === 'image/svg+xml') return 'svg';
-  const ext = path.extname(file.name || '').replace('.', '').toLowerCase();
-  if (ext) return ext;
-  return 'png';
-}
-
-async function uploadToLocalPublicDir(file: File, target: string, buffer: Buffer): Promise<string> {
-  const ext = extensionFromFile(file);
+async function uploadToLocalPublicDir(target: string, buffer: Buffer, detectedMime: string): Promise<string> {
+  const ext = extensionForMime(detectedMime);
   const fileName = `${target}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
   await mkdir(themeUploadDir, { recursive: true });
   await writeFile(path.join(themeUploadDir, fileName), buffer);
@@ -42,14 +21,16 @@ async function uploadToLocalPublicDir(file: File, target: string, buffer: Buffer
 }
 
 async function uploadToDirectusAssets(file: File, buffer: Buffer, detectedMime: string): Promise<string> {
-  const fallbackExt = extensionFromFile(file);
-  const sourceName = (file.name || '').trim();
-  const filename = sourceName || `theme-${Date.now()}.${fallbackExt}`;
-  const safeFile = new File([new Uint8Array(buffer)], filename, { type: detectedMime });
-  const uploaded = await uploadFileToDirectus(safeFile, filename, detectedMime);
+  const fallbackExt = extensionForMime(detectedMime);
+  const { filename, file: safeFile } = fileFromValidatedUpload(
+    file,
+    { ok: true, detectedMime, buffer },
+    `theme-${Date.now()}.${fallbackExt}`,
+  );
+  const uploaded = await uploadDirectusAsset(safeFile, filename, detectedMime);
   const id = String(uploaded?.id || '').trim();
   if (!id) throw new Error('DIRECTUS_UPLOAD_NO_ID');
-  return `${directusUrl}/assets/${encodeURIComponent(id)}`;
+  return getDirectusAssetUrl(id);
 }
 
 export const POST = withAdmin(async (req) => {
@@ -66,11 +47,7 @@ export const POST = withAdmin(async (req) => {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'FILE_REQUIRED', code: 'FILE_REQUIRED' }, { status: 400 });
   }
-  const validation = await validateUploadedFile(file, {
-    allowedMimes: ALLOWED_MIME_TYPES,
-    maxSize: MAX_FILE_SIZE,
-    allowSvg: true,
-  });
+  const validation = await validateThemeImageUpload(file);
   if (!validation.ok) {
     return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 });
   }
@@ -78,7 +55,7 @@ export const POST = withAdmin(async (req) => {
   try {
     const uploadedUrl = isThemeStoredInDirectus()
       ? await uploadToDirectusAssets(file, validation.buffer, validation.detectedMime)
-      : await uploadToLocalPublicDir(file, target, validation.buffer);
+      : await uploadToLocalPublicDir(target, validation.buffer, validation.detectedMime);
 
     const settings = await writeThemeSettings(
       target === 'logo'
@@ -86,7 +63,7 @@ export const POST = withAdmin(async (req) => {
         : { headerBackgroundImageUrl: uploadedUrl },
     );
 
-    revalidateTag('theme');
+    invalidateTheme();
     return NextResponse.json({
       data: {
         url: uploadedUrl,

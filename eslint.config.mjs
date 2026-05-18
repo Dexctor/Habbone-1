@@ -1,7 +1,17 @@
 import nextPlugin from '@next/eslint-plugin-next'
 
 export default [
-  { ignores: ['.next/**', 'node_modules/**', 'dist/**', 'build/**'] },
+  {
+    ignores: [
+      '.next/**',
+      '.claude/**',
+      '.migration/**',
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'public/**',
+    ],
+  },
   {
     plugins: {
       '@next/next': nextPlugin,

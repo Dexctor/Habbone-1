@@ -1,18 +1,14 @@
 import 'server-only';
 
-import { revalidateTag, revalidatePath } from 'next/cache';
+import { applyInvalidation } from '@/server/cache-policy';
+import type { InvalidationPlan } from '@/server/cache-policy-core';
 
 /**
  * Server-side: directly call revalidateTag for each tag.
  * Use this in API route handlers and server actions.
  */
-export function serverRevalidate(tags: string[], paths?: string[]) {
-  for (const tag of tags) {
-    revalidateTag(tag);
-  }
-  if (paths) {
-    for (const p of paths) {
-      revalidatePath(p);
-    }
-  }
+export function serverRevalidate(tagsOrPlan: string[] | InvalidationPlan, paths?: string[]) {
+  applyInvalidation(Array.isArray(tagsOrPlan)
+    ? { tags: tagsOrPlan, paths: paths || [] }
+    : tagsOrPlan);
 }

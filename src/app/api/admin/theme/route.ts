@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { readThemeSettings, writeThemeSettings } from '@/server/theme-settings-store';
+import { invalidateTheme } from '@/server/cache-policy';
 
 const Body = z.object({
   headerLogoUrl: z.string().trim().max(512).optional(),
@@ -42,7 +42,7 @@ export const POST = withAdmin(async (req) => {
 
   try {
     const data = await writeThemeSettings(parsed.data);
-    revalidateTag('theme');
+    invalidateTheme();
     return NextResponse.json({ data });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'THEME_WRITE_FAILED';

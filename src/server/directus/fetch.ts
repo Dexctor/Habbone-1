@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { directusUrl, serviceToken } from './client';
+import { appendDirectusParams, type DirectusQueryParams } from './fetch-core';
 
 /**
  * Authenticated fetch to the Directus REST API.
@@ -11,21 +12,16 @@ import { directusUrl, serviceToken } from './client';
  * const data = await directusFetch<{ data: MyType[] }>('/items/my_table?limit=10');
  * ```
  */
-export async function directusFetch<T = any>(
+export async function directusFetch<T = unknown>(
   path: string,
   options?: {
     method?: string;
     body?: unknown;
-    params?: Record<string, string>;
+    params?: DirectusQueryParams;
   },
 ): Promise<T> {
   const url = new URL(path.startsWith('http') ? path : `${directusUrl}${path}`);
-
-  if (options?.params) {
-    for (const [key, value] of Object.entries(options.params)) {
-      url.searchParams.set(key, value);
-    }
-  }
+  appendDirectusParams(url, options?.params);
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${serviceToken}`,
@@ -49,7 +45,16 @@ export async function directusFetch<T = any>(
     throw new Error(`Directus ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  return res.json() as Promise<T>;
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await res.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }
 
 /**
@@ -59,23 +64,14 @@ export async function directusCount(
   collection: string,
   filter?: Record<string, string>,
 ): Promise<number> {
-  const url = new URL(`${directusUrl}/items/${encodeURIComponent(collection)}`);
-  url.searchParams.set('limit', '0');
-  url.searchParams.set('meta', 'total_count');
-
-  if (filter) {
-    for (const [key, value] of Object.entries(filter)) {
-      url.searchParams.set(key, value);
-    }
-  }
-
   try {
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ meta?: { total_count?: number } }>(`/items/${encodeURIComponent(collection)}`, {
+      params: {
+        limit: '0',
+        meta: 'total_count',
+        ...(filter ?? {}),
+      },
     });
-    if (!res.ok) return 0;
-    const json = await res.json();
     return Number(json?.meta?.total_count ?? 0);
   } catch {
     return 0;

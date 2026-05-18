@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { assertAdmin } from '@/server/authz';
 import { searchAdminUsers } from '@/server/services/admin-users';
 import { checkRateLimit } from '@/server/rate-limit';
+import { isSameOriginMutation } from '@/server/request-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,11 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  const rl = checkRateLimit(req, { key: 'admin:users:search', limit: 60, windowMs: 60 * 1000 });
+  if (!isSameOriginMutation(req)) {
+    return NextResponse.json({ error: 'Origine invalide', code: 'INVALID_ORIGIN' }, { status: 403 });
+  }
+
+  const rl = await checkRateLimit(req, { key: 'admin:users:search', limit: 60, windowMs: 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json({ error: 'RATE_LIMITED', code: 'RATE_LIMITED' }, { status: 429, headers: rl.headers });
   }

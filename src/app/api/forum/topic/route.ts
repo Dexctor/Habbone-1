@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
 import { createForumTopic } from '@/server/directus/forum'
 import { sanitizeRichContentHtml, sanitizePlainText } from '@/server/comment-sanitize'
+import { invalidateForum } from '@/server/cache-policy'
 
 export const dynamic = 'force-dynamic';
 
@@ -41,8 +41,7 @@ export const POST = withAuth(async (req, { nick }) => {
     })
 
     const id = topic && typeof topic === 'object' ? (topic as any).id : null
-    revalidateTag('forum')
-    revalidateTag('home')
+    invalidateForum({ home: true })
     return NextResponse.json({ ok: true, id: id != null ? Number(id) : null })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)

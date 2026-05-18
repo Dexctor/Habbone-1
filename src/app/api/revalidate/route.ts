@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag, revalidatePath } from 'next/cache';
 import { assertAdmin } from '@/server/authz';
+import { serverRevalidate } from '@/lib/trigger-revalidation';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,12 +38,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No tags or paths provided' }, { status: 400 });
   }
 
-  for (const tag of tags) {
-    if (typeof tag === 'string') revalidateTag(tag);
-  }
-  for (const p of paths) {
-    if (typeof p === 'string') revalidatePath(p);
-  }
+  serverRevalidate(
+    tags.filter((tag): tag is string => typeof tag === 'string'),
+    paths.filter((path): path is string => typeof path === 'string'),
+  );
 
   return NextResponse.json({
     ok: true,

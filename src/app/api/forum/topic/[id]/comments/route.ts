@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
 import { sanitizeCommentBody } from '@/server/comment-sanitize'
 import { createForumComment } from '@/server/directus/forum'
 import { buildError, formatZodError } from '@/types/api'
+import { invalidateForum } from '@/server/cache-policy'
 
 const BodySchema = z.object({
   content: z.string().trim().min(1, 'Commentaire requis').max(5000, 'Commentaire trop long'),
@@ -32,8 +32,7 @@ export const POST = withAuth(async (req, { nick, params }) => {
 
   try {
     const created = await createForumComment({ topicId, author: nick, content: sanitizedHtml })
-    revalidateTag('forum')
-    revalidateTag('forum-topic-' + topicId)
+    invalidateForum({ topicId })
     return NextResponse.json({ ok: true, data: created })
   } catch {
     return NextResponse.json(buildError('Echec de publication', { code: 'CREATE_FAILED' }), { status: 500 })

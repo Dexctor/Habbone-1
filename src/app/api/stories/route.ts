@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
 import { uploadFileToDirectus, createStoryRow, countStoriesThisMonthByAuthor } from '@/server/directus/stories'
 import { buildError, formatZodError } from '@/types/api'
+import { invalidateStories } from '@/server/cache-policy'
+import { fileFromValidatedUpload, validateStoryImageUpload } from '@/server/upload-policy'
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif'])
-const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10MB
-
 const StoryUploadSchema = z.object({
-  file: z
-    .custom<File>((value) => value instanceof File, 'Fichier requis')
-    .refine((file) => ALLOWED_MIME_SET.has(file.type), 'Type de fichier invalide (png, jpg, gif uniquement)')
-    .refine((file) => file.size <= MAX_FILE_BYTES, 'Fichier trop volumineux (max 10MB)'),
+  file: z.custom<File>((value) => value instanceof File, 'Fichier requis'),
 })
 
 export const POST = withAuth(async (req, { nick }) => {
@@ -27,6 +22,10 @@ export const POST = withAuth(async (req, { nick }) => {
     }
 
     const file = parsed.data.file
+    const validation = await validateStoryImageUpload(file)
+    if (!validation.ok) {
+      return NextResponse.json(buildError(validation.error, { code: validation.code }), { status: 400 })
+    }
 
     const used = await countStoriesThisMonthByAuthor(nick).catch(() => 0)
     if (used >= 10) {
@@ -36,16 +35,14 @@ export const POST = withAuth(async (req, { nick }) => {
       )
     }
 
-    const filename = file.name?.trim() ? file.name.trim() : `story-${Date.now()}`
-    const mime = file.type || 'application/octet-stream'
+    const { filename, file: safeFile } = fileFromValidatedUpload(file, validation, `story-${Date.now()}`)
 
-    const upload = await uploadFileToDirectus(file, filename, mime)
+    const upload = await uploadFileToDirectus(safeFile, filename, validation.detectedMime)
     const story = await createStoryRow({ author: nick, imageId: upload.id, title: filename })
     const storyId =
       story && typeof story === 'object' && story !== null ? (story as { id?: unknown }).id : null
 
-    revalidateTag('stories')
-    revalidateTag('home')
+    invalidateStories({ home: true })
     return NextResponse.json({ ok: true, id: storyId != null ? String(storyId) : null })
   } catch (unknownError: unknown) {
     const message = unknownError instanceof Error ? unknownError.message : String(unknownError)

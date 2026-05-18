@@ -28,9 +28,25 @@ jobs:
       - name: Typecheck
         run: npm run typecheck --silent
 
+      - name: Unit tests
+        run: npm test --silent
+
       - name: Build
         env:
           NEXT_PUBLIC_DIRECTUS_URL: http://localhost
           DIRECTUS_SERVICE_TOKEN: test-token
           NEXTAUTH_SECRET: test-secret
+          APP_ORIGIN: http://127.0.0.1:3000
         run: npm run build --silent
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E public smoke tests
+        env:
+          NEXT_PUBLIC_DIRECTUS_URL: http://localhost
+          DIRECTUS_SERVICE_TOKEN: test-token
+          NEXTAUTH_SECRET: test-secret
+          APP_ORIGIN: http://127.0.0.1:3000
+          RATE_LIMIT_DISABLED: 'true'
+        run: npx playwright test --project=chromium

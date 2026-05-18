@@ -1,4 +1,5 @@
 import 'server-only'
+import { getRedis } from '@/server/redis'
 
 type Entry = { count: number; resetAt: number }
 
@@ -39,7 +40,16 @@ export function getClientIdentifier(req: Request): string {
   return 'anon'
 }
 
-export function checkRateLimit(
+function buildHeaders(limit: number, remaining: number, resetAt: number, retryAfterSeconds?: number) {
+  const headers = new Headers()
+  if (retryAfterSeconds != null) headers.set('Retry-After', String(retryAfterSeconds))
+  headers.set('X-RateLimit-Limit', String(limit))
+  headers.set('X-RateLimit-Remaining', String(Math.max(0, remaining)))
+  headers.set('X-RateLimit-Reset', String(Math.ceil(resetAt / 1000)))
+  return headers
+}
+
+function checkLocalRateLimit(
   req: Request,
   opts: { key: string; limit?: number; windowMs?: number }
 ) {
@@ -71,18 +81,55 @@ export function checkRateLimit(
   }
   const remainingBefore = Math.max(0, limit - entry.count)
   if (remainingBefore <= 0) {
-    const headers = new Headers()
-    headers.set('Retry-After', String(Math.ceil((entry.resetAt - nowMs) / 1000)))
-    headers.set('X-RateLimit-Limit', String(limit))
-    headers.set('X-RateLimit-Remaining', '0')
-    headers.set('X-RateLimit-Reset', String(Math.ceil(entry.resetAt / 1000)))
+    const headers = buildHeaders(limit, 0, entry.resetAt, Math.ceil((entry.resetAt - nowMs) / 1000))
     return { ok: false as const, headers }
   }
 
   entry.count += 1
-  const headers = new Headers()
-  headers.set('X-RateLimit-Limit', String(limit))
-  headers.set('X-RateLimit-Remaining', String(Math.max(0, limit - entry.count)))
-  headers.set('X-RateLimit-Reset', String(Math.ceil(entry.resetAt / 1000)))
+  const headers = buildHeaders(limit, limit - entry.count, entry.resetAt)
   return { ok: true as const, headers }
+}
+
+export async function checkRateLimit(
+  req: Request,
+  opts: { key: string; limit?: number; windowMs?: number }
+) {
+  if (String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() === 'true') {
+    const headers = new Headers()
+    headers.set('X-RateLimit-Bypass', 'true')
+    return { ok: true as const, headers }
+  }
+
+  const windowMs = Math.max(1000, opts.windowMs ?? DEFAULT_WINDOW_MS)
+  const limit = Math.max(1, opts.limit ?? DEFAULT_LIMIT)
+  const resetAt = Date.now() + windowMs
+  const id = `${opts.key}:${getClientIdentifier(req)}`
+  const redisKey = `rl:${id}`
+  const r = getRedis()
+
+  if (!r) return checkLocalRateLimit(req, opts)
+
+  try {
+    const count = await r.incr(redisKey)
+    let ttl = await r.pttl(redisKey)
+    if (count === 1 || ttl < 0) {
+      await r.pexpire(redisKey, windowMs)
+      ttl = windowMs
+    }
+    const redisResetAt = Date.now() + Math.max(0, ttl)
+
+    if (count > limit) {
+      return {
+        ok: false as const,
+        headers: buildHeaders(limit, 0, redisResetAt, Math.ceil(Math.max(0, ttl) / 1000)),
+      }
+    }
+
+    return {
+      ok: true as const,
+      headers: buildHeaders(limit, limit - count, redisResetAt),
+    }
+  } catch {
+    return checkLocalRateLimit(req, opts)
+  }
 }

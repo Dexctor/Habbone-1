@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/auth'
-import { checkRateLimit } from '@/server/rate-limit'
+import { withAuth } from '@/server/api-helpers'
 import { getUserById, changeUserPassword } from '@/server/directus/users'
 import { passwordsMatch } from '@/server/directus/security'
 
@@ -11,14 +9,8 @@ const BodySchema = z.object({
   newPassword: z.string().min(6, 'Nouveau mot de passe trop court (min 6 caracteres)'),
 })
 
-export async function POST(req: Request) {
-  const rl = checkRateLimit(req, { key: 'user:change-password', limit: 5, windowMs: 10 * 60 * 1000 })
-  if (!rl.ok) {
-    return NextResponse.json({ error: 'Trop de tentatives, reessayez plus tard.' }, { status: 429, headers: rl.headers })
-  }
-
-  const session = await getServerSession(authOptions)
-  const userId = Number((session?.user as any)?.id)
+export const POST = withAuth(async (req, { user }) => {
+  const userId = Number((user as any)?.id)
   if (!userId) {
     return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
   }
@@ -48,4 +40,4 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+}, { key: 'user:change-password', limit: 5, windowMs: 10 * 60 * 1000 })

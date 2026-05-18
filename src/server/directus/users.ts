@@ -6,6 +6,8 @@ import { directusService, rItems, rItem, cItem, uItem } from './client';
 import { TABLES, USE_V2 } from './tables';
 import { hashPassword } from './security';
 import type { HabboVerificationStatus } from './types';
+import { directusFetch } from './fetch';
+import { summarizeUserStatusBuckets, type AdminUserStatusStats } from './users-core';
 
 const USERS_TABLE = TABLES.users;
 
@@ -36,6 +38,7 @@ type LegacyUserRecord = {
   habbo_core_snapshot?: unknown;
   habbo_snapshot_at?: string | null;
   moedas?: number | null;
+  twitter?: string | null;
 };
 
 const LEGACY_USER_FIELDS = [
@@ -243,6 +246,16 @@ export async function getUserById(userId: number) {
   return mapRow(raw);
 }
 
+export async function getUserEditableProfile(userId: number): Promise<{ twitter: string | null } | null> {
+  const row = (await directusService
+    .request(rItem(USERS_TABLE as any, userId as any, { fields: ['id', 'twitter'] as any } as any))
+    .catch(() => null)) as any;
+  if (!row) return null;
+  return {
+    twitter: typeof row?.twitter === 'string' ? row.twitter : null,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Create                                                             */
 /* ------------------------------------------------------------------ */
@@ -368,6 +381,56 @@ export async function getUserMoedas(userId: number): Promise<number> {
   const value = USE_V2 ? (row as any)?.coins : (row as any)?.moedas;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function cleanLegacyUserId(id: string) {
+  return id.startsWith('legacy:') ? id.split(':')[1] : id;
+}
+
+export async function getAdminUserCoinsSnapshot(userId: string): Promise<{
+  id: string | number;
+  nick: string | null;
+  balance: number;
+} | null> {
+  const cleanId = cleanLegacyUserId(userId);
+  const coinField = USE_V2 ? 'coins' : 'moedas';
+  const row = (await directusService
+    .request(rItem(USERS_TABLE as any, cleanId as any, { fields: ['id', 'nick', coinField] as any } as any))
+    .catch(() => null)) as any;
+  if (!row) return null;
+
+  const rawBalance = row?.[coinField];
+  const balance = typeof rawBalance === 'number' ? rawBalance : Number(rawBalance);
+  return {
+    id: row.id ?? cleanId,
+    nick: typeof row.nick === 'string' ? row.nick : null,
+    balance: Number.isFinite(balance) ? balance : 0,
+  };
+}
+
+export async function updateAdminUserCoinsBalance(userId: string, balance: number) {
+  const cleanId = cleanLegacyUserId(userId);
+  const coinField = USE_V2 ? 'coins' : 'moedas';
+  return directusService
+    .request(uItem(USERS_TABLE as any, cleanId as any, { [coinField]: balance } as any))
+    .catch(() => null);
+}
+
+export async function getAdminUserStatusStats(): Promise<AdminUserStatusStats> {
+  const bannedCol = USE_V2 ? 'banned' : 'banido';
+  const activeCol = USE_V2 ? 'active' : 'ativado';
+
+  const json = await directusFetch<{
+    data?: Array<Record<string, unknown> & { count?: { id?: number } }>;
+  }>(`/items/${encodeURIComponent(USERS_TABLE)}`, {
+    params: {
+      'aggregate[count]': 'id',
+      'groupBy[]': [bannedCol, activeCol],
+      limit: '-1',
+    },
+  });
+  const buckets = json.data ?? [];
+  return summarizeUserStatusBuckets(buckets, { banned: bannedCol, active: activeCol });
 }
 
 export { isBcrypt, md5, hashPassword, passwordsMatch } from './security';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
+import { invalidateShop } from '@/server/cache-policy';
 import {
   listShopItems,
   createShopItem,
@@ -56,7 +56,7 @@ export const POST = withAdmin(async (req) => {
     try {
       const item = await createShopItem(parsed.data);
       if (!item) return NextResponse.json({ error: 'Création échouée' }, { status: 500 });
-      revalidateTag('shop');
+      invalidateShop();
       return NextResponse.json({ ok: true, data: item });
     } catch (e: any) {
       return NextResponse.json({ error: e?.message || 'Erreur de création' }, { status: 500 });
@@ -70,7 +70,7 @@ export const POST = withAdmin(async (req) => {
     const { action: _, id: __, ...patch } = body;
     const item = await updateShopItem(id, patch);
     if (!item) return NextResponse.json({ error: 'Mise à jour échouée' }, { status: 500 });
-    revalidateTag('shop');
+    invalidateShop();
     return NextResponse.json({ ok: true, data: item });
   }
 
@@ -80,7 +80,7 @@ export const POST = withAdmin(async (req) => {
     if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
     const ok = await deleteShopItem(id);
     if (!ok) return NextResponse.json({ error: 'Suppression échouée' }, { status: 500 });
-    revalidateTag('shop');
+    invalidateShop();
     return NextResponse.json({ ok: true });
   }
 
@@ -99,7 +99,7 @@ export const POST = withAdmin(async (req) => {
       if (!order) {
         return NextResponse.json({ error: 'Commande non trouvée ou Directus a rejeté la MAJ' }, { status: 500 });
       }
-      revalidateTag('shop');
+      invalidateShop();
       return NextResponse.json({ ok: true, data: order });
     } catch (e: unknown) {
       console.error('[admin:shop] update_order failed:', e);

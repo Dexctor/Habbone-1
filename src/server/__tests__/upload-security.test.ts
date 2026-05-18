@@ -89,6 +89,18 @@ describe('validateUploadedFile', () => {
     if (!result.ok) assert.equal(result.code, 'MIME_MISMATCH');
   });
 
+  it('matches the public upload policy by rejecting SVG even when SVG bytes are valid', async () => {
+    const svgPayload = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>');
+    const result = await validateUploadedFile(fileFrom(svgPayload, 'image/svg+xml'), {
+      allowedMimes: ALLOWED_IMAGE,
+      maxSize: 5 * 1024 * 1024,
+      allowSvg: false,
+    });
+
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.code, 'UNSUPPORTED_FILE_TYPE');
+  });
+
   it('rejects unrecognised bytes even with a whitelisted MIME', async () => {
     const junk = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
     const result = await validateUploadedFile(fileFrom(junk, 'image/png'), {

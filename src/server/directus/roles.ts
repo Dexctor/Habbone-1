@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { directusService, directusUrl, serviceToken, rItems, rItem, cItem, uItem } from './client';
-import { readRoles } from '@directus/sdk';
+import { directusService, cItem, uItem } from './client';
 import type { DirectusRoleLite, DirectusUserLite } from './types';
+import { TABLES } from './tables';
+import { directusCount, directusFetch } from './fetch';
 
 type DirectusRolePayload = {
   name: string;
@@ -34,15 +35,12 @@ type PolicyLite = { id: string; admin_access?: boolean; app_access?: boolean };
 async function fetchPoliciesForRole(roleId: string): Promise<PolicyLite[]> {
   try {
     // Directus v11+: roles have a `policies` array of policy IDs
-    const url = new URL(`${directusUrl}/policies`);
-    url.searchParams.set('fields', 'id,admin_access,app_access');
-    url.searchParams.set('limit', '100');
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data?: PolicyLite[] }>('/policies', {
+      params: {
+        fields: 'id,admin_access,app_access',
+        limit: '100',
+      },
     });
-    if (!response.ok) return [];
-    const json = await response.json();
     return Array.isArray(json?.data) ? json.data : [];
   } catch {
     return [];
@@ -59,15 +57,12 @@ async function getAllPolicies(): Promise<Map<string, PolicyLite>> {
     return _policiesCache;
   }
   try {
-    const url = new URL(`${directusUrl}/policies`);
-    url.searchParams.set('fields', 'id,admin_access,app_access');
-    url.searchParams.set('limit', '500');
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data?: PolicyLite[] }>('/policies', {
+      params: {
+        fields: 'id,admin_access,app_access',
+        limit: '500',
+      },
     });
-    if (!response.ok) return _policiesCache ?? new Map();
-    const json = await response.json();
     const policies = Array.isArray(json?.data) ? json.data : [];
     _policiesCache = new Map(policies.map((p: PolicyLite) => [p.id, p]));
     _policiesCacheTs = Date.now();
@@ -128,16 +123,13 @@ async function resolveRoleAccess(roleRaw: any): Promise<DirectusRoleLite> {
 
 export async function listRoles(): Promise<DirectusRoleLite[]> {
   try {
-    const url = new URL(`${directusUrl}/roles`);
-    url.searchParams.set('fields', 'id,name,description,policies.*');
-    url.searchParams.set('sort', 'name');
-    url.searchParams.set('limit', '100');
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data?: unknown[] }>('/roles', {
+      params: {
+        fields: 'id,name,description,policies.*',
+        sort: 'name',
+        limit: '100',
+      },
     });
-    if (!response.ok) return [];
-    const json = await response.json();
     const rows = Array.isArray(json?.data) ? json.data : [];
     return Promise.all(rows.map((r: any) => resolveRoleAccess(r)));
   } catch {
@@ -166,16 +158,52 @@ export async function updateRole(roleId: string, patch: UpdateRoleInput): Promis
   return updated as DirectusRoleLite;
 }
 
+export async function getRoleMemberCounts(): Promise<{ counts: Record<string, number>; withoutRole: number }> {
+  const json = await directusFetch<{
+    data?: Array<{ directus_role_id?: string | null; count?: { id?: number } }>;
+  }>(`/items/${encodeURIComponent(TABLES.users)}`, {
+    params: {
+      'aggregate[count]': 'id',
+      'groupBy[]': 'directus_role_id',
+      limit: '-1',
+    },
+  });
+
+  const counts: Record<string, number> = {};
+  let withoutRole = 0;
+
+  for (const bucket of json.data ?? []) {
+    const count = Number(bucket.count?.id ?? 0);
+    if (bucket.directus_role_id) {
+      counts[bucket.directus_role_id] = count;
+    } else {
+      withoutRole += count;
+    }
+  }
+
+  return { counts, withoutRole };
+}
+
+export async function countRoleMembers(roleId: string): Promise<number> {
+  return directusCount(TABLES.users, { 'filter[directus_role_id][_eq]': roleId });
+}
+
+export async function deleteRole(roleId: string): Promise<boolean> {
+  try {
+    await directusFetch(`/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getRoleById(roleId: string): Promise<DirectusRoleLite | null> {
   try {
-    const url = new URL(`${directusUrl}/roles/${encodeURIComponent(roleId)}`);
-    url.searchParams.set('fields', 'id,name,description,policies.*');
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
+    const json = await directusFetch<{ data?: unknown }>(`/roles/${encodeURIComponent(roleId)}`, {
+      params: {
+        fields: 'id,name,description,policies.*',
+      },
     });
-    if (!response.ok) return null;
-    const json = await response.json();
     const row = json?.data;
     if (!row) return null;
     return resolveRoleAccess(row);

@@ -12,6 +12,7 @@ import {
 } from './client';
 import { TABLES, USE_V2 } from './tables';
 import { resolveUserId, resolveUserNicks, isoToUnixSeconds, nowIso } from './user-cache';
+import { uploadDirectusAsset } from './assets';
 import type { StoryRecord } from './types';
 import { parseTimestamp } from '@/lib/date-utils';
 
@@ -61,29 +62,7 @@ export async function uploadFileToDirectus(
   mimeType: string,
 ): Promise<{ id: string }> {
   const safeName = filename?.trim() || `story-${Date.now()}`;
-  const formData = new FormData();
-  formData.set('file', file, safeName);
-  formData.set('title', safeName);
-  if (STORIES_FOLDER_ID) formData.set('folder', STORIES_FOLDER_ID);
-
-  const response = await fetch(`${directusUrl}/files`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    body: formData,
-  }).catch((error: unknown) => {
-    throw new Error(`UPLOAD_NETWORK_ERROR: ${error instanceof Error ? error.message : String(error)}`);
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`UPLOAD_FAILED: ${response.status} ${body}`);
-  }
-
-  const json = (await response.json().catch(() => ({}))) as Record<string, any>;
-  const data = (json?.data ?? json) as Record<string, any>;
-  const id = data?.id ?? null;
-  if (!id) throw new Error('UPLOAD_FAILED_NO_ID');
-  return { id: String(id) };
+  return uploadDirectusAsset(file, safeName, mimeType, { folderId: STORIES_FOLDER_ID });
 }
 
 // ============ CREATE ============

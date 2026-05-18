@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from 'next/cache';
 import { z } from "zod";
 import { withAuth } from '@/server/api-helpers';
 import { createNewsComment } from "@/server/directus/news";
 import { buildError, formatZodError } from "@/types/api";
 import { sanitizeCommentBody } from "@/server/comment-sanitize";
+import { invalidateNews } from "@/server/cache-policy";
 
 const BodySchema = z.object({
   content: z
@@ -53,8 +53,7 @@ export const POST = withAuth(async (req, { nick, user, params }) => {
       author: String(nick || user?.email || "Anonyme"),
       content: sanitizedHtml,
     });
-    revalidateTag('news');
-    revalidateTag('news-' + newsId);
+    invalidateNews({ newsId });
     return NextResponse.json({ ok: true, data: created });
   } catch (error) {
     return NextResponse.json(buildError("Echec de publication", { code: "CREATE_FAILED" }), {
