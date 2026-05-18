@@ -13,6 +13,19 @@ describe('mediaUrl', () => {
       process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE = previous;
     }
   });
+
+  it('trims environment URL values before building Directus asset URLs', () => {
+    const previousDirectus = process.env.NEXT_PUBLIC_DIRECTUS_URL;
+    process.env.NEXT_PUBLIC_DIRECTUS_URL = ' https://api.habbone.fr ';
+    try {
+      assert.equal(
+        mediaUrl('9fa48287-c18b-4334-9a78-4f21dfbfaa60'),
+        'https://api.habbone.fr/assets/9fa48287-c18b-4334-9a78-4f21dfbfaa60',
+      );
+    } finally {
+      process.env.NEXT_PUBLIC_DIRECTUS_URL = previousDirectus;
+    }
+  });
 });
 
 describe('normalizeHtmlMediaUrls', () => {

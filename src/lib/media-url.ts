@@ -1,9 +1,9 @@
 function getDirectusUrl() {
-    return process.env.NEXT_PUBLIC_DIRECTUS_URL || '';
+    return (process.env.NEXT_PUBLIC_DIRECTUS_URL || '').trim();
 }
 
 function getLegacyMediaBase() {
-    return process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || '';
+    return (process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || '').trim();
 }
 
 /**
@@ -11,6 +11,7 @@ function getLegacyMediaBase() {
  * Retourne '' si l'URL est invalide pour permettre le fallback côté composant.
  */
 function validateUrl(url: string): string {
+    url = String(url || '').trim();
     if (!url) return '';
     // Chemins relatifs (commencent par /) — toujours valides
     if (url.startsWith('/')) return url;
