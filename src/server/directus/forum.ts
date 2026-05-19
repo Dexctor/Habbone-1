@@ -5,6 +5,8 @@ import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 import { resolveUserId, resolveUserNicks, unixSecondsToIso, isoToUnixSeconds, nowIso } from './user-cache';
 import type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCategoryRecord } from './types';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseForum from '@/server/supabase/forum';
 
 /* ------------------------------------------------------------------ */
 /*  Column sets                                                        */
@@ -161,10 +163,14 @@ export async function listForumTopicsByAuthorService(author: string, limit = 30)
 }
 
 export function getPublicTopics(limit = 50): Promise<ForumTopicRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.getPublicTopics(limit);
+
   return adminListForumTopics(limit);
 }
 
 export async function getPublicTopicById(id: number): Promise<ForumTopicRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.getPublicTopicById(id);
+
   const row = (await directusService.request(
     rItem(TABLES.forumTopics, id, { fields: TOPIC_FIELDS } as any),
   )) as any;
@@ -184,6 +190,8 @@ export async function createForumTopic(data: {
   imagem?: string | null;
   cat_id?: number | string | null;
 }): Promise<ForumTopicRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.createForumTopic(data);
+
   if (USE_V2) {
     const authorId = await resolveUserId(data.autor);
     const payload: Record<string, unknown> = {
@@ -364,6 +372,8 @@ export async function createForumComment(input: {
   content: string;
   status?: string | null;
 }): Promise<ForumCommentRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.createForumComment(input);
+
   if (USE_V2) {
     const authorId = await resolveUserId(input.author);
     const payload: Record<string, unknown> = {
@@ -388,6 +398,8 @@ export async function createForumComment(input: {
 }
 
 export async function getPublicTopicComments(topicId: number): Promise<ForumCommentRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.getPublicTopicComments(topicId);
+
   try {
     const params: Record<string, string> = {
       fields: COMMENT_SELECT,
@@ -409,6 +421,8 @@ export async function getPublicTopicComments(topicId: number): Promise<ForumComm
 /* ------------------------------------------------------------------ */
 
 export async function toggleForumCommentLike(commentId: number, author: string) {
+  if (isSupabaseDataEnabled()) return supabaseForum.toggleForumCommentLike(commentId, author);
+
   const safeAuthor = String(author || '').trim();
   if (!safeAuthor) throw new Error('AUTHOR_REQUIRED');
 
@@ -468,6 +482,8 @@ export async function reportForumComment(commentId: number, author: string) {
 /* ------------------------------------------------------------------ */
 
 export async function setTopicVote(topicId: number, author: string, vote: 1 | -1) {
+  if (isSupabaseDataEnabled()) return supabaseForum.setTopicVote(topicId, author, vote);
+
   const nowUnix = Math.floor(Date.now() / 1000);
 
   if (USE_V2) {
@@ -552,6 +568,8 @@ export async function setTopicVote(topicId: number, author: string, vote: 1 | -1
 }
 
 export async function getTopicVoteSummary(topicId: number): Promise<{ up: number; down: number }> {
+  if (isSupabaseDataEnabled()) return supabaseForum.getTopicVoteSummary(topicId);
+
   try {
     if (USE_V2) {
       const json = await directusFetch<{ data: { id: number; value: number }[] }>(`/items/${VOTE_TABLE}`, {
@@ -608,6 +626,8 @@ export async function listForumCategoriesService(): Promise<ForumCategoryRecord[
 }
 
 export async function listPublicForumCategories(): Promise<ForumCategoryRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.listPublicForumCategories();
+
   return listForumCategoriesService();
 }
 

@@ -29,6 +29,21 @@ NEXT_PUBLIC_SUPABASE_UPLOADS_BASE=https://<project-ref>.supabase.co/storage/v1/o
 - Commentaires orphelins archivés dans `_migration_orphan_article_comments` et `_migration_orphan_forum_comments`.
 - Contraintes uniques/FK critiques ajoutées.
 
+## Voir les tables dans Supabase
+
+Les tables ont été importées dans le schéma `habbonex_main`, pas dans `public`.
+
+Si le Table Editor ne montre aucune table, vérifier d'abord dans SQL Editor :
+
+```sql
+select table_schema, table_name
+from information_schema.tables
+where table_schema = 'habbonex_main'
+order by table_name;
+```
+
+Pour les rendre visibles dans l'API Supabase/PostgREST, exposer le schéma `habbonex_main` dans les réglages API du projet, ou garder l'accès serveur direct via `SUPABASE_DB_URL`.
+
 ## Stratégie code
 
 Le code conserve les imports existants `@/server/directus/*` pour limiter le blast radius. Les services publics basculent vers Supabase seulement si `DATA_BACKEND=supabase`.
@@ -40,3 +55,11 @@ Première tranche :
 - toggle likes commentaires news ;
 - lecture des compteurs likes news/forum ;
 - support remote images Supabase Storage dans `next.config.ts`.
+
+Deuxième tranche :
+
+- lectures publiques forum ;
+- création de topics/commentaires forum ;
+- toggle likes commentaires forum ;
+- votes topics forum ;
+- catégories forum.
