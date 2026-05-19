@@ -17,11 +17,21 @@ function shouldUseSsl(databaseUrl: string): boolean {
   return !/(localhost|127\.0\.0\.1|host\.docker\.internal)/i.test(databaseUrl);
 }
 
+function getPgConnectionString(databaseUrl: string): string {
+  try {
+    const url = new URL(databaseUrl);
+    url.searchParams.delete('sslmode');
+    return url.toString();
+  } catch {
+    return databaseUrl;
+  }
+}
+
 export function getSupabasePool(): Pool {
   if (pool) return pool;
   const connectionString = getDatabaseUrl();
   pool = new Pool({
-    connectionString,
+    connectionString: getPgConnectionString(connectionString),
     max: Number(process.env.SUPABASE_DB_POOL_MAX || 4),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 8_000,
