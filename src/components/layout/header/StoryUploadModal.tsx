@@ -1,6 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
 import { toastError, toastSuccess } from '@/lib/sonner'
 
@@ -10,6 +11,7 @@ type StoryUploadModalProps = {
 }
 
 export default function StoryUploadModal({ open, onClose }: StoryUploadModalProps) {
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -67,6 +69,7 @@ export default function StoryUploadModal({ open, onClose }: StoryUploadModalProp
                     if (!res.ok) throw new Error((j as any)?.error || 'Erreur envoi storie')
                     try { await toastSuccess('Storie publiée !') } catch {}
                     setFile(null)
+                    router.refresh()
                     onClose()
                   } catch (e: any) {
                     try { await toastError(e?.message || 'Erreur lors de la publication') } catch {}
@@ -83,4 +86,3 @@ export default function StoryUploadModal({ open, onClose }: StoryUploadModalProp
     </AnimatePresence>
   )
 }
-

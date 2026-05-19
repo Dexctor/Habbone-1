@@ -18,6 +18,14 @@ function getMediaBackend() {
     return (process.env.NEXT_PUBLIC_MEDIA_BACKEND || process.env.DATA_BACKEND || '').trim().toLowerCase();
 }
 
+function isSupabaseObjectPath(path: string): boolean {
+    return (
+        /^(uploads|stories|theme|themes)\//i.test(path) ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.[a-z0-9]{2,8}$/i.test(path) ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}__[^/]+\.[a-z0-9]{2,8}$/i.test(path)
+    );
+}
+
 /**
  * Vérifie qu'une URL absolue est syntaxiquement valide.
  * Retourne '' si l'URL est invalide pour permettre le fallback côté composant.
@@ -67,6 +75,12 @@ export function mediaUrl(idOrPath?: string) {
             return '';
         }
         return validateUrl(idOrPath);
+    }
+
+    const rawPath = idOrPath.replace(/^\/+/, '');
+    const supabaseUploadsBase = getMediaBackend() === 'supabase' ? getSupabaseUploadsBase() : '';
+    if (supabaseUploadsBase && isSupabaseObjectPath(rawPath) && !idOrPath.startsWith('/uploads/')) {
+        return validateUrl(`${supabaseUploadsBase}/${rawPath.split('/').map(encodeURIComponent).join('/')}`);
     }
 
     const path = idOrPath.startsWith('/') ? idOrPath : `/${idOrPath}`;
