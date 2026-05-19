@@ -71,3 +71,24 @@ Troisième tranche :
 - commandes boutique ;
 - achat avec débit coins et décrément stock conditionnels ;
 - notifications admin boutique.
+
+Quatrième tranche :
+
+- auth/login ;
+- inscription ;
+- profil éditable ;
+- vérification Habbo ;
+- mot de passe oublié/changement mot de passe ;
+- coins utilisateur/admin ;
+- statistiques utilisateurs.
+
+Avant d'activer `DATA_BACKEND=supabase`, appliquer aussi :
+
+```powershell
+cd "D:\Coding project\Keystone habbonne\habbone-admin\habbonedirectus"
+
+docker run --rm `
+  -v "${PWD}:/repo" `
+  postgres:17 `
+  psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/001-users-twitter.sql
+```

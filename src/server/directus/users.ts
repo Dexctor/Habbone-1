@@ -8,6 +8,8 @@ import { hashPassword } from './security';
 import type { HabboVerificationStatus } from './types';
 import { directusFetch } from './fetch';
 import { summarizeUserStatusBuckets, type AdminUserStatusStats } from './users-core';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseUsers from '@/server/supabase/users';
 
 const USERS_TABLE = TABLES.users;
 
@@ -190,6 +192,8 @@ export function normalizeHotelCode(hotel?: string | null): HabboHotelCode {
 /* ------------------------------------------------------------------ */
 
 export async function listUsersByNick(nick: string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.listUsersByNick(nick);
+
   const raw = (await directusService
     .request(
       rItems(USERS_TABLE as any, {
@@ -204,6 +208,8 @@ export async function listUsersByNick(nick: string) {
 }
 
 export async function getUserByNick(nick: string, hotel?: string | null) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getUserByNick(nick, hotel);
+
   const normalized = hotel ? normalizeHotelCode(hotel) : null;
   const filter =
     normalized === null
@@ -239,6 +245,8 @@ export async function getUserByNick(nick: string, hotel?: string | null) {
 }
 
 export async function getUserById(userId: number) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getUserById(userId);
+
   const raw = await directusService
     .request(rItem(USERS_TABLE as any, userId as any, { fields: USER_FIELDS as any } as any))
     .catch(() => null);
@@ -247,6 +255,8 @@ export async function getUserById(userId: number) {
 }
 
 export async function getUserEditableProfile(userId: number): Promise<{ twitter: string | null } | null> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getUserEditableProfile(userId);
+
   const row = (await directusService
     .request(rItem(USERS_TABLE as any, userId as any, { fields: ['id', 'twitter'] as any } as any))
     .catch(() => null)) as any;
@@ -273,6 +283,8 @@ export async function createUser(data: {
   verifiedAt?: string | null;
   ativado?: 's' | 'n';
 }) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.createUser(data);
+
   if (USE_V2) {
     const payload: Record<string, unknown> = {
       nick: data.nick,
@@ -314,16 +326,22 @@ export async function createUser(data: {
 /* ------------------------------------------------------------------ */
 
 export async function upgradePasswordToBcrypt(userId: number, plain: string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.upgradePasswordToBcrypt(userId, plain);
+
   const payload = USE_V2 ? { password: hashPassword(plain) } : { senha: hashPassword(plain) };
   return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function changeUserPassword(userId: number, newPassword: string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.changeUserPassword(userId, newPassword);
+
   const payload = USE_V2 ? { password: hashPassword(newPassword) } : { senha: hashPassword(newPassword) };
   return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function updateUserTwitter(userId: number, twitter: string | null) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.updateUserTwitter(userId, twitter);
+
   return directusService.request(uItem(USERS_TABLE as any, userId as any, { twitter } as any));
 }
 
@@ -339,11 +357,15 @@ export async function updateUserVerification(
     ativado: 's' | 'n';
   }>,
 ) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.updateUserVerification(userId, patch);
+
   const payload = USE_V2 ? legacyPatchToV2(patch as Record<string, unknown>) : patch;
   return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
 }
 
 export async function markUserAsVerified(userId: number) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.markUserAsVerified(userId);
+
   const nowIso = new Date().toISOString();
   return updateUserVerification(userId, {
     habbo_verification_status: 'ok',
@@ -358,6 +380,8 @@ export async function tryUpdateHabboSnapshotForUser(
   userId: number,
   core: HabboUserCore,
 ): Promise<boolean> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.tryUpdateHabboSnapshotForUser(userId, core);
+
   try {
     const payload: Partial<LegacyUserRecord> = {
       habbo_unique_id: core.uniqueId,
@@ -374,6 +398,8 @@ export async function tryUpdateHabboSnapshotForUser(
 }
 
 export async function getUserMoedas(userId: number): Promise<number> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getUserMoedas(userId);
+
   const fields = USE_V2 ? ['coins'] : ['moedas'];
   const row = await directusService
     .request(rItem(USERS_TABLE as any, userId as any, { fields: fields as any } as any))
@@ -392,6 +418,8 @@ export async function getAdminUserCoinsSnapshot(userId: string): Promise<{
   nick: string | null;
   balance: number;
 } | null> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getAdminUserCoinsSnapshot(userId);
+
   const cleanId = cleanLegacyUserId(userId);
   const coinField = USE_V2 ? 'coins' : 'moedas';
   const row = (await directusService
@@ -409,6 +437,8 @@ export async function getAdminUserCoinsSnapshot(userId: string): Promise<{
 }
 
 export async function updateAdminUserCoinsBalance(userId: string, balance: number) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.updateAdminUserCoinsBalance(userId, balance);
+
   const cleanId = cleanLegacyUserId(userId);
   const coinField = USE_V2 ? 'coins' : 'moedas';
   return directusService
@@ -417,6 +447,8 @@ export async function updateAdminUserCoinsBalance(userId: string, balance: numbe
 }
 
 export async function getAdminUserStatusStats(): Promise<AdminUserStatusStats> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getAdminUserStatusStats();
+
   const bannedCol = USE_V2 ? 'banned' : 'banido';
   const activeCol = USE_V2 ? 'active' : 'ativado';
 
