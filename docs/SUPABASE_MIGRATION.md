@@ -63,3 +63,11 @@ Deuxième tranche :
 - toggle likes commentaires forum ;
 - votes topics forum ;
 - catégories forum.
+
+Troisième tranche :
+
+- lectures boutique ;
+- CRUD items boutique ;
+- commandes boutique ;
+- achat avec débit coins et décrément stock conditionnels ;
+- notifications admin boutique.

@@ -12,6 +12,8 @@ import {
 import { purchaseItemCore, type PurchaseResult, type PurchaseUserSnapshot } from './shop-purchase-core';
 import { withRedisLock } from '@/server/redis';
 import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseShop from '@/server/supabase/shop';
 
 export type { ShopItem, ShopOrder, AdminNotification };
 
@@ -167,6 +169,8 @@ function mapDbToNotification(row: any): AdminNotification {
 /* ------------------------------------------------------------------ */
 
 export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
+  if (isSupabaseDataEnabled()) return supabaseShop.listShopItems(onlyActive);
+
   try {
     const filter: Record<string, unknown> = {};
     if (onlyActive) {
@@ -193,6 +197,8 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
 }
 
 export async function getShopItem(id: number): Promise<ShopItem | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.getShopItem(id);
+
   try {
     const row = await directus.request(rItem(SHOP_ITEMS_TABLE, id, { fields: ITEMS_FIELDS }));
     return row ? mapDbToShopItem(row) : null;
@@ -202,6 +208,8 @@ export async function getShopItem(id: number): Promise<ShopItem | null> {
 }
 
 export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopItem | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.createShopItem(data);
+
   try {
     const dbData = USE_V2
       ? { ...mapShopItemToDb(data), sold_count: 0, free: false }
@@ -223,6 +231,8 @@ export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopIt
 }
 
 export async function updateShopItem(id: number, data: Partial<ShopItem>): Promise<ShopItem | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.updateShopItem(id, data);
+
   try {
     const dbData = mapShopItemToDb(data);
     const row = await directus.request(uItem(SHOP_ITEMS_TABLE, id, dbData));
@@ -234,6 +244,8 @@ export async function updateShopItem(id: number, data: Partial<ShopItem>): Promi
 }
 
 export async function deleteShopItem(id: number): Promise<boolean> {
+  if (isSupabaseDataEnabled()) return supabaseShop.deleteShopItem(id);
+
   try {
     await directus.request(dItem(SHOP_ITEMS_TABLE, id));
     return true;
@@ -268,6 +280,8 @@ export async function listShopOrders(options?: {
   limit?: number;
   page?: number;
 }): Promise<{ data: ShopOrder[]; total: number }> {
+  if (isSupabaseDataEnabled()) return supabaseShop.listShopOrders(options);
+
   const { status, limit = 50, page = 1 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
@@ -317,6 +331,8 @@ export async function createShopOrder(data: {
   item_imagem?: string;
   preco: number;
 }): Promise<ShopOrder | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.createShopOrder(data);
+
   try {
     let dbData: Record<string, unknown>;
     if (USE_V2) {
@@ -345,6 +361,8 @@ export async function createShopOrder(data: {
 }
 
 export async function updateShopOrder(id: number, data: Partial<ShopOrder>): Promise<ShopOrder | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.updateShopOrder(id, data);
+
   try {
     const dbData: Record<string, unknown> = {};
     if (data.status) dbData.status = appStatusToDb(data.status);
@@ -425,6 +443,8 @@ async function getPurchaseUser(userId: number): Promise<PurchaseUserSnapshot | n
 }
 
 export async function purchaseItem(userId: number, userNick: string, itemId: number): Promise<PurchaseResult<ShopOrder>> {
+  if (isSupabaseDataEnabled()) return supabaseShop.purchaseItem(userId, userNick, itemId);
+
   const run = () => purchaseItemCore(userId, userNick, itemId, {
     getItem: getShopItem,
     getUser: getPurchaseUser,
@@ -458,6 +478,8 @@ export async function listAdminNotifications(options?: {
   unreadOnly?: boolean;
   limit?: number;
 }): Promise<AdminNotification[]> {
+  if (isSupabaseDataEnabled()) return supabaseShop.listAdminNotifications(options);
+
   const { unreadOnly = false, limit = 50 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
@@ -487,6 +509,8 @@ export async function createAdminNotification(data: {
   message?: string;
   link?: string;
 }): Promise<AdminNotification | null> {
+  if (isSupabaseDataEnabled()) return supabaseShop.createAdminNotification(data);
+
   try {
     const dbData = USE_V2
       ? {
@@ -510,6 +534,8 @@ export async function createAdminNotification(data: {
 }
 
 export async function markNotificationRead(id: number): Promise<boolean> {
+  if (isSupabaseDataEnabled()) return supabaseShop.markNotificationRead(id);
+
   try {
     const patch = USE_V2 ? { read: true } : { status: 'lido' };
     await directus.request(uItem(ADMIN_NOTIFICATIONS_TABLE, id, patch));
@@ -520,6 +546,8 @@ export async function markNotificationRead(id: number): Promise<boolean> {
 }
 
 export async function markAllNotificationsRead(): Promise<boolean> {
+  if (isSupabaseDataEnabled()) return supabaseShop.markAllNotificationsRead();
+
   try {
     const unread = await listAdminNotifications({ unreadOnly: true, limit: 200 });
     await Promise.all(unread.map((n) => markNotificationRead(n.id)));
@@ -530,6 +558,8 @@ export async function markAllNotificationsRead(): Promise<boolean> {
 }
 
 export async function countUnreadNotifications(): Promise<number> {
+  if (isSupabaseDataEnabled()) return supabaseShop.countUnreadNotifications();
+
   try {
     const rows = await listAdminNotifications({ unreadOnly: true, limit: 200 });
     return rows.length;
