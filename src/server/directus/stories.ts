@@ -15,6 +15,8 @@ import { resolveUserId, resolveUserNicks, isoToUnixSeconds, nowIso } from './use
 import { uploadDirectusAsset } from './assets';
 import type { StoryRecord } from './types';
 import { parseTimestamp } from '@/lib/date-utils';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseStories from '@/server/supabase/stories';
 
 const TABLE = TABLES.stories;
 
@@ -68,6 +70,8 @@ export async function uploadFileToDirectus(
 // ============ CREATE ============
 
 export async function createStoryRow(input: StoryRowInput) {
+  if (isSupabaseDataEnabled()) return supabaseStories.createStoryRow(input);
+
   if (USE_V2) {
     const authorId = await resolveUserId(input.author);
     const publishedAt = input.status === 'draft' ? null : nowIso();
@@ -120,6 +124,8 @@ export async function createStoryRow(input: StoryRowInput) {
 // ============ COUNT ============
 
 export async function countStoriesThisMonthByAuthor(author: string): Promise<number> {
+  if (isSupabaseDataEnabled()) return supabaseStories.countStoriesThisMonthByAuthor(author);
+
   if (!author) return 0;
 
   const now = new Date();
@@ -202,6 +208,8 @@ function extractStoryTimestamp(row: any): number {
 // ============ LIST ============
 
 export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseStories.listStoriesService(limit);
+
   try {
     const rows = (await directusService.request(
       rItems(TABLE as any, {
@@ -220,10 +228,14 @@ export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
 // ============ ADMIN FUNCTIONS ============
 
 export async function adminListStories(limit = 500): Promise<StoryRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseStories.adminListStories(limit);
+
   return listStoriesService(limit);
 }
 
 export async function adminUpdateStory(id: number, patch: Partial<StoryRecord>): Promise<void> {
+  if (isSupabaseDataEnabled()) return supabaseStories.adminUpdateStory(id, patch);
+
   if (USE_V2) {
     const mapped: Record<string, unknown> = {};
     if ('titulo' in patch) mapped.title = patch.titulo;
@@ -238,5 +250,7 @@ export async function adminUpdateStory(id: number, patch: Partial<StoryRecord>):
 }
 
 export async function adminDeleteStory(id: number): Promise<void> {
+  if (isSupabaseDataEnabled()) return supabaseStories.adminDeleteStory(id);
+
   await directusService.request(dItem(TABLE as any, id));
 }

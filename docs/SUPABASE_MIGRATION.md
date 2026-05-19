@@ -82,6 +82,12 @@ Quatrième tranche :
 - coins utilisateur/admin ;
 - statistiques utilisateurs.
 
+Cinquième tranche :
+
+- sponsors/partenaires ;
+- stories côté lecture/écriture DB ;
+- upload de fichiers stories encore conservé sur Directus pour éviter de changer le flux fichier avant validation du bucket média.
+
 Avant d'activer `DATA_BACKEND=supabase`, appliquer aussi :
 
 ```powershell
