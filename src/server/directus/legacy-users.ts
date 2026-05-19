@@ -10,6 +10,8 @@ import {
 } from './client';
 import { TABLES, USE_V2 } from './tables';
 import type { LegacyUserLite, CollectionResponse } from './types';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseUsers from '@/server/supabase/users';
 
 const USERS_TABLE = TABLES.users;
 
@@ -66,6 +68,8 @@ function mapListRow(row: any): Record<string, unknown> {
 /* ------------------------------------------------------------------ */
 
 export async function getLegacyUserByEmail(email?: string | null) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.getLegacyUserByEmail(email);
+
   const e = (email || '').trim();
   if (!e) return null;
 
@@ -104,6 +108,8 @@ export async function searchLegacyUsuarios(
   page = 1,
   filters?: { roleName?: string | null; roleId?: string | null; status?: string | null },
 ): Promise<{ items: LegacyUserLite[]; total: number }> {
+  if (isSupabaseDataEnabled()) return supabaseUsers.searchLegacyUsuarios(q, limit, page, filters);
+
   const applyFilters = (params: URLSearchParams) => {
     if (q) params.set('search', q);
     if (filters?.roleId) params.set('filter[directus_role_id][_eq]', String(filters.roleId));
@@ -206,6 +212,8 @@ export async function searchLegacyUsuarios(
 /* ------------------------------------------------------------------ */
 
 export async function setLegacyUserRole(userId: number | string, roleName: string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.setLegacyUserRole(userId);
+
   // In v2 there is no plain `role` string column — rely on setLegacyUserRoleId.
   if (USE_V2) {
     // no-op kept for API compat
@@ -216,6 +224,8 @@ export async function setLegacyUserRole(userId: number | string, roleName: strin
 }
 
 export async function setLegacyUserRoleId(userId: number | string, directusRoleId: string, roleName?: string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.setLegacyUserRoleId(userId, directusRoleId);
+
   // Bypass the @directus/sdk and PATCH directly. We hit a case in prod where
   // the SDK accepted the call, returned success, but the row never changed.
   // A raw PATCH gives us a real HTTP status + response body to surface errors.
@@ -252,6 +262,8 @@ export async function setLegacyUserRoleId(userId: number | string, directusRoleI
 }
 
 export async function setLegacyUserBanStatus(userId: number | string, banned: boolean) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.setLegacyUserBanStatus(userId, banned);
+
   if (USE_V2) {
     const payload = { banned, active: !banned };
     return directusService.request(uItem(USERS_TABLE as any, String(userId), payload as any));
@@ -265,10 +277,14 @@ export async function setLegacyUserBanStatus(userId: number | string, banned: bo
 }
 
 export async function deleteLegacyUser(userId: number | string) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.deleteLegacyUser(userId);
+
   return directusService.request(dItem(USERS_TABLE as any, String(userId)));
 }
 
 export async function adminListUsers(limit = 500) {
+  if (isSupabaseDataEnabled()) return supabaseUsers.adminListUsers(limit);
+
   const rows = (await directusService.request(
     rItems(USERS_TABLE as any, {
       limit,

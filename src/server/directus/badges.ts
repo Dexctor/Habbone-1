@@ -2,6 +2,8 @@ import 'server-only';
 
 import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseBadges from '@/server/supabase/badges';
 
 const BADGES_TABLE = TABLES.badges;
 const USER_BADGES_TABLE = TABLES.userBadges;
@@ -86,6 +88,8 @@ export type UserBadge = {
 
 /** Get all badges owned by a user */
 export async function getUserBadges(userId: number): Promise<UserBadge[]> {
+  if (isSupabaseDataEnabled()) return supabaseBadges.getUserBadges(userId);
+
   try {
     const userBadgeFilter: Record<string, string> = {
       [`filter[${UB_FIELDS.user}][_eq]`]: String(userId),
@@ -143,6 +147,8 @@ export function getRoleBadgeImage(roleName: string): string | null {
  * v2: reads directus_role_id (UUID) then resolves through directus_roles.name.
  */
 export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<string, string | null>> {
+  if (isSupabaseDataEnabled()) return supabaseBadges.getRoleBadgesForNicks(nicks);
+
   const result: Record<string, string | null> = {};
   if (!nicks.length) return result;
 
@@ -211,6 +217,8 @@ export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<str
  * Also ensures they have the "member" badge.
  */
 export async function ensureRoleBadge(userId: number, roleName: string): Promise<void> {
+  if (isSupabaseDataEnabled()) return supabaseBadges.ensureRoleBadge(userId, roleName);
+
   try {
     const key = roleName.toLowerCase().trim();
 

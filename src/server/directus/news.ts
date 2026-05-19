@@ -143,6 +143,8 @@ async function v2NewsCommentToLegacy(row: V2NewsCommentRow): Promise<NewsComment
 /* ------------------------------------------------------------------ */
 
 export async function adminListNews(limit = 500): Promise<NewsRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminListNews(limit);
+
   const rows = (await directusService.request(
     rItems(TABLES.articles, {
       limit,
@@ -164,6 +166,8 @@ export async function adminCreateNews(data: {
   data?: string | null;
   status?: string | null;
 }): Promise<NewsRecord> {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminCreateNews(data);
+
   if (USE_V2) {
     const authorId = await resolveAuthorId(data.autor);
     const payload: Record<string, unknown> = {
@@ -203,6 +207,8 @@ export async function adminUpdateNews(
     status: string | null;
   }>,
 ): Promise<NewsRecord> {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminUpdateNews(id, patch);
+
   if (USE_V2) {
     const mapped: Record<string, unknown> = {};
     if ('titulo' in patch) mapped.title = patch.titulo;
@@ -219,10 +225,14 @@ export async function adminUpdateNews(
 }
 
 export async function adminDeleteNews(id: number) {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminDeleteNews(id);
+
   return directusService.request(dItem(TABLES.articles, id));
 }
 
 export async function listNewsByAuthorService(author: string, limit = 30): Promise<NewsRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.listNewsByAuthorService(author, limit);
+
   if (!author) return [];
 
   if (USE_V2) {
@@ -255,6 +265,8 @@ export async function listNewsByAuthorService(author: string, limit = 30): Promi
 }
 
 export async function adminListNewsComments(limit = 500, newsId?: number): Promise<NewsCommentRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminListNewsComments(limit, newsId);
+
   try {
     const params: Record<string, string> = {
       limit: String(limit),
@@ -277,6 +289,8 @@ export async function adminUpdateNewsComment(
   id: number,
   patch: Partial<{ comentario: string; autor: string | null; data: string | null; status: string | null }>,
 ): Promise<NewsCommentRecord> {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminUpdateNewsComment(id, patch);
+
   if (USE_V2) {
     const mapped: Record<string, unknown> = {};
     if ('comentario' in patch) mapped.content = patch.comentario;
@@ -290,6 +304,8 @@ export async function adminUpdateNewsComment(
 }
 
 export async function adminDeleteNewsComment(id: number) {
+  if (isSupabaseDataEnabled()) return supabaseNews.adminDeleteNewsComment(id);
+
   return directusService.request(dItem(TABLES.articleComments, id));
 }
 

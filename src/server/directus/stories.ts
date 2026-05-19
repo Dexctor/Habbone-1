@@ -16,6 +16,7 @@ import { uploadDirectusAsset } from './assets';
 import type { StoryRecord } from './types';
 import { parseTimestamp } from '@/lib/date-utils';
 import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import { uploadSupabaseObject } from '@/server/supabase/storage';
 import * as supabaseStories from '@/server/supabase/stories';
 
 const TABLE = TABLES.stories;
@@ -64,6 +65,15 @@ export async function uploadFileToDirectus(
   mimeType: string,
 ): Promise<{ id: string }> {
   const safeName = filename?.trim() || `story-${Date.now()}`;
+  if (isSupabaseDataEnabled()) {
+    const uploaded = await uploadSupabaseObject({
+      file,
+      filename: safeName,
+      mimeType,
+      prefix: 'stories',
+    });
+    return { id: uploaded.url };
+  }
   return uploadDirectusAsset(file, safeName, mimeType, { folderId: STORIES_FOLDER_ID });
 }
 

@@ -50,6 +50,136 @@ export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
   return rows.map(mapSupabaseNews);
 }
 
+export async function adminListNews(limit = 500): Promise<NewsRecord[]> {
+  const rows = await queryRows<SupabaseNewsRow>(
+    `${articleSelectSql()}
+     order by a.published_at desc nulls last, a.id desc
+     limit $1`,
+    [limit],
+  );
+  return rows.map(mapSupabaseNews);
+}
+
+export async function adminCreateNews(data: {
+  titulo: string;
+  descricao?: string | null;
+  imagem?: string | null;
+  noticia: string;
+  autor?: string | null;
+  data?: string | null;
+  status?: string | null;
+}): Promise<NewsRecord> {
+  const row = await queryOne<SupabaseNewsRow>(
+    `with author_row as (
+       select id from ${tableName('users')} where lower(nick) = lower($5) limit 1
+     )
+     insert into ${tableName('articles')} (title, summary, cover_image, body, author, status, published_at)
+     values ($1, $2, $3, $4, (select id from author_row), coalesce($6, 'published'), coalesce($7::timestamp, now()))
+     returning
+       id,
+       title,
+       summary,
+       cover_image,
+       body,
+       (select nick from ${tableName('users')} where id = author) as author_nick,
+       published_at,
+       status`,
+    [
+      data.titulo,
+      data.descricao ?? null,
+      data.imagem ?? null,
+      data.noticia,
+      data.autor ?? '',
+      data.status ?? 'published',
+      data.data ? new Date(Number(data.data) > 1e11 ? Number(data.data) : Number(data.data) * 1000).toISOString() : null,
+    ],
+  );
+  if (!row) throw new Error('NEWS_CREATE_FAILED');
+  return mapSupabaseNews(row);
+}
+
+export async function adminUpdateNews(
+  id: number,
+  patch: Partial<{
+    titulo: string;
+    descricao: string | null;
+    imagem: string | null;
+    noticia: string;
+    autor: string | null;
+    data: string | null;
+    status: string | null;
+  }>,
+): Promise<NewsRecord> {
+  const values: unknown[] = [id];
+  const assignments: string[] = [];
+  if ('titulo' in patch) {
+    values.push(patch.titulo ?? '');
+    assignments.push(`title = $${values.length}`);
+  }
+  if ('descricao' in patch) {
+    values.push(patch.descricao ?? null);
+    assignments.push(`summary = $${values.length}`);
+  }
+  if ('imagem' in patch) {
+    values.push(patch.imagem ?? null);
+    assignments.push(`cover_image = $${values.length}`);
+  }
+  if ('noticia' in patch) {
+    values.push(patch.noticia ?? '');
+    assignments.push(`body = $${values.length}`);
+  }
+  if ('autor' in patch) {
+    values.push(patch.autor ?? '');
+    assignments.push(`author = (select id from ${tableName('users')} where lower(nick) = lower($${values.length}) limit 1)`);
+  }
+  if ('data' in patch) {
+    const raw = Number(patch.data);
+    values.push(Number.isFinite(raw) && raw > 0 ? new Date(raw > 1e11 ? raw : raw * 1000).toISOString() : null);
+    assignments.push(`published_at = $${values.length}`);
+  }
+  if ('status' in patch) {
+    values.push(patch.status ?? null);
+    assignments.push(`status = $${values.length}`);
+  }
+
+  if (assignments.length === 0) return getPublicNewsById(id);
+
+  const row = await queryOne<SupabaseNewsRow>(
+    `update ${tableName('articles')}
+     set ${assignments.join(', ')}
+     where id = $1
+     returning
+       id,
+       title,
+       summary,
+       cover_image,
+       body,
+       (select nick from ${tableName('users')} where id = author) as author_nick,
+       published_at,
+       status`,
+    values,
+  );
+  if (!row) throw new Error('NEWS_NOT_FOUND');
+  return mapSupabaseNews(row);
+}
+
+export async function adminDeleteNews(id: number): Promise<void> {
+  await queryRows(`delete from ${tableName('articles')} where id = $1`, [id]);
+}
+
+export async function listNewsByAuthorService(author: string, limit = 30): Promise<NewsRecord[]> {
+  const safeAuthor = String(author || '').trim();
+  if (!safeAuthor) return [];
+  const rows = await queryRows<SupabaseNewsRow>(
+    `${articleSelectSql()}
+     where lower(u.nick) = lower($1)
+     order by a.published_at desc nulls last, a.id desc
+     limit $2`,
+    [safeAuthor, limit],
+  );
+  return rows.map(mapSupabaseNews);
+}
+
 export async function getPublicNewsById(id: number): Promise<NewsRecord> {
   const row = await queryOne<SupabaseNewsRow>(
     `${articleSelectSql()} where a.id = $1 limit 1`,
@@ -86,6 +216,71 @@ export async function getPublicNewsComments(newsId: number): Promise<NewsComment
     [newsId],
   );
   return rows.map(mapSupabaseNewsComment);
+}
+
+export async function adminListNewsComments(limit = 500, newsId?: number): Promise<NewsCommentRecord[]> {
+  const rows = await queryRows<SupabaseNewsCommentRow>(
+    `select
+       c.id,
+       c.article,
+       c.content,
+       u.nick as author_nick,
+       c.created_at,
+       c.status
+     from ${tableName('article_comments')} c
+     left join ${tableName('users')} u on u.id = c.author
+     ${newsId ? 'where c.article = $2' : ''}
+     order by c.created_at desc nulls last, c.id desc
+     limit $1`,
+    newsId ? [limit, newsId] : [limit],
+  );
+  return rows.map(mapSupabaseNewsComment);
+}
+
+export async function adminUpdateNewsComment(
+  id: number,
+  patch: Partial<{ comentario: string; autor: string | null; data: string | null; status: string | null }>,
+): Promise<NewsCommentRecord> {
+  const values: unknown[] = [id];
+  const assignments: string[] = [];
+  if ('comentario' in patch) {
+    values.push(patch.comentario ?? '');
+    assignments.push(`content = $${values.length}`);
+  }
+  if ('autor' in patch) {
+    values.push(patch.autor ?? '');
+    assignments.push(`author = (select id from ${tableName('users')} where lower(nick) = lower($${values.length}) limit 1)`);
+  }
+  if ('data' in patch) {
+    const raw = Number(patch.data);
+    values.push(Number.isFinite(raw) && raw > 0 ? new Date(raw > 1e11 ? raw : raw * 1000).toISOString() : null);
+    assignments.push(`created_at = $${values.length}`);
+  }
+  if ('status' in patch) {
+    values.push(patch.status ?? null);
+    assignments.push(`status = $${values.length}`);
+  }
+  if (assignments.length === 0) throw new Error('NEWS_COMMENT_NO_PATCH');
+
+  const row = await queryOne<SupabaseNewsCommentRow>(
+    `update ${tableName('article_comments')}
+     set ${assignments.join(', ')}
+     where id = $1
+     returning
+       id,
+       article,
+       content,
+       (select nick from ${tableName('users')} where id = author) as author_nick,
+       created_at,
+       status`,
+    values,
+  );
+  if (!row) throw new Error('NEWS_COMMENT_NOT_FOUND');
+  return mapSupabaseNewsComment(row);
+}
+
+export async function adminDeleteNewsComment(id: number): Promise<void> {
+  await queryRows(`delete from ${tableName('article_comments')} where id = $1`, [id]);
 }
 
 export async function createNewsComment(input: {

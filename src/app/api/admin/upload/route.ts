@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
 import { getDirectusAssetUrl, uploadDirectusAsset } from '@/server/directus/assets';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import { uploadSupabaseObject } from '@/server/supabase/storage';
 import { fileFromValidatedUpload, validateAdminImageUpload } from '@/server/upload-policy';
 
 /**
@@ -27,6 +29,16 @@ export const POST = withAdmin(async (req) => {
     }
 
     const { filename, file: safeFile } = fileFromValidatedUpload(file, validation, `shop-${Date.now()}.png`);
+    if (isSupabaseDataEnabled()) {
+      const uploaded = await uploadSupabaseObject({
+        file: safeFile,
+        filename,
+        mimeType: validation.detectedMime,
+        prefix: 'admin',
+      });
+      return NextResponse.json({ ok: true, url: uploaded.url });
+    }
+
     const uploaded = await uploadDirectusAsset(safeFile, filename, validation.detectedMime);
     const id = String(uploaded?.id || '').trim();
 

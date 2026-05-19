@@ -2,6 +2,8 @@ import 'server-only';
 
 import { TABLES, USE_V2 } from './tables';
 import { directusFetch } from './fetch';
+import { isSupabaseDataEnabled, tableName } from '@/server/supabase/config';
+import { queryRows } from '@/server/supabase/db';
 import {
   LEGACY_HISTORY_FIELDS,
   V2_HISTORY_FIELDS,
@@ -76,6 +78,51 @@ async function fetchHistoryByFilter(
 
 export async function getAdminUserHistory(userId: string): Promise<UserHistory> {
   const cleanId = cleanLegacyUserId(userId);
+
+  if (isSupabaseDataEnabled()) {
+    const [rawTopics, rawArticles, rawForumComments, rawArticleComments] = await Promise.all([
+      queryRows<HistoryRow>(
+        `select id, title, body, cover_image, author, created_at, views, pinned, locked, status, category
+         from ${tableName('forum_topics')}
+         where author = $1
+         order by created_at desc nulls last
+         limit 50`,
+        [Number(cleanId)],
+      ),
+      queryRows<HistoryRow>(
+        `select id, title, summary, cover_image, body, author, published_at, status
+         from ${tableName('articles')}
+         where author = $1
+         order by published_at desc nulls last
+         limit 50`,
+        [Number(cleanId)],
+      ),
+      queryRows<HistoryRow>(
+        `select id, topic, content, author, created_at, status
+         from ${tableName('forum_comments')}
+         where author = $1
+         order by created_at desc nulls last
+         limit 50`,
+        [Number(cleanId)],
+      ),
+      queryRows<HistoryRow>(
+        `select id, article, content, author, created_at, status
+         from ${tableName('article_comments')}
+         where author = $1
+         order by created_at desc nulls last
+         limit 50`,
+        [Number(cleanId)],
+      ),
+    ]);
+
+    return {
+      topics: rawTopics.map((row) => normalizeHistoryRow(row, 'topic' satisfies HistoryKind, true)),
+      articles: rawArticles.map((row) => normalizeHistoryRow(row, 'article' satisfies HistoryKind, true)),
+      forumComments: rawForumComments.map((row) => normalizeHistoryRow(row, 'forumComment' satisfies HistoryKind, true)),
+      newsComments: rawArticleComments.map((row) => normalizeHistoryRow(row, 'articleComment' satisfies HistoryKind, true)),
+      adminLogs: [],
+    };
+  }
 
   if (USE_V2) {
     return fetchHistoryByFilter(

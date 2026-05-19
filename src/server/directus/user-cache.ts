@@ -2,6 +2,8 @@ import 'server-only';
 
 import { directusService, rItems } from './client';
 import { TABLES, USE_V2 } from './tables';
+import { isSupabaseDataEnabled, tableName } from '@/server/supabase/config';
+import { queryRows } from '@/server/supabase/db';
 
 /**
  * In-memory cache mapping users.id <-> users.nick.
@@ -21,6 +23,22 @@ let cache: CacheState | null = null;
 let inflight: Promise<CacheState> | null = null;
 
 async function buildCache(): Promise<CacheState> {
+  if (isSupabaseDataEnabled()) {
+    const rows = await queryRows<{ id: number; nick: string | null }>(
+      `select id, nick from ${tableName('users')} order by id asc limit 5000`,
+    ).catch(() => []);
+    const idToNick = new Map<number, string>();
+    const nickToId = new Map<string, number>();
+    for (const u of rows) {
+      const id = Number(u.id);
+      const nick = String(u.nick || '');
+      if (!id || !nick) continue;
+      idToNick.set(id, nick);
+      nickToId.set(nick.toLowerCase(), id);
+    }
+    return { idToNick, nickToId };
+  }
+
   if (!USE_V2) {
     return { idToNick: new Map(), nickToId: new Map() };
   }
@@ -54,20 +72,20 @@ async function ensureCache(): Promise<CacheState> {
 }
 
 export async function resolveUserId(nick: string | null | undefined): Promise<number | null> {
-  if (!USE_V2 || !nick) return null;
+  if ((!USE_V2 && !isSupabaseDataEnabled()) || !nick) return null;
   const c = await ensureCache();
   return c.nickToId.get(String(nick).toLowerCase()) ?? null;
 }
 
 export async function resolveUserNick(id: number | null | undefined): Promise<string | null> {
-  if (!USE_V2 || !id) return null;
+  if ((!USE_V2 && !isSupabaseDataEnabled()) || !id) return null;
   const c = await ensureCache();
   return c.idToNick.get(Number(id)) ?? null;
 }
 
 /** Batch resolver; returns a map id -> nick for the ids that exist. */
 export async function resolveUserNicks(ids: Array<number | null | undefined>): Promise<Map<number, string>> {
-  if (!USE_V2) return new Map();
+  if (!USE_V2 && !isSupabaseDataEnabled()) return new Map();
   const c = await ensureCache();
   const out = new Map<number, string>();
   for (const id of ids) {

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
 import { getDirectusAssetUrl, uploadDirectusAsset } from '@/server/directus/assets'
+import { isSupabaseDataEnabled } from '@/server/supabase/config'
+import { uploadSupabaseObject } from '@/server/supabase/storage'
 import { fileFromValidatedUpload, validatePublicImageUpload } from '@/server/upload-policy'
 
 export const POST = withAuth(async (req) => {
@@ -17,6 +19,16 @@ export const POST = withAuth(async (req) => {
     }
 
     const { filename, file: safeFile } = fileFromValidatedUpload(file, validation, `image-${Date.now()}`)
+    if (isSupabaseDataEnabled()) {
+      const uploaded = await uploadSupabaseObject({
+        file: safeFile,
+        filename,
+        mimeType: validation.detectedMime,
+        prefix: 'uploads',
+      })
+      return NextResponse.json({ ok: true, url: uploaded.url, id: uploaded.path })
+    }
+
     const uploaded = await uploadDirectusAsset(safeFile, filename, validation.detectedMime)
     const id = String(uploaded?.id || '').trim()
     if (!id) {

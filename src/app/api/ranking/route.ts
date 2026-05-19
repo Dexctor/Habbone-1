@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { directusFetch } from '@/server/directus/fetch'
 import { TABLES, USE_V2 } from '@/server/directus/tables'
 import { resolveUserNick } from '@/server/directus/user-cache'
+import { isSupabaseDataEnabled, tableName } from '@/server/supabase/config'
+import { queryRows } from '@/server/supabase/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +51,63 @@ async function fetchTopCoins(limit: number): Promise<RankingEntry[]> {
   }
 }
 
+async function fetchSupabaseRanking(limit: number): Promise<RankingResponse> {
+  const [comments, articles, topics, coins] = await Promise.all([
+    queryRows<{ nick: string; score: string }>(
+      `select u.nick, count(*)::text as score
+       from (
+         select author from ${tableName('forum_comments')}
+         union all
+         select author from ${tableName('article_comments')}
+       ) c
+       join ${tableName('users')} u on u.id = c.author
+       where u.nick is not null
+       group by u.nick
+       order by count(*) desc, u.nick asc
+       limit $1`,
+      [limit],
+    ),
+    queryRows<{ nick: string; score: string }>(
+      `select u.nick, count(*)::text as score
+       from ${tableName('articles')} a
+       join ${tableName('users')} u on u.id = a.author
+       where u.nick is not null
+       group by u.nick
+       order by count(*) desc, u.nick asc
+       limit $1`,
+      [limit],
+    ),
+    queryRows<{ nick: string; score: string }>(
+      `select u.nick, count(*)::text as score
+       from ${tableName('forum_topics')} t
+       join ${tableName('users')} u on u.id = t.author
+       where u.nick is not null
+       group by u.nick
+       order by count(*) desc, u.nick asc
+       limit $1`,
+      [limit],
+    ),
+    queryRows<{ nick: string; score: number | string }>(
+      `select nick, coins as score
+       from ${tableName('users')}
+       where nick is not null and coalesce(coins, 0) > 0
+       order by coins desc, nick asc
+       limit $1`,
+      [limit],
+    ),
+  ]);
+
+  const mapRows = (rows: Array<{ nick: string; score: string | number }>) =>
+    rows.map((row) => ({ nick: String(row.nick), score: Number(row.score) || 0 }));
+
+  return {
+    comments: mapRows(comments),
+    articles: mapRows(articles),
+    topics: mapRows(topics),
+    coins: mapRows(coins),
+  };
+}
+
 async function countByAuthor(authors: Array<string | number>, limit: number): Promise<RankingEntry[]> {
   // v2: resolve ids → nicks first
   let nicks: string[];
@@ -79,6 +138,10 @@ async function countByAuthor(authors: Array<string | number>, limit: number): Pr
 export async function GET() {
   try {
     const TOP = 10;
+    if (isSupabaseDataEnabled()) {
+      return NextResponse.json(await fetchSupabaseRanking(TOP));
+    }
+
     const [forumComments, newsComments, articles, topics, coins] = await Promise.all([
       fetchAllAuthors(TABLES.forumComments),
       fetchAllAuthors(TABLES.articleComments),

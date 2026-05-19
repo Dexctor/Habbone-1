@@ -127,6 +127,8 @@ function yesNoToBool(v: unknown): boolean {
 /* ------------------------------------------------------------------ */
 
 export async function adminListForumTopics(limit = 200): Promise<ForumTopicRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminListForumTopics(limit);
+
   const rows = (await directusService.request(
     rItems(TABLES.forumTopics, { limit, sort: TOPIC_LIST_SORT, fields: TOPIC_FIELDS } as any),
   )) as any[];
@@ -139,6 +141,8 @@ export async function listForumTopicsWithCategories(limit = 50): Promise<ForumTo
 }
 
 export async function listForumTopicsByAuthorService(author: string, limit = 30): Promise<ForumTopicRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.listForumTopicsByAuthorService(author, limit);
+
   if (!author) return [];
 
   const filter: Record<string, unknown> = USE_V2
@@ -241,6 +245,8 @@ export async function adminUpdateForumTopic(
     status: string | null;
   }>,
 ): Promise<ForumTopicRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminUpdateForumTopic(id, patch);
+
   if (USE_V2) {
     const mapped: Record<string, unknown> = {};
     if ('titulo' in patch) mapped.title = patch.titulo;
@@ -260,6 +266,8 @@ export async function adminUpdateForumTopic(
 }
 
 export async function adminDeleteForumTopic(id: number) {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminDeleteForumTopic(id);
+
   return directusService.request(dItem(TABLES.forumTopics, id));
 }
 
@@ -268,6 +276,8 @@ export async function adminDeleteForumTopic(id: number) {
 /* ------------------------------------------------------------------ */
 
 export async function adminListForumPosts(limit = 500): Promise<ForumPostRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminListForumPosts() as Promise<ForumPostRecord[]>;
+
   if (USE_V2) return [];
   return directusService.request(
     rItems(TABLES.forumPosts, {
@@ -285,6 +295,8 @@ export async function adminCreateForumPost(data: {
   data?: string | null;
   status?: string | null;
 }): Promise<ForumPostRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminCreateForumPost() as Promise<ForumPostRecord>;
+
   if (USE_V2) {
     throw new Error('forum_posts is deprecated in v2 — use forum comments instead');
   }
@@ -302,6 +314,8 @@ export async function adminUpdateForumPost(
   id: number,
   patch: Partial<{ conteudo: string; autor: string | null; data: string | null; status: string | null }>,
 ): Promise<ForumPostRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminUpdateForumPost() as Promise<ForumPostRecord>;
+
   if (USE_V2) {
     throw new Error('forum_posts is deprecated in v2');
   }
@@ -309,6 +323,8 @@ export async function adminUpdateForumPost(
 }
 
 export async function adminDeleteForumPost(id: number) {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminDeleteForumPost();
+
   if (USE_V2) return { id };
   return directusService.request(dItem(TABLES.forumPosts, id));
 }
@@ -329,6 +345,8 @@ export function getPublicPostById(id: number): Promise<ForumPostRecord> {
 /* ------------------------------------------------------------------ */
 
 export async function adminListForumComments(limit = 500, topicId?: number): Promise<ForumCommentRecord[]> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminListForumComments(limit, topicId);
+
   try {
     const params: Record<string, string> = {
       limit: String(limit),
@@ -349,6 +367,8 @@ export async function adminUpdateForumComment(
   id: number,
   patch: Partial<{ comentario: string; autor: string | null; data: string | null; status: string | null }>,
 ): Promise<ForumCommentRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminUpdateForumComment(id, patch);
+
   if (USE_V2) {
     const mapped: Record<string, unknown> = {};
     if ('comentario' in patch) mapped.content = patch.comentario;
@@ -363,6 +383,8 @@ export async function adminUpdateForumComment(
 }
 
 export async function adminDeleteForumComment(id: number) {
+  if (isSupabaseDataEnabled()) return supabaseForum.adminDeleteForumComment(id);
+
   return directusService.request(dItem(TABLES.forumComments, id));
 }
 

@@ -5,6 +5,8 @@
 
 import { directusService as directus, rItems, cItem } from "@/server/directus/client";
 import { aggregate } from "@directus/sdk";
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseAdminLogs from '@/server/supabase/admin-logs';
 
 export type AdminAction =
     | "user.ban"
@@ -41,6 +43,8 @@ interface AdminLogRow {
  * Log an admin action
  */
 export async function logAdminAction(entry: Omit<AdminLogEntry, "id" | "created_at">): Promise<void> {
+    if (isSupabaseDataEnabled()) return supabaseAdminLogs.logAdminAction(entry);
+
     try {
         await directus.request(
             cItem("admin_logs", {
@@ -70,6 +74,8 @@ export async function getAdminLogs(options: {
     fromDate?: string;
     toDate?: string;
 }): Promise<{ data: AdminLogEntry[]; total: number }> {
+    if (isSupabaseDataEnabled()) return supabaseAdminLogs.getAdminLogs(options);
+
     const { page = 1, limit = 50, action, adminId, targetType, fromDate, toDate } = options;
 
     const filter: Record<string, unknown> = {};
@@ -132,6 +138,8 @@ export async function getLogStats(days: number = 7): Promise<{
     byAction: Record<string, number>;
     byDay: { date: string; count: number }[];
 }> {
+    if (isSupabaseDataEnabled()) return supabaseAdminLogs.getLogStats(days);
+
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - days);
     const fromDateStr = fromDate.toISOString();

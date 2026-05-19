@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { HabboUserCore } from '@/lib/habbo';
 import { hashPassword } from '@/server/directus/security';
-import type { HabboVerificationStatus } from '@/server/directus/types';
+import type { HabboVerificationStatus, LegacyUserLite } from '@/server/directus/types';
 import { summarizeUserStatusBuckets, type AdminUserStatusStats } from '@/server/directus/users-core';
 import { queryOne, queryRows } from './db';
 import { tableName } from './config';
@@ -76,6 +76,19 @@ export async function getUserById(userId: number): Promise<LegacyCompatibleUserR
      where id = $1
      limit 1`,
     [userId],
+  );
+  return row ? mapSupabaseUserToLegacy(row) : null;
+}
+
+export async function getLegacyUserByEmail(email?: string | null) {
+  const e = (email || '').trim();
+  if (!e) return null;
+  const row = await queryOne<SupabaseUserRow>(
+    `select ${USER_SELECT}
+     from ${tableName('users')}
+     where lower(email) = lower($1)
+     limit 1`,
+    [e],
   );
   return row ? mapSupabaseUserToLegacy(row) : null;
 }
@@ -220,6 +233,120 @@ export async function getUserMoedas(userId: number): Promise<number> {
 
 function cleanLegacyUserId(id: string) {
   return id.startsWith('legacy:') ? id.split(':')[1] : id;
+}
+
+function mapAdminLegacyUser(row: SupabaseUserRow): LegacyUserLite {
+  return {
+    id: row.id ?? '',
+    email: row.email ?? null,
+    nick: row.nick ?? null,
+    status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
+    role: null,
+    directus_role_id: row.directus_role_id ?? null,
+    banido: row.banned ? 's' : 'n',
+    ativado: row.active ? 's' : 'n',
+  };
+}
+
+export async function searchLegacyUsuarios(
+  q?: string,
+  limit = 20,
+  page = 1,
+  filters?: { roleName?: string | null; roleId?: string | null; status?: string | null },
+): Promise<{ items: LegacyUserLite[]; total: number }> {
+  const values: unknown[] = [];
+  const where: string[] = [];
+  const search = String(q || '').trim();
+  if (search) {
+    values.push(`%${search}%`);
+    where.push(`(nick ilike $${values.length} or email ilike $${values.length})`);
+  }
+  if (filters?.roleId) {
+    values.push(filters.roleId);
+    where.push(`directus_role_id = $${values.length}`);
+  }
+  if (filters?.status === 'suspended') {
+    where.push('banned = true');
+  } else if (filters?.status === 'active') {
+    where.push('coalesce(banned, false) = false');
+    where.push('active = true');
+  } else if (filters?.status === 'inactive') {
+    where.push('active = false');
+  }
+
+  values.push(limit, Math.max(0, page - 1) * limit);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+  const whereSql = where.length ? `where ${where.join(' and ')}` : '';
+
+  const rows = await queryRows<SupabaseUserRow>(
+    `select ${USER_SELECT}
+     from ${tableName('users')}
+     ${whereSql}
+     order by created_at desc nulls last, id desc
+     limit $${limitParam}
+     offset $${offsetParam}`,
+    values,
+  );
+  const countValues = values.slice(0, -2);
+  const countRow = await queryOne<{ count: string }>(
+    `select count(*)::text as count from ${tableName('users')} ${whereSql}`,
+    countValues,
+  );
+  return {
+    items: rows.map(mapAdminLegacyUser),
+    total: Number(countRow?.count) || rows.length,
+  };
+}
+
+export async function setLegacyUserRole(userId: number | string) {
+  return { id: userId };
+}
+
+export async function setLegacyUserRoleId(userId: number | string, directusRoleId: string) {
+  return queryOne<SupabaseUserRow>(
+    `update ${tableName('users')}
+     set directus_role_id = $2
+     where id = $1
+     returning ${USER_SELECT}`,
+    [userId, directusRoleId],
+  );
+}
+
+export async function setLegacyUserBanStatus(userId: number | string, banned: boolean) {
+  return queryOne<SupabaseUserRow>(
+    `update ${tableName('users')}
+     set banned = $2, active = $3
+     where id = $1
+     returning ${USER_SELECT}`,
+    [userId, banned, !banned],
+  );
+}
+
+export async function deleteLegacyUser(userId: number | string) {
+  return queryOne<{ id: number }>(
+    `delete from ${tableName('users')} where id = $1 returning id`,
+    [userId],
+  );
+}
+
+export async function adminListUsers(limit = 500) {
+  const rows = await queryRows<SupabaseUserRow>(
+    `select ${USER_SELECT}
+     from ${tableName('users')}
+     order by created_at desc nulls last, id desc
+     limit $1`,
+    [limit],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    nick: row.nick,
+    email: row.email,
+    ativado: row.active ? 's' : 'n',
+    banido: row.banned ? 's' : 'n',
+    status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
+    data_criacao: row.created_at ? Math.floor(Date.parse(String(row.created_at)) / 1000) : null,
+  }));
 }
 
 export async function getAdminUserCoinsSnapshot(userId: string): Promise<{

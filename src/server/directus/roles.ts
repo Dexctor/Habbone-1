@@ -4,6 +4,8 @@ import { directusService, cItem, uItem } from './client';
 import type { DirectusRoleLite, DirectusUserLite } from './types';
 import { TABLES } from './tables';
 import { directusCount, directusFetch } from './fetch';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseRoles from '@/server/supabase/roles';
 
 type DirectusRolePayload = {
   name: string;
@@ -122,6 +124,8 @@ async function resolveRoleAccess(roleRaw: any): Promise<DirectusRoleLite> {
 // ── Public API ─────────────────────────────────────────────────────
 
 export async function listRoles(): Promise<DirectusRoleLite[]> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.listRoles();
+
   try {
     const json = await directusFetch<{ data?: unknown[] }>('/roles', {
       params: {
@@ -138,6 +142,8 @@ export async function listRoles(): Promise<DirectusRoleLite[]> {
 }
 
 export async function createRole(role: CreateRoleInput): Promise<DirectusRoleLite> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.createRole(role);
+
   const payload: DirectusRolePayload = {
     name: role.name,
     description: role.description ?? null,
@@ -149,6 +155,8 @@ export async function createRole(role: CreateRoleInput): Promise<DirectusRoleLit
 }
 
 export async function updateRole(roleId: string, patch: UpdateRoleInput): Promise<DirectusRoleLite> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.updateRole(roleId, patch);
+
   const payload: Partial<DirectusRolePayload> = {};
   if (patch.name !== undefined) payload.name = patch.name;
   if (patch.description !== undefined) payload.description = patch.description ?? null;
@@ -159,6 +167,8 @@ export async function updateRole(roleId: string, patch: UpdateRoleInput): Promis
 }
 
 export async function getRoleMemberCounts(): Promise<{ counts: Record<string, number>; withoutRole: number }> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.getRoleMemberCounts();
+
   const json = await directusFetch<{
     data?: Array<{ directus_role_id?: string | null; count?: { id?: number } }>;
   }>(`/items/${encodeURIComponent(TABLES.users)}`, {
@@ -185,10 +195,14 @@ export async function getRoleMemberCounts(): Promise<{ counts: Record<string, nu
 }
 
 export async function countRoleMembers(roleId: string): Promise<number> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.countRoleMembers(roleId);
+
   return directusCount(TABLES.users, { 'filter[directus_role_id][_eq]': roleId });
 }
 
 export async function deleteRole(roleId: string): Promise<boolean> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.deleteRole(roleId);
+
   try {
     await directusFetch(`/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' });
     return true;
@@ -198,6 +212,8 @@ export async function deleteRole(roleId: string): Promise<boolean> {
 }
 
 export async function getRoleById(roleId: string): Promise<DirectusRoleLite | null> {
+  if (isSupabaseDataEnabled()) return supabaseRoles.getRoleById(roleId);
+
   try {
     const json = await directusFetch<{ data?: unknown }>(`/roles/${encodeURIComponent(roleId)}`, {
       params: {
@@ -214,6 +230,8 @@ export async function getRoleById(roleId: string): Promise<DirectusRoleLite | nu
 
 /** @deprecated Use setLegacyUserRoleId from legacy-users.ts instead */
 export async function setUserRole(userId: string, roleId: string) {
+  if (isSupabaseDataEnabled()) return supabaseRoles.setUserRole(userId, roleId);
+
   return directusService.request(
     uItem('directus_users', userId, {
       role: roleId,

@@ -4,7 +4,8 @@ import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
 import { getDirectusAssetUrl, uploadDirectusAsset } from '@/server/directus/assets';
-import { isThemeStoredInDirectus, themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
+import { isThemeStoredInDirectus, isThemeStoredInSupabase, themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
+import { uploadSupabaseObject } from '@/server/supabase/storage';
 import { extensionForMime, fileFromValidatedUpload, validateThemeImageUpload } from '@/server/upload-policy';
 import { invalidateTheme } from '@/server/cache-policy';
 
@@ -33,6 +34,22 @@ async function uploadToDirectusAssets(file: File, buffer: Buffer, detectedMime: 
   return getDirectusAssetUrl(id);
 }
 
+async function uploadToSupabaseStorage(file: File, buffer: Buffer, detectedMime: string, target: string): Promise<string> {
+  const fallbackExt = extensionForMime(detectedMime);
+  const { filename, file: safeFile } = fileFromValidatedUpload(
+    file,
+    { ok: true, detectedMime, buffer },
+    `theme-${target}-${Date.now()}.${fallbackExt}`,
+  );
+  const uploaded = await uploadSupabaseObject({
+    file: safeFile,
+    filename,
+    mimeType: detectedMime,
+    prefix: 'theme',
+  });
+  return uploaded.url;
+}
+
 export const POST = withAdmin(async (req) => {
   const formData = await req.formData().catch(() => null);
   if (!formData) {
@@ -53,7 +70,9 @@ export const POST = withAdmin(async (req) => {
   }
 
   try {
-    const uploadedUrl = isThemeStoredInDirectus()
+    const uploadedUrl = isThemeStoredInSupabase()
+      ? await uploadToSupabaseStorage(file, validation.buffer, validation.detectedMime, target)
+      : isThemeStoredInDirectus()
       ? await uploadToDirectusAssets(file, validation.buffer, validation.detectedMime)
       : await uploadToLocalPublicDir(target, validation.buffer, validation.detectedMime);
 

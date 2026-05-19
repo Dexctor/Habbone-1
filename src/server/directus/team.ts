@@ -4,6 +4,8 @@ import { USERS_TABLE } from './client';
 import { directusFetch } from './fetch';
 import { parseTimestamp } from '@/lib/date-utils';
 import type { TeamMember } from './types';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabaseTeam from '@/server/supabase/team';
 
 type LegacyTeamRow = {
   id?: number | string | null;
@@ -66,6 +68,8 @@ const ROLE_ORDER: Record<string, number> = {
 };
 
 export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Record<string, TeamMember[]>> {
+  if (isSupabaseDataEnabled()) return supabaseTeam.listTeamMembersByRoles(_roleNames);
+
   // Fetch all Directus roles dynamically
   const roles = await fetchRoles();
   const visibleRoles = roles.filter(r => !HIDDEN_ROLES.has(r.name.toLowerCase()));

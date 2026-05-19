@@ -88,6 +88,13 @@ Cinquième tranche :
 - stories côté lecture/écriture DB ;
 - upload de fichiers stories encore conservé sur Directus pour éviter de changer le flux fichier avant validation du bucket média.
 
+Sixième tranche :
+
+- uploads publics/admin/stories/theme vers Supabase Storage quand `DATA_BACKEND=supabase` ;
+- CRUD admin news/forum ;
+- rôles applicatifs via `app_roles` ;
+- team, badges, ranking, pseudo changes et logs admin via Supabase.
+
 Avant d'activer `DATA_BACKEND=supabase`, appliquer aussi :
 
 ```powershell
@@ -97,4 +104,16 @@ docker run --rm `
   -v "${PWD}:/repo" `
   postgres:17 `
   psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/001-users-twitter.sql
+
+docker run --rm `
+  -v "${PWD}:/repo" `
+  postgres:17 `
+  psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/002-app-roles.sql
+
+docker run --rm `
+  -v "${PWD}:/repo" `
+  postgres:17 `
+  psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/003-pseudo-changes.sql
 ```
+
+Important : si les utilisateurs ont deja des `directus_role_id` venant de Directus, il faut soit importer les anciens UUID dans `app_roles`, soit reassocier les utilisateurs aux nouveaux roles depuis le panel admin avant de couper Directus.

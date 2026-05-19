@@ -6,6 +6,8 @@ import { directusUrl, serviceToken } from '@/server/directus/client';
 import { TABLES } from '@/server/directus/tables';
 import { getRoleById } from '@/server/directus/roles';
 import { cleanUserId, decideGuard, isFounderRoleName } from '@/server/admin-guards-core';
+import { isSupabaseDataEnabled, tableName } from '@/server/supabase/config';
+import { queryOne } from '@/server/supabase/db';
 
 const USERS_TABLE = TABLES.users;
 
@@ -15,6 +17,19 @@ export type AdminGuardResult =
 
 async function fetchTarget(userId: string) {
   const cleanId = cleanUserId(userId);
+  if (isSupabaseDataEnabled()) {
+    const row = await queryOne<{ id: number; nick: string | null; directus_role_id: string | null }>(
+      `select id, nick, directus_role_id from ${tableName('users')} where id = $1 limit 1`,
+      [cleanId],
+    );
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      nick: String(row.nick || ''),
+      roleId: row.directus_role_id ? String(row.directus_role_id) : null,
+    };
+  }
+
   const res = await fetch(
     `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}?fields=id,nick,directus_role_id`,
     {

@@ -4,6 +4,8 @@ import { directusService as directus, rItems, cItem, uItem } from './client';
 import { directusFetch } from './fetch';
 import { TABLES, USE_V2 } from './tables';
 import { resolveUserId, isoToUnixSeconds } from './user-cache';
+import { isSupabaseDataEnabled } from '@/server/supabase/config';
+import * as supabasePseudoChanges from '@/server/supabase/pseudo-changes';
 
 const TABLE = TABLES.pseudoChanges;
 const USERS_TABLE = TABLES.users;
@@ -85,6 +87,8 @@ export async function syncHabboName(
     previousNick?: string;
   },
 ): Promise<{ changed: boolean; oldNick?: string } | null> {
+  if (isSupabaseDataEnabled()) return supabasePseudoChanges.syncHabboName(uniqueId, currentNick, options);
+
   try {
     const cleanId = String(uniqueId || '').trim();
     const cleanNick = String(currentNick || '').trim();
@@ -212,6 +216,8 @@ export async function listPseudoChanges(options?: {
   limit?: number;
   page?: number;
 }): Promise<{ data: PseudoChange[]; total: number }> {
+  if (isSupabaseDataEnabled()) return supabasePseudoChanges.listPseudoChanges(options);
+
   const { hotel, limit = 50, page = 1 } = options || {};
   try {
     const filter: Record<string, unknown> = {};
