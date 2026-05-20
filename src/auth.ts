@@ -10,6 +10,7 @@ import {
   asTrue,
   asFalse,
   tryUpdateHabboSnapshotForUser,
+  getUserMoedas,
 } from '@/server/directus/users';
 import { getRoleById } from '@/server/directus/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
@@ -116,6 +117,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email || null,
           avatar: user.avatar || null,
           missao: user.missao || null,
+          moedas: Number.isFinite(Number(user.moedas)) ? Number(user.moedas) : 0,
           hotel: hotelCode,
           role,
           directusRoleId,
@@ -132,12 +134,19 @@ export const authOptions: NextAuthOptions = {
         token.nick = user.nick;
         token.avatar = user.avatar;
         token.missao = user.missao;
+        token.moedas = user.moedas ?? 0;
         token.hotel = user.hotel ?? 'fr';
         token.role = user.role ?? 'member';
         token.email = user.email ?? null;
         token.directusRoleId = user.directusRoleId ?? null;
         token.directusRoleName = user.directusRoleName ?? null;
         token.directusAdminAccess = user.directusAdminAccess === true;
+      } else if (token.uid && token.moedas === undefined) {
+        try {
+          token.moedas = await getUserMoedas(Number(token.uid));
+        } catch {
+          token.moedas = 0;
+        }
       }
       return token;
     },
@@ -147,6 +156,7 @@ export const authOptions: NextAuthOptions = {
         nick: token.nick,
         avatar: token.avatar,
         missao: token.missao,
+        moedas: token.moedas ?? 0,
         hotel: token.hotel ?? 'fr',
         role: token.role,
         email: token.email,

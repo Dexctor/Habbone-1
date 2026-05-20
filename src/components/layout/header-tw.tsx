@@ -50,7 +50,15 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const habboLiteTtlMs = 30_000
   const moedasTtlMs = 15_000
-  const sessionNick = (session?.user as any)?.nick as string | undefined
+  const sessionUser = session?.user as any
+  const sessionNick = sessionUser?.nick as string | undefined
+  const sessionUserId = sessionUser?.id ? String(sessionUser.id) : ''
+  const sessionCoins = useMemo(() => {
+    const raw = sessionUser?.moedas
+    const value = typeof raw === 'number' ? raw : Number(raw)
+    return Number.isFinite(value) ? value : null
+  }, [sessionUser?.moedas])
+  const moedasCacheKey = sessionUserId ? `moedas:${sessionUserId}` : sessionNick ? `moedas:${sessionNick}` : null
   const onProfilePage = pathname.startsWith('/profile')
   const { data: habboLite } = useHabboProfile(sessionNick || '', {
     lite: true,
@@ -139,11 +147,19 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
   }, [habboLite, onProfilePage])
 
   useEffect(() => {
-    if (status !== 'authenticated' || !sessionNick) return
+    if (status !== 'authenticated') {
+      setCoins(null)
+      return
+    }
+    if (sessionCoins !== null) setCoins(sessionCoins)
+  }, [status, sessionCoins])
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !moedasCacheKey) return
     let cancelled = false
       ; (async () => {
         try {
-          const payload = await cachedValue(`moedas:${sessionNick}`, moedasTtlMs, async () => {
+          const payload = await cachedValue(moedasCacheKey, moedasTtlMs, async () => {
             const response = await fetch('/api/user/moedas', { cache: 'no-store' })
             const json = await response.json().catch(() => null)
             if (!response.ok) {
@@ -156,16 +172,18 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
             const value = typeof (payload as any)?.moedas === 'number' ? (payload as any).moedas : Number((payload as any)?.moedas || 0)
             setCoins(Number.isFinite(value) ? value : null)
           }
-        } catch { }
+        } catch {
+          if (!cancelled && sessionCoins !== null) setCoins(sessionCoins)
+        }
       })()
     return () => { cancelled = true }
-  }, [status, sessionNick])
+  }, [status, moedasCacheKey, sessionCoins])
 
   // Listen for live coins updates (shop purchase, admin coin grant, etc.).
   // The emitter sends `detail.balance` when the new amount is known, otherwise
   // we fall back to a cache invalidation + refetch.
   useEffect(() => {
-    if (typeof window === 'undefined' || !sessionNick) return
+    if (typeof window === 'undefined' || !moedasCacheKey) return
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ balance?: number }>).detail
       if (typeof detail?.balance === 'number') {
@@ -173,7 +191,7 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
         return
       }
       // No explicit balance provided — invalidate the cache and refetch
-      invalidateCache(`moedas:${sessionNick}`)
+      invalidateCache(moedasCacheKey)
       void (async () => {
         try {
           const response = await fetch('/api/user/moedas', { cache: 'no-store' })
@@ -182,12 +200,14 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
             const value = typeof (json as any)?.moedas === 'number' ? (json as any).moedas : Number((json as any)?.moedas || 0)
             setCoins(Number.isFinite(value) ? value : null)
           }
-        } catch { }
+        } catch {
+          if (sessionCoins !== null) setCoins(sessionCoins)
+        }
       })()
     }
     window.addEventListener('habbone:coins', handler)
     return () => window.removeEventListener('habbone:coins', handler)
-  }, [sessionNick])
+  }, [moedasCacheKey, sessionCoins])
 
   const handleLogin = useCallback(async ({ nick, password }: LoginPayload) => {
     const trimmedNick = nick.trim()

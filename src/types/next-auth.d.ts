@@ -8,6 +8,7 @@ declare module 'next-auth' {
     nick: string;
     avatar: string | null;
     missao: string | null;
+    moedas: number;
     hotel: string;
     role: AppRole;
     directusRoleId: string | null;
@@ -21,6 +22,7 @@ declare module 'next-auth' {
       nick: string;
       avatar: string | null;
       missao: string | null;
+      moedas: number;
       hotel: string;
       role: AppRole;
       email: string | null;
@@ -37,6 +39,7 @@ declare module 'next-auth/jwt' {
     nick: string;
     avatar: string | null;
     missao: string | null;
+    moedas: number;
     hotel: string;
     role: AppRole;
     email: string | null;
