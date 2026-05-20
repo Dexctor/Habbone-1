@@ -28,5 +28,6 @@ export async function adminCount(table: string): Promise<number> {
 }
 
 export function adminCountUsers(): Promise<number> {
+  if (isSupabaseDataEnabled()) return adminCount('users');
   return adminCount(TABLES.users);
 }

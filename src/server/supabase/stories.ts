@@ -40,7 +40,7 @@ export async function createStoryRow(input: StoryRowInput): Promise<StoryRecord>
        select id from ${tableName('users')} where lower(nick) = lower($1) limit 1
      )
      insert into ${tableName('stories')} (author, image, title, status, published_at)
-     values ((select id from author_row), $2, $3, $4, case when $4 = 'draft' then null else now() end)
+     values ((select id from author_row), $2, $3, $4::text, case when $4::text = 'draft' then null else now() end)
      returning
        id,
        title,
