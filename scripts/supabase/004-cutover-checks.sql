@@ -65,6 +65,10 @@ select 'forum_topic_vote_duplicates', count(*) from (
   having count(*) > 1
 ) x;
 
+select 'article_comments_missing_created_at' as check_name, count(*) from article_comments where created_at is null
+union all
+select 'forum_comments_missing_created_at', count(*) from forum_comments where created_at is null;
+
 select 'article_legacy_upload_refs' as check_name, count(*) from articles
 where cover_image like '/uploads/%'
 union all

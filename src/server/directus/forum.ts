@@ -403,6 +403,7 @@ export async function createForumComment(input: {
       topic: input.topicId,
       content: input.content,
       author: input.authorId ?? authorId,
+      created_at: new Date().toISOString(),
       status: input.status ?? 'active',
     };
     const created = (await directusService.request(cItem(TABLES.forumComments, payload as any))) as V2Comment;

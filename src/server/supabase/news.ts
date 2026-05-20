@@ -299,8 +299,8 @@ export async function createNewsComment(input: {
        order by case when id = $5::integer then 0 else 1 end
        limit 1
      )
-     insert into ${tableName('article_comments')} (article, content, author, status)
-     values ($1, $3, (select id from author_row), coalesce($4, 'active'))
+     insert into ${tableName('article_comments')} (article, content, author, status, created_at)
+     values ($1, $3, (select id from author_row), coalesce($4, 'active'), now())
      returning
        id,
        article,

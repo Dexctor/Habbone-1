@@ -324,6 +324,7 @@ export async function createNewsComment(input: {
       article: input.newsId,
       content: input.content,
       author: input.authorId ?? authorId,
+      created_at: new Date().toISOString(),
       status: input.status ?? 'active',
     };
     const created = (await directusService.request(cItem(TABLES.articleComments, payload as any))) as V2NewsCommentRow;
