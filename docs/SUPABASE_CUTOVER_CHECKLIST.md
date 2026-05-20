@@ -40,6 +40,24 @@ Points deja identifies pendant l'audit :
 - Verifier les lignes qui pointent encore vers `/uploads/...`.
 - Ne couper `habbone.fr/uploads` que lorsque ces fichiers existent aussi dans Supabase Storage.
 
+Pour les anciens fichiers `/uploads/...` presents sur le VPS (`/opt/uploads-habbone`), synchroniser uniquement les fichiers encore references :
+
+```powershell
+$env:SUPABASE_URL="https://<project-ref>.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+
+.\scripts\supabase\sync-legacy-uploads.ps1
+```
+
+Puis normaliser les chemins en base :
+
+```powershell
+docker run --rm `
+  -v "${PWD}:/repo" `
+  postgres:17 `
+  psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/006-normalize-legacy-upload-paths.sql
+```
+
 ## 4. Lancer les controles Supabase
 
 Depuis la racine du repo :

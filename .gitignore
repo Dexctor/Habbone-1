@@ -47,5 +47,6 @@ public/img/*.exe
 
 # backups
 *.bak
+.supabase-legacy-uploads/
 
 .claude/
