@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { mediaUrl } from '@/lib/media-url'
 import { stripHtml } from '@/lib/text-utils'
 
+const FORUM_TOPIC_IMAGE_FALLBACK = '/img/thumbnail.png'
+
 type Topic = {
   id: number
   titulo: string
@@ -44,7 +46,7 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {visibleTopics.map((topic) => {
-              const image = topic.imagem ? mediaUrl(topic.imagem) : '/img/thumbnail.png'
+              const image = topic.imagem ? mediaUrl(topic.imagem) : ''
               const title = stripHtml(topic.titulo || '') || `Sujet #${topic.id}`
               const author = topic.autor?.trim() || 'Anonyme'
 
@@ -58,9 +60,14 @@ export default function ForumTopicsClient({ topics }: { topics: Topic[] }) {
                     <div className="relative h-[106px] w-[106px] shrink-0 overflow-hidden rounded-[3px] bg-[#1F1F3E]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={image}
+                        src={image || FORUM_TOPIC_IMAGE_FALLBACK}
                         alt=""
                         className="absolute inset-0 h-full w-full object-contain p-2 image-pixelated"
+                        onError={(event) => {
+                          const img = event.currentTarget
+                          if (img.src.endsWith(FORUM_TOPIC_IMAGE_FALLBACK)) return
+                          img.src = FORUM_TOPIC_IMAGE_FALLBACK
+                        }}
                       />
                     </div>
 

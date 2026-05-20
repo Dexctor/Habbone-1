@@ -14,10 +14,58 @@ type TabId = 'mondial' | 'fr'
 
 const ALL_HOTELS = ['com', 'fr', 'nl', 'tr', 'com.br', 'it', 'es', 'de', 'fi']
 const BADGE_API_BASE = '/api/habboassets/badges'
+const CACHE_PREFIX = 'habbone:badges-page:'
 
 const GRID_COLS = 8
 const GRID_ROWS = 6
 const PAGE_SIZE = GRID_COLS * GRID_ROWS
+
+function parseBadges(json: any): Badge[] {
+  return Array.isArray(json?.badges)
+    ? json.badges
+        .filter((row: any) => typeof row?.url_habbo === 'string' && row.url_habbo.length > 0)
+        .map((row: any) => ({
+          code: String(row?.code || ''),
+          name: String(row?.name || row?.code || 'Badge'),
+          image: String(row?.url_habbo || ''),
+        }))
+    : []
+}
+
+function readCachedBadges(key: string): Badge[] {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = window.localStorage.getItem(`${CACHE_PREFIX}${key}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed?.items) ? parsed.items : []
+  } catch {
+    return []
+  }
+}
+
+function writeCachedBadges(key: string, items: Badge[]) {
+  if (typeof window === 'undefined' || items.length === 0) return
+
+  try {
+    window.localStorage.setItem(
+      `${CACHE_PREFIX}${key}`,
+      JSON.stringify({ items, updatedAt: Date.now() }),
+    )
+  } catch {
+    // Local storage is an optional stale fallback.
+  }
+}
+
+async function fetchBadgeItems(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`HabboAssets proxy responded ${response.status}`)
+
+  const json = await response.json()
+  if (json?.error) throw new Error(String(json.error))
+  return parseBadges(json)
+}
 
 export default function BadgesPageClient() {
   const [tab, setTab] = useState<TabId>('mondial')
@@ -27,43 +75,51 @@ export default function BadgesPageClient() {
   const [page, setPage] = useState(0)
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
+    const cachedMondial = readCachedBadges('mondial')
+    const cachedFr = readCachedBadges('fr')
+
+    if (cachedMondial.length > 0) setMondialBadges(cachedMondial)
+    if (cachedFr.length > 0) setFrBadges(cachedFr)
+    setLoading(cachedMondial.length === 0 && cachedFr.length === 0)
 
     // Fetch badges for all hotels (mondial)
-    const fetchMondial = fetch(`${BADGE_API_BASE}?limit=2000`)
-      .then((r) => r.json())
-      .then((json) => {
-        const data = Array.isArray(json?.badges)
-          ? json.badges
-              .filter((row: any) => typeof row?.url_habbo === 'string' && row.url_habbo.length > 0)
-              .map((row: any) => ({
-                code: String(row?.code || ''),
-                name: String(row?.name || row?.code || 'Badge'),
-                image: String(row?.url_habbo || ''),
-              }))
-          : []
-        setMondialBadges(data)
+    const fetchMondial = fetchBadgeItems(`${BADGE_API_BASE}?limit=2000`)
+      .then((data) => {
+        if (cancelled) return
+        if (data.length > 0) {
+          setMondialBadges(data)
+          writeCachedBadges('mondial', data)
+        } else if (cachedMondial.length === 0) {
+          setMondialBadges([])
+        }
       })
-      .catch(() => setMondialBadges([]))
+      .catch(() => {
+        if (!cancelled && cachedMondial.length > 0) setMondialBadges(cachedMondial)
+      })
 
     // Fetch badges specifically from habbo.fr
-    const fetchFr = fetch(`${BADGE_API_BASE}?limit=2000&hotel=fr`)
-      .then((r) => r.json())
-      .then((json) => {
-        const data = Array.isArray(json?.badges)
-          ? json.badges
-              .filter((row: any) => typeof row?.url_habbo === 'string' && row.url_habbo.length > 0)
-              .map((row: any) => ({
-                code: String(row?.code || ''),
-                name: String(row?.name || row?.code || 'Badge'),
-                image: String(row?.url_habbo || ''),
-              }))
-          : []
-        setFrBadges(data)
+    const fetchFr = fetchBadgeItems(`${BADGE_API_BASE}?limit=2000&hotel=fr`)
+      .then((data) => {
+        if (cancelled) return
+        if (data.length > 0) {
+          setFrBadges(data)
+          writeCachedBadges('fr', data)
+        } else if (cachedFr.length === 0) {
+          setFrBadges([])
+        }
       })
-      .catch(() => setFrBadges([]))
+      .catch(() => {
+        if (!cancelled && cachedFr.length > 0) setFrBadges(cachedFr)
+      })
 
-    Promise.all([fetchMondial, fetchFr]).finally(() => setLoading(false))
+    Promise.all([fetchMondial, fetchFr]).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const items = tab === 'mondial' ? mondialBadges : frBadges

@@ -12,10 +12,56 @@ type Mobi = {
 }
 
 const FURNI_API = '/api/habboassets/furniture?limit=1000'
+const CACHE_KEY = 'habbone:mobis-page'
 
 const GRID_COLS = 8
 const GRID_ROWS = 5
 const PAGE_SIZE = GRID_COLS * GRID_ROWS
+
+function parseMobis(json: any): Mobi[] {
+  const raw = Array.isArray(json?.furniture) ? json.furniture : []
+
+  return raw
+    .filter((row: any) => typeof row?.url_icon_habbo === 'string' && row.url_icon_habbo.length > 0)
+    .map((row: any, idx: number) => ({
+      id: Number(row?.id ?? idx),
+      name: String(row?.name || row?.classname || 'Mobi'),
+      image: String(row?.url_icon_habbo || ''),
+      category: String(row?.furniline || row?.type || 'Autre'),
+    }))
+}
+
+function readCachedMobis(): Mobi[] {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed?.items) ? parsed.items : []
+  } catch {
+    return []
+  }
+}
+
+function writeCachedMobis(items: Mobi[]) {
+  if (typeof window === 'undefined' || items.length === 0) return
+
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ items, updatedAt: Date.now() }))
+  } catch {
+    // Local storage is an optional stale fallback.
+  }
+}
+
+async function fetchMobis() {
+  const response = await fetch(FURNI_API)
+  if (!response.ok) throw new Error(`HabboAssets proxy responded ${response.status}`)
+
+  const json = await response.json()
+  if (json?.error) throw new Error(String(json.error))
+  return parseMobis(json)
+}
 
 export default function MobisPageClient() {
   const [items, setItems] = useState<Mobi[]>([])
@@ -24,24 +70,32 @@ export default function MobisPageClient() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch(FURNI_API)
-      .then((r) => r.json())
-      .then((json) => {
-        const raw = Array.isArray(json?.furniture) ? json.furniture : []
+    let cancelled = false
+    const cached = readCachedMobis()
 
-        const data = raw
-          .filter((row: any) => typeof row?.url_icon_habbo === 'string' && row.url_icon_habbo.length > 0)
-          .map((row: any, idx: number) => ({
-            id: Number(row?.id ?? idx),
-            name: String(row?.name || row?.classname || 'Mobi'),
-            image: String(row?.url_icon_habbo || ''),
-            category: String(row?.furniline || row?.type || 'Autre'),
-          }))
+    setItems(cached)
+    setLoading(cached.length === 0)
 
-        setItems(data)
+    fetchMobis()
+      .then((data) => {
+        if (cancelled) return
+        if (data.length > 0) {
+          setItems(data)
+          writeCachedMobis(data)
+        } else if (cached.length === 0) {
+          setItems([])
+        }
       })
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (!cancelled && cached.length > 0) setItems(cached)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const filtered = useMemo(() => {

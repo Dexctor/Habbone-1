@@ -18,6 +18,7 @@ const FURNI_API = '/api/habboassets/furniture'
 const GRID_COLS = 6
 const GRID_ROWS = 6
 const PAGE_SIZE = GRID_COLS * GRID_ROWS
+const CACHE_PREFIX = 'habbone:latest-assets:'
 
 const TABS: { id: TabId; icon: string; tooltip: string }[] = [
   { id: 'mondial', icon: '/img/earth.png', tooltip: 'Mondial' },
@@ -49,6 +50,41 @@ function parseFurni(json: any): Item[] {
     : []
 }
 
+function readCachedItems(tab: TabId): Item[] {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = window.localStorage.getItem(`${CACHE_PREFIX}${tab}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed?.items) ? parsed.items : []
+  } catch {
+    return []
+  }
+}
+
+function writeCachedItems(tab: TabId, items: Item[]) {
+  if (typeof window === 'undefined' || items.length === 0) return
+
+  try {
+    window.localStorage.setItem(
+      `${CACHE_PREFIX}${tab}`,
+      JSON.stringify({ items, updatedAt: Date.now() }),
+    )
+  } catch {
+    // Local storage is only an opportunistic fallback for unstable upstream data.
+  }
+}
+
+async function fetchJson(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`HabboAssets proxy responded ${response.status}`)
+
+  const json = await response.json()
+  if (json?.error) throw new Error(String(json.error))
+  return json
+}
+
 export default function LatestBadges() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +94,11 @@ export default function LatestBadges() {
   const reduce = useReducedMotion()
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
+    const cached = readCachedItems(tab)
+
+    setItems(cached)
+    setLoading(cached.length === 0)
     setPage(0)
 
     let url: string
@@ -75,11 +115,29 @@ export default function LatestBadges() {
       parser = parseBadges
     }
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((json) => setItems(parser(json)))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false))
+    fetchJson(url)
+      .then((json) => {
+        if (cancelled) return
+
+        const nextItems = parser(json)
+        if (nextItems.length > 0) {
+          setItems(nextItems)
+          writeCachedItems(tab, nextItems)
+          return
+        }
+
+        if (cached.length === 0) setItems([])
+      })
+      .catch(() => {
+        if (!cancelled && cached.length > 0) setItems(cached)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [tab])
 
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE))

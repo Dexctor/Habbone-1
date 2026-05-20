@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readHabboAssetsCache, writeHabboAssetsCache } from '@/server/habboassets-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const requestedLimit = intParam(searchParams.get('limit'), 1000, MAX_LIMIT);
   const startOffset = intParam(searchParams.get('offset'), 0, Number.MAX_SAFE_INTEGER);
+  const hotel = searchParams.get('hotel') || 'com';
+  const term = searchParams.get('term') || '';
+  const cacheKey = `furniture:${hotel}:${term}:${requestedLimit}:${startOffset}`;
   const furniture: unknown[] = [];
 
   const makeUrl = (limit: number, offset: number) => {
@@ -69,16 +73,24 @@ export async function GET(req: Request) {
       if (chunk.length < limit) break;
     }
 
-    return NextResponse.json({
-      term: searchParams.get('term') || '',
-      hotel: searchParams.get('hotel') || 'com',
+    const payload = {
+      term,
+      hotel,
       limit: requestedLimit,
       offset: startOffset,
       order: 'desc',
       furniture,
-    });
+    };
+
+    writeHabboAssetsCache(cacheKey, payload);
+    return NextResponse.json(payload);
   } catch (error) {
     console.error('[api/habboassets/furniture] failed', error);
+    const cached = readHabboAssetsCache(cacheKey, { allowStale: true });
+    if (cached) {
+      return NextResponse.json({ ...cached.payload, stale: true });
+    }
+
     return NextResponse.json({ furniture: [], error: 'HABBOASSETS_FURNITURE_FETCH_FAILED' });
   }
 }
