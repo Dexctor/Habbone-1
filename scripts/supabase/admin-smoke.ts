@@ -32,6 +32,7 @@ import {
   listShopItems,
   listShopOrders,
   markNotificationRead,
+  purchaseItem,
   updateShopItem,
 } from '@/server/directus/shop';
 import { getAdminLogs, logAdminAction } from '@/server/directus/admin-logs';
@@ -263,6 +264,40 @@ async function main() {
   await check('admin shop orders list reads Supabase orders', async () => {
     const orders = await listShopOrders({ limit: 5, page: 1 });
     return `orders=${orders.data.length}/${orders.total}`;
+  });
+
+  await check('public shop purchase creates an order and updates stock', async () => {
+    const item = await createShopItem({
+      nome: `[codex-smoke] purchasable item ${suffix}`,
+      descricao: 'temporary purchase smoke item',
+      imagem: 'uploads/hm-a22190e3bf.png',
+      preco: 0,
+      estoque: 1,
+      status: 'ativo',
+    });
+    if (!item?.id) throw new Error('Purchasable shop item was not created.');
+
+    const itemId = Number(item.id);
+    cleanups.push(async () => {
+      await queryRows(`delete from ${tableName('shop_orders')} where item = $1`, [itemId]);
+      await queryRows(`delete from ${tableName('admin_notifications')} where message like $1`, [
+        `%[codex-smoke] purchasable item ${suffix}%`,
+      ]);
+      await deleteShopItem(itemId);
+    });
+
+    const purchase = await purchaseItem(user.id, user.nick, itemId);
+    if (!purchase.ok) throw new Error(purchase.error || 'Purchase failed.');
+
+    const updated = await listShopItems(false);
+    const after = updated.find((row) => Number(row.id) === itemId);
+    if (!after || after.estoque !== 0) throw new Error(`Expected stock 0, got ${after?.estoque}`);
+
+    await queryRows(`delete from ${tableName('shop_orders')} where item = $1`, [itemId]);
+    await queryRows(`delete from ${tableName('admin_notifications')} where message like $1`, [
+      `%[codex-smoke] purchasable item ${suffix}%`,
+    ]);
+    await deleteShopItem(itemId);
   });
 
   await check('admin notifications create/read/mark/delete', async () => {

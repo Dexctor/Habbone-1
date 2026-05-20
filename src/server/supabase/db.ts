@@ -21,6 +21,13 @@ function getPgConnectionString(databaseUrl: string): string {
   try {
     const url = new URL(databaseUrl);
     url.searchParams.delete('sslmode');
+    if (
+      url.hostname.endsWith('.pooler.supabase.com') &&
+      url.port === '5432' &&
+      (process.env.SUPABASE_DB_USE_SESSION_POOLER || '').trim().toLowerCase() !== 'true'
+    ) {
+      url.port = (process.env.SUPABASE_DB_POOLER_PORT || '6543').trim() || '6543';
+    }
     return url.toString();
   } catch {
     return databaseUrl;
@@ -32,9 +39,10 @@ export function getSupabasePool(): Pool {
   const connectionString = getDatabaseUrl();
   pool = new Pool({
     connectionString: getPgConnectionString(connectionString),
-    max: Number(process.env.SUPABASE_DB_POOL_MAX || 4),
-    idleTimeoutMillis: 30_000,
+    max: Math.max(1, Number(process.env.SUPABASE_DB_POOL_MAX || 1)),
+    idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 8_000,
+    allowExitOnIdle: true,
     ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : undefined,
   });
   return pool;

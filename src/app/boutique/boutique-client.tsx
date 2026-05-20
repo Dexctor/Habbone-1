@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { mediaUrl } from '@/lib/media-url'
 import type { ShopItem } from '@/types/shop'
 
 const PAGE_SIZE = 12
@@ -36,6 +37,7 @@ function ShopCard({
   const cantAfford = coins < item.preco
   const isBuying = buying === item.id
   const disabled = soldOut || !loggedIn || cantAfford || isBuying
+  const imageUrl = mediaUrl(item.imagem) || '/img/box.png'
 
   return (
     <article className="flex flex-col rounded-[8px] bg-[#1F1F3E] border border-[#141433] overflow-hidden">
@@ -43,7 +45,7 @@ function ShopCard({
       <div className="flex h-[140px] items-center justify-center bg-[#303060]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={item.imagem}
+          src={imageUrl}
           alt={item.nome}
           className="h-[100px] w-auto object-contain image-pixelated"
           loading="lazy"
@@ -90,6 +92,16 @@ function ShopCard({
       </div>
     </article>
   )
+}
+
+async function readJsonResponse(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
 }
 
 function Pagination({
@@ -186,7 +198,7 @@ export default function BoutiqueClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId: item.id }),
       })
-      const json = await res.json()
+      const json = await readJsonResponse(res)
       if (!res.ok) throw new Error(json?.error || 'Erreur')
 
       toast.success(json.message || 'Achat effectué !')
@@ -201,7 +213,7 @@ export default function BoutiqueClient({
 
       // Refresh items to update stock
       const refreshRes = await fetch('/api/shop/items', { cache: 'no-store' })
-      const refreshJson = await refreshRes.json()
+      const refreshJson = await readJsonResponse(refreshRes)
       if (refreshJson?.data) setItems(refreshJson.data)
     } catch (e: any) {
       toast.error(e?.message || 'Erreur lors de l\'achat')
@@ -313,7 +325,7 @@ export default function BoutiqueClient({
             <div className="flex items-center gap-4 rounded-[6px] border border-white/10 bg-[#272746] p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={confirmItem.imagem}
+                src={mediaUrl(confirmItem.imagem) || '/img/box.png'}
                 alt={confirmItem.nome}
                 className="h-[60px] w-[60px] object-contain image-pixelated"
                 onError={(e) => { (e.target as HTMLImageElement).src = '/img/box.png' }}
