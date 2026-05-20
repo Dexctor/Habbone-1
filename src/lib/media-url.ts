@@ -57,6 +57,7 @@ export function mediaUrl(idOrPath?: string) {
         if (supabaseUploadsBase) {
             return validateUrl(`${supabaseUploadsBase}/${idOrPath}`);
         }
+        if (getMediaBackend() === 'supabase') return '';
         const directusUrl = getDirectusUrl();
         if (!directusUrl) return '';
         return validateUrl(`${directusUrl}/assets/${idOrPath}`);
@@ -79,9 +80,10 @@ export function mediaUrl(idOrPath?: string) {
 
     const rawPath = idOrPath.replace(/^\/+/, '');
     const supabaseUploadsBase = getMediaBackend() === 'supabase' ? getSupabaseUploadsBase() : '';
-    if (supabaseUploadsBase && isSupabaseObjectPath(rawPath) && !idOrPath.startsWith('/uploads/')) {
+    if (supabaseUploadsBase && isSupabaseObjectPath(rawPath)) {
         return validateUrl(`${supabaseUploadsBase}/${rawPath.split('/').map(encodeURIComponent).join('/')}`);
     }
+    if (getMediaBackend() === 'supabase' && isSupabaseObjectPath(rawPath)) return '';
 
     const path = idOrPath.startsWith('/') ? idOrPath : `/${idOrPath}`;
     const base = getLegacyMediaBase() || getDirectusUrl() || '';

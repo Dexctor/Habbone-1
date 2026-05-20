@@ -8,10 +8,15 @@ Garder Directus actif par défaut. Activer Supabase uniquement sur une preview d
 
 ```env
 DATA_BACKEND=supabase
+ALLOW_DIRECTUS_FALLBACK=false
 SUPABASE_DB_URL=postgresql://...
 SUPABASE_DB_SCHEMA=habbonex_main
 SUPABASE_DB_POOL_MAX=4
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_UPLOADS_BUCKET=directus-uploads
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+THEME_STORAGE=supabase-storage
 ```
 
 Pour les médias, ne passer à Supabase qu'après avoir validé les chemins publics :
@@ -47,6 +52,8 @@ Pour les rendre visibles dans l'API Supabase/PostgREST, exposer le schéma `habb
 ## Stratégie code
 
 Le code conserve les imports existants `@/server/directus/*` pour limiter le blast radius. Les services publics basculent vers Supabase seulement si `DATA_BACKEND=supabase`.
+
+En mode `DATA_BACKEND=supabase`, le client Directus serveur est bloque par defaut. Une route qui tente encore Directus echouera explicitement avec `Directus runtime is disabled...`. `ALLOW_DIRECTUS_FALLBACK=true` peut etre pose uniquement pour un rollback temporaire, pas pour l'etat final.
 
 Première tranche :
 

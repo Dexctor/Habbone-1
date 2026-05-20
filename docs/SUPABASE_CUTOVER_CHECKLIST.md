@@ -85,6 +85,7 @@ Ce script remplace les UUID nus par le nom d'objet present dans Supabase Storage
 ## 5. Variables Vercel attendues
 
 - `DATA_BACKEND=supabase`
+- `ALLOW_DIRECTUS_FALLBACK=false`
 - `SUPABASE_DB_URL`
 - `SUPABASE_DB_SCHEMA=habbonex_main`
 - `SUPABASE_DB_POOL_MAX`
@@ -94,9 +95,12 @@ Ce script remplace les UUID nus par le nom d'objet present dans Supabase Storage
 - `SUPABASE_UPLOADS_BUCKET=directus-uploads`
 - `NEXT_PUBLIC_MEDIA_BACKEND=supabase`
 - `NEXT_PUBLIC_SUPABASE_UPLOADS_BASE`
+- `THEME_STORAGE=supabase-storage`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
 - `REDIS_URL` si le cache Redis reste utilise
+
+`ALLOW_DIRECTUS_FALLBACK=true` ne doit servir que de rollback temporaire. En mode `DATA_BACKEND=supabase`, le runtime Directus est volontairement bloque pour detecter toute route qui tenterait encore d'appeler Directus.
 
 ## 6. Tests fonctionnels obligatoires
 
