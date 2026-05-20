@@ -312,6 +312,7 @@ export async function adminDeleteNewsComment(id: number) {
 export async function createNewsComment(input: {
   newsId: number;
   author: string;
+  authorId?: number | null;
   content: string;
   status?: string | null;
 }): Promise<NewsCommentRecord> {
@@ -322,7 +323,7 @@ export async function createNewsComment(input: {
     const payload: Record<string, unknown> = {
       article: input.newsId,
       content: input.content,
-      author: authorId,
+      author: input.authorId ?? authorId,
       status: input.status ?? 'active',
     };
     const created = (await directusService.request(cItem(TABLES.articleComments, payload as any))) as V2NewsCommentRow;

@@ -51,6 +51,7 @@ export const POST = withAuth(async (req, { nick, user, params }) => {
     const created = await createNewsComment({
       newsId,
       author: String(nick || user?.email || "Anonyme"),
+      authorId: Number(user?.id) || null,
       content: sanitizedHtml,
     });
     invalidateNews({ newsId });

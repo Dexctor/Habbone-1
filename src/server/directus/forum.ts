@@ -391,6 +391,7 @@ export async function adminDeleteForumComment(id: number) {
 export async function createForumComment(input: {
   topicId: number;
   author: string;
+  authorId?: number | null;
   content: string;
   status?: string | null;
 }): Promise<ForumCommentRecord> {
@@ -401,7 +402,7 @@ export async function createForumComment(input: {
     const payload: Record<string, unknown> = {
       topic: input.topicId,
       content: input.content,
-      author: authorId,
+      author: input.authorId ?? authorId,
       status: input.status ?? 'active',
     };
     const created = (await directusService.request(cItem(TABLES.forumComments, payload as any))) as V2Comment;

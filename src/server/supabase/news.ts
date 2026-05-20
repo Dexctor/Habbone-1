@@ -286,12 +286,18 @@ export async function adminDeleteNewsComment(id: number): Promise<void> {
 export async function createNewsComment(input: {
   newsId: number;
   author: string;
+  authorId?: number | null;
   content: string;
   status?: string | null;
 }): Promise<NewsCommentRecord> {
   const row = await queryOne<SupabaseNewsCommentRow>(
     `with author_row as (
-       select id from ${tableName('users')} where lower(nick) = lower($2) limit 1
+       select id
+       from ${tableName('users')}
+       where ($5::integer is not null and id = $5::integer)
+          or lower(nick) = lower($2)
+       order by case when id = $5::integer then 0 else 1 end
+       limit 1
      )
      insert into ${tableName('article_comments')} (article, content, author, status)
      values ($1, $3, (select id from author_row), coalesce($4, 'active'))
@@ -302,7 +308,7 @@ export async function createNewsComment(input: {
        (select nick from ${tableName('users')} where id = author) as author_nick,
        created_at,
        status`,
-    [input.newsId, input.author, input.content, input.status ?? null],
+    [input.newsId, input.author, input.content, input.status ?? null, input.authorId ?? null],
   );
   if (!row) throw new Error('COMMENT_CREATE_FAILED');
   return mapSupabaseNewsComment(row);

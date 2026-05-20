@@ -36,14 +36,14 @@ export function shopInvalidation(): InvalidationPlan {
 export function newsInvalidation(options?: { newsId?: number | string; home?: boolean; admin?: boolean }): InvalidationPlan {
   return makeInvalidationPlan({
     tags: [TAG_NEWS, options?.newsId != null ? TAG_NEWS_DETAIL(options.newsId) : null, options?.home ? TAG_HOME : null],
-    paths: [options?.admin ? '/admin' : null],
+    paths: [options?.newsId != null ? `/news/${options.newsId}` : null, options?.admin ? '/admin' : null],
   });
 }
 
 export function forumInvalidation(options?: { topicId?: number | string; home?: boolean; admin?: boolean }): InvalidationPlan {
   return makeInvalidationPlan({
     tags: [TAG_FORUM, options?.topicId != null ? TAG_FORUM_TOPIC(options.topicId) : null, options?.home ? TAG_HOME : null],
-    paths: [options?.admin ? '/admin' : null],
+    paths: [options?.topicId != null ? `/forum/topic/${options.topicId}` : null, options?.admin ? '/admin' : null],
   });
 }
 

@@ -31,14 +31,14 @@ describe('cache invalidation policy', () => {
   it('builds news detail invalidation with optional home and admin refresh', () => {
     assert.deepEqual(newsInvalidation({ newsId: 42, home: true, admin: true }), {
       tags: ['news', 'news-42', 'home'],
-      paths: ['/admin'],
+      paths: ['/news/42', '/admin'],
     });
   });
 
   it('builds forum topic invalidation with optional home and admin refresh', () => {
     assert.deepEqual(forumInvalidation({ topicId: 9, home: true, admin: true }), {
       tags: ['forum', 'forum-topic-9', 'home'],
-      paths: ['/admin'],
+      paths: ['/forum/topic/9', '/admin'],
     });
   });
 
@@ -60,6 +60,6 @@ describe('cache invalidation policy', () => {
     );
 
     assert.deepEqual(plan.tags, ['news', 'news-1', 'home']);
-    assert.deepEqual(plan.paths, ['/admin', '/team']);
+    assert.deepEqual(plan.paths, ['/news/1', '/admin', '/team']);
   });
 });

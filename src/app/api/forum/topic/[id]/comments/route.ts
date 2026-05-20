@@ -10,7 +10,7 @@ const BodySchema = z.object({
   content: z.string().trim().min(1, 'Commentaire requis').max(5000, 'Commentaire trop long'),
 })
 
-export const POST = withAuth(async (req, { nick, params }) => {
+export const POST = withAuth(async (req, { nick, user, params }) => {
   const topicId = Number(params?.id || 0)
   if (!Number.isFinite(topicId) || topicId <= 0) {
     return NextResponse.json(buildError('Identifiant sujet invalide', { code: 'INVALID_ID' }), { status: 400 })
@@ -31,7 +31,12 @@ export const POST = withAuth(async (req, { nick, params }) => {
   }
 
   try {
-    const created = await createForumComment({ topicId, author: nick, content: sanitizedHtml })
+    const created = await createForumComment({
+      topicId,
+      author: nick,
+      authorId: Number(user?.id) || null,
+      content: sanitizedHtml,
+    })
     invalidateForum({ topicId })
     return NextResponse.json({ ok: true, data: created })
   } catch {
