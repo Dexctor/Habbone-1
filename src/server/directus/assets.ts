@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { directusUrl, serviceToken } from './client';
+import { assertDirectusConfigured, directusUrl, serviceToken } from './client';
 
 export function getDirectusAssetUrl(id: string | number): string {
+  assertDirectusConfigured();
   return `${directusUrl}/assets/${encodeURIComponent(String(id))}`;
 }
 
@@ -12,6 +13,7 @@ export async function uploadDirectusAsset(
   mimeType: string,
   options?: { folderId?: string | null },
 ): Promise<{ id: string }> {
+  assertDirectusConfigured();
   const safeName = filename?.trim() || `asset-${Date.now()}`;
   const formData = new FormData();
   formData.set('file', file, safeName);

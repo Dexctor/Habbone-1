@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { directusUrl, serviceToken } from './client';
+import { assertDirectusConfigured, directusUrl, serviceToken } from './client';
 import { appendDirectusParams, type DirectusQueryParams } from './fetch-core';
 
 /**
@@ -20,6 +20,7 @@ export async function directusFetch<T = unknown>(
     params?: DirectusQueryParams;
   },
 ): Promise<T> {
+  assertDirectusConfigured();
   const url = new URL(path.startsWith('http') ? path : `${directusUrl}${path}`);
   appendDirectusParams(url, options?.params);
 

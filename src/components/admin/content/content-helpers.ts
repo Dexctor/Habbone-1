@@ -6,6 +6,7 @@ import type {
   NewsRecord as AdminArticle,
   StoryRecord as AdminStory,
 } from "@/server/directus/types";
+import { mediaUrl } from "@/lib/media-url";
 
 export type ContentType =
   | "topics"
@@ -90,8 +91,6 @@ export const CONTENT_META: Record<ContentType, ContentTypeMeta> = {
   },
 };
 
-const DIRECTUS_BASE_URL = (process.env.NEXT_PUBLIC_DIRECTUS_URL || "").replace(/\/$/, "");
-
 export function getItemTitle(
   item: ContentItem,
   contentType: ContentType,
@@ -120,7 +119,7 @@ export function resolveItemDate(item: ContentItem): string | undefined {
 export function resolveAssetUrl(value?: string | null): string | null {
   if (!value) return null;
   if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
-  return `${DIRECTUS_BASE_URL}/assets/${value}`;
+  return mediaUrl(value) || null;
 }
 
 /**
@@ -133,4 +132,3 @@ export function extractExcerpt(html: string | null | undefined, max = 120): stri
   if (plain.length <= max) return plain;
   return plain.slice(0, max - 1).trimEnd() + "…";
 }
-
