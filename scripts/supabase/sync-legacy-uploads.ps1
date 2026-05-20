@@ -25,13 +25,10 @@ function Content-Type([string]$Path) {
     ".webp" { "image/webp"; break }
     ".avif" { "image/avif"; break }
     ".svg"  { "image/svg+xml"; break }
+    ".mp4"  { "video/mp4"; break }
     ".json" { "application/json"; break }
     default { "application/octet-stream"; break }
   }
-}
-
-function Escape-RemotePath([string]$Path) {
-  return "'" + $Path.Replace("'", "'\''") + "'"
 }
 
 function Escape-ObjectPath([string]$Path) {
@@ -85,7 +82,7 @@ foreach ($filename in $filenames) {
   $objectPath = "uploads/$filename"
 
   if (!(Test-Path -LiteralPath $localPath)) {
-    $remoteSpec = "${VpsHost}:$(Escape-RemotePath $remotePath)"
+    $remoteSpec = "${VpsHost}:$remotePath"
     Write-Host "Downloading $filename"
     & scp -i $SshKey -o BatchMode=yes -o ConnectTimeout=10 $remoteSpec $localPath
     if ($LASTEXITCODE -ne 0) {
