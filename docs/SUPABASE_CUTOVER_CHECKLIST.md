@@ -53,6 +53,17 @@ docker run --rm `
 
 Les compteurs doivent correspondre au dernier export voulu. Les references `/uploads/...` restantes doivent etre traitees avant fermeture du VPS.
 
+Si les controles remontent des references media sous forme d'UUID Directus sans extension, lancer ensuite :
+
+```powershell
+docker run --rm `
+  -v "${PWD}:/repo" `
+  postgres:17 `
+  psql "$env:SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /repo/scripts/supabase/005-normalize-media-paths.sql
+```
+
+Ce script remplace les UUID nus par le nom d'objet present dans Supabase Storage (`uuid.png`, `uuid.jpg`, etc.).
+
 ## 5. Variables Vercel attendues
 
 - `DATA_BACKEND=supabase`
