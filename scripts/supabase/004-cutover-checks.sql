@@ -66,16 +66,31 @@ select 'forum_topic_vote_duplicates', count(*) from (
 ) x;
 
 select 'article_legacy_upload_refs' as check_name, count(*) from articles
-where cover_image like '/uploads/%' or cover_image like 'uploads/%'
+where cover_image like '/uploads/%'
 union all
 select 'story_legacy_upload_refs', count(*) from stories
-where image like '/uploads/%' or image like 'uploads/%'
+where image like '/uploads/%'
 union all
 select 'shop_legacy_upload_refs', count(*) from shop_items
-where image like '/uploads/%' or image like 'uploads/%'
+where image like '/uploads/%'
 union all
 select 'sponsor_legacy_upload_refs', count(*) from sponsors
-where image like '/uploads/%' or image like 'uploads/%';
+where image like '/uploads/%';
+
+with media_refs as (
+  select 'articles.cover_image' as source, cover_image as path from articles where cover_image like 'uploads/%'
+  union all select 'stories.image', image from stories where image like 'uploads/%'
+  union all select 'shop_items.image', image from shop_items where image like 'uploads/%'
+  union all select 'sponsors.image', image from sponsors where image like 'uploads/%'
+)
+select source, count(*) as missing_storage_objects
+from media_refs refs
+left join storage.objects obj
+  on obj.bucket_id = 'directus-uploads'
+ and obj.name = refs.path
+where obj.id is null
+group by source
+order by source;
 
 select 'article_bare_uuid_refs' as check_name, count(*) from articles
 where cover_image ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
