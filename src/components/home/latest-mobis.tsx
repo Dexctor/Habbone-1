@@ -13,8 +13,8 @@ type Item = {
 
 type TabId = 'mondial' | 'fr' | 'mobis'
 
-const BADGE_API = 'https://www.habboassets.com/api/v1/badges'
-const FURNI_API = 'https://www.habboassets.com/api/v1/furniture'
+const BADGE_API = '/api/habboassets/badges'
+const FURNI_API = '/api/habboassets/furniture'
 const GRID_COLS = 6
 const GRID_ROWS = 6
 const PAGE_SIZE = GRID_COLS * GRID_ROWS

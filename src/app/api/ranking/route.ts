@@ -52,6 +52,7 @@ async function fetchTopCoins(limit: number): Promise<RankingEntry[]> {
 }
 
 async function fetchSupabaseRanking(limit: number): Promise<RankingResponse> {
+  const empty = [] as Array<{ nick: string; score: string | number }>;
   const [comments, articles, topics, coins] = await Promise.all([
     queryRows<{ nick: string; score: string }>(
       `select u.nick, count(*)::text as score
@@ -64,9 +65,12 @@ async function fetchSupabaseRanking(limit: number): Promise<RankingResponse> {
        where u.nick is not null
        group by u.nick
        order by count(*) desc, u.nick asc
-       limit $1`,
+      limit $1`,
       [limit],
-    ),
+    ).catch((error) => {
+      console.error('[api/ranking] comments ranking failed', error);
+      return empty;
+    }),
     queryRows<{ nick: string; score: string }>(
       `select u.nick, count(*)::text as score
        from ${tableName('articles')} a
@@ -74,9 +78,12 @@ async function fetchSupabaseRanking(limit: number): Promise<RankingResponse> {
        where u.nick is not null
        group by u.nick
        order by count(*) desc, u.nick asc
-       limit $1`,
+      limit $1`,
       [limit],
-    ),
+    ).catch((error) => {
+      console.error('[api/ranking] articles ranking failed', error);
+      return empty;
+    }),
     queryRows<{ nick: string; score: string }>(
       `select u.nick, count(*)::text as score
        from ${tableName('forum_topics')} t
@@ -84,17 +91,23 @@ async function fetchSupabaseRanking(limit: number): Promise<RankingResponse> {
        where u.nick is not null
        group by u.nick
        order by count(*) desc, u.nick asc
-       limit $1`,
+      limit $1`,
       [limit],
-    ),
+    ).catch((error) => {
+      console.error('[api/ranking] topics ranking failed', error);
+      return empty;
+    }),
     queryRows<{ nick: string; score: number | string }>(
       `select nick, coins as score
        from ${tableName('users')}
        where nick is not null and coalesce(coins, 0) > 0
        order by coins desc, nick asc
-       limit $1`,
+      limit $1`,
       [limit],
-    ),
+    ).catch((error) => {
+      console.error('[api/ranking] coins ranking failed', error);
+      return empty;
+    }),
   ]);
 
   const mapRows = (rows: Array<{ nick: string; score: string | number }>) =>
@@ -160,10 +173,10 @@ export async function GET() {
     };
 
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    console.error('[api/ranking] failed', error);
     return NextResponse.json(
       { comments: [], articles: [], topics: [], coins: [] },
-      { status: 500 },
     );
   }
 }

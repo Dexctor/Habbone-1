@@ -11,7 +11,7 @@ type Mobi = {
   category: string
 }
 
-const FURNI_API = 'https://www.habboassets.com/api/v1/furniture?limit=1000'
+const FURNI_API = '/api/habboassets/furniture?limit=1000'
 
 const GRID_COLS = 8
 const GRID_ROWS = 5

@@ -13,7 +13,7 @@ type Badge = {
 type TabId = 'mondial' | 'fr'
 
 const ALL_HOTELS = ['com', 'fr', 'nl', 'tr', 'com.br', 'it', 'es', 'de', 'fi']
-const BADGE_API_BASE = 'https://www.habboassets.com/api/v1/badges'
+const BADGE_API_BASE = '/api/habboassets/badges'
 
 const GRID_COLS = 8
 const GRID_ROWS = 6

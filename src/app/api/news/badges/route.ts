@@ -9,13 +9,13 @@ export async function GET() {
     const data = await listPublicNewsBadges();
     return NextResponse.json({ data });
   } catch (error: any) {
+    console.error("[api/news/badges] failed", error);
     return NextResponse.json(
       {
         data: [],
         error: error?.message || "NEWS_BADGES_FETCH_FAILED",
         code: "NEWS_BADGES_FETCH_FAILED",
       },
-      { status: 500 },
     );
   }
 }
