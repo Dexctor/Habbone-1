@@ -330,6 +330,8 @@ export async function adminDeleteForumPost(id: number) {
 }
 
 export function getPublicPostById(id: number): Promise<ForumPostRecord> {
+  if (isSupabaseDataEnabled()) return supabaseForum.getPublicPostById(id) as Promise<ForumPostRecord>;
+
   if (USE_V2) {
     return Promise.reject(new Error('forum_posts deprecated in v2'));
   }
@@ -486,6 +488,8 @@ export async function toggleForumCommentLike(commentId: number, author: string) 
 /* ------------------------------------------------------------------ */
 
 export async function reportForumComment(commentId: number, author: string) {
+  if (isSupabaseDataEnabled()) return supabaseForum.reportForumComment(commentId, author);
+
   if (USE_V2) return null; // no v2 report table designed yet
   const payload: any = {
     tipo: 'report',

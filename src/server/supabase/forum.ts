@@ -204,6 +204,14 @@ export async function adminDeleteForumPost(): Promise<{ id: number | null }> {
   return { id: null };
 }
 
+export function getPublicPostById(_id: number): Promise<never> {
+  return Promise.reject(new Error('forum_posts deprecated in Supabase migration'));
+}
+
+export async function reportForumComment(_commentId: number, _author: string): Promise<null> {
+  return null;
+}
+
 export async function getPublicTopicComments(topicId: number): Promise<ForumCommentRecord[]> {
   const rows = await queryRows<SupabaseForumCommentRow>(
     `select
