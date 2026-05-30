@@ -188,20 +188,24 @@ export async function adminDeleteForumTopic(id: number): Promise<void> {
   await queryRows(`delete from ${tableName('forum_topics')} where id = $1`, [id]);
 }
 
-export async function adminListForumPosts(): Promise<[]> {
+export async function adminListForumPosts(_limit?: number): Promise<[]> {
   return [];
 }
 
-export async function adminCreateForumPost(): Promise<never> {
+export async function adminCreateForumPost(_data?: unknown): Promise<never> {
   throw new Error('forum_posts is deprecated in Supabase migration');
 }
 
-export async function adminUpdateForumPost(): Promise<never> {
+export async function adminUpdateForumPost(_id?: number, _data?: unknown): Promise<never> {
   throw new Error('forum_posts is deprecated in Supabase migration');
 }
 
-export async function adminDeleteForumPost(): Promise<{ id: number | null }> {
+export async function adminDeleteForumPost(_id?: number): Promise<{ id: number | null }> {
   return { id: null };
+}
+
+export async function listForumCategoriesService(): Promise<ForumCategoryRecord[]> {
+  return listPublicForumCategories();
 }
 
 export function getPublicPostById(_id: number): Promise<never> {

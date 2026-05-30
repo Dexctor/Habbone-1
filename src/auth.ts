@@ -3,19 +3,21 @@ import type { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import {
   listUsersByNick,
+  upgradePasswordToBcrypt,
+  tryUpdateHabboSnapshotForUser,
+  getUserMoedas,
+} from '@/server/supabase/users';
+import { getRoleById } from '@/server/supabase/roles';
+import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
+import { ensureRoleBadge } from '@/server/supabase/badges';
+import { syncHabboName } from '@/server/supabase/pseudo-changes';
+import {
   normalizeHotelCode,
   passwordsMatch,
-  upgradePasswordToBcrypt,
   isBcrypt,
   asTrue,
   asFalse,
-  tryUpdateHabboSnapshotForUser,
-  getUserMoedas,
-} from '@/server/directus/users';
-import { getRoleById } from '@/server/directus/roles';
-import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
-import { ensureRoleBadge } from '@/server/directus/badges';
-import { syncHabboName } from '@/server/directus/pseudo-changes';
+} from '@/server/auth-helpers';
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },

@@ -97,7 +97,6 @@ export {
 } from './directus/forum';
 
 export {
-  getLikesMapForComments,
   getLikesMapForNewsComments,
   getLikesMapForTopicComments,
 } from './directus/likes';

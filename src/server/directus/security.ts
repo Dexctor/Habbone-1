@@ -23,7 +23,7 @@ export function hashPassword(plain: string) {
   return bcrypt.hashSync(plain, salt);
 }
 
-export function passwordsMatch(plain: string, stored: string) {
+export function passwordsMatch(plain: string, stored: string | null | undefined) {
   if (!stored) return false;
   if (isBcrypt(stored)) {
     const fixed = normalizeBcrypt(stored) || stored;
