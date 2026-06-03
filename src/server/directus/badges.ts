@@ -1,205 +1,113 @@
 import 'server-only';
 
-import { directusFetch } from './fetch';
-import { TABLES, USE_V2 } from './tables';
+import { pbList, pbFirst, pbCreate } from './pb-helpers';
+import { TABLES } from './tables';
 
 const BADGES_TABLE = TABLES.badges;
 const USER_BADGES_TABLE = TABLES.userBadges;
 const USERS_TABLE = TABLES.users;
 
-// Mapping: role name (lowercase) -> badge id
-const ROLE_BADGE_MAP: Record<string, number> = {
-  'fondateur': 5,
-  'responsable': 6,
-  'animateurs': 7,
-  'journaliste': 8,
-  'correcteur': 9,
-  'configurateur wired': 10,
-  'constructeur': 11,
-  'graphiste': 12,
-  'member': 13,
+/**
+ * Badges service (PocketBase).
+ *
+ * v2 model: user_badges has relations `badge` -> badges and `user` -> users,
+ * plus `source` enum and `active` bool. A user's role is users.role -> roles.name.
+ *
+ * NOTE: ROLE_BADGE_MAP below maps a role name to a *badge id*. With the v2
+ * re-sequenced schema, badge ids are PocketBase strings, not the old integers.
+ * This map must be revisited after the data migration (Lot 6) to point at the
+ * real migrated badge ids (or, better, resolve the badge by name). Kept here so
+ * the role-badge auto-grant flow compiles and is easy to fix in one place.
+ */
+const ROLE_BADGE_MAP: Record<string, string> = {
+  // roleName(lowercase) -> badge id (PLACEHOLDER ids, fix after Lot 6)
 };
 
-const UB_FIELDS = USE_V2
-  ? { badge: 'badge', user: 'user', source: 'source', active: 'active' }
-  : { badge: 'id_emblema', user: 'id_usuario', source: 'autor_tipo', active: 'status' };
-
-const BADGE_FIELDS = USE_V2
-  ? { id: 'id', name: 'name', image: 'image', active: 'active' }
-  : { id: 'id', name: 'nome', image: 'imagem', active: 'status' };
-
-async function userHasBadge(userId: number, badgeId: number): Promise<boolean> {
-  try {
-    const json = await directusFetch<{ data: { id: number }[] }>(`/items/${USER_BADGES_TABLE}`, {
-      params: {
-        [`filter[${UB_FIELDS.user}][_eq]`]: String(userId),
-        [`filter[${UB_FIELDS.badge}][_eq]`]: String(badgeId),
-        limit: '1',
-        fields: 'id',
-      },
-    });
-    return Array.isArray(json?.data) && json.data.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-async function grantBadge(userId: number, badgeId: number): Promise<void> {
-  const body: Record<string, unknown> = USE_V2
-    ? {
-        [UB_FIELDS.badge]: badgeId,
-        [UB_FIELDS.user]: userId,
-        [UB_FIELDS.source]: 'earned',
-        active: true,
-      }
-    : {
-        [UB_FIELDS.badge]: badgeId,
-        [UB_FIELDS.user]: userId,
-        [UB_FIELDS.source]: 'ganhado',
-        autor: 'system',
-        data: Math.floor(Date.now() / 1000),
-        status: 'ativo',
-      };
-  await directusFetch(`/items/${USER_BADGES_TABLE}`, {
-    method: 'POST',
-    body,
-  });
-}
-
 export const ROLE_BADGE_IMAGE: Record<string, string> = {
-  'fondateur': '/badges-roles/HOFONDA.gif',
-  'responsable': '/badges-roles/HORESP.gif',
-  'animateurs': '/badges-roles/HOANIM.gif',
-  'journaliste': '/badges-roles/HOJOURNA.gif',
-  'correcteur': '/badges-roles/HOCORRE.gif',
+  fondateur: '/badges-roles/HOFONDA.gif',
+  responsable: '/badges-roles/HORESP.gif',
+  animateurs: '/badges-roles/HOANIM.gif',
+  journaliste: '/badges-roles/HOJOURNA.gif',
+  correcteur: '/badges-roles/HOCORRE.gif',
   'configurateur wired': '/badges-roles/HOWIRED.gif',
-  'constructeur': '/badges-roles/HOCONST.gif',
-  'graphiste': '/badges-roles/HOGRAPH.gif',
-  'member': '/badges-roles/HOUSER.gif',
+  constructeur: '/badges-roles/HOCONST.gif',
+  graphiste: '/badges-roles/HOGRAPH.gif',
+  member: '/badges-roles/HOUSER.gif',
 };
 
 export type UserBadge = {
-  id: number;
+  id: string;
   nome: string;
   imagem: string;
 };
 
-/** Get all badges owned by a user */
-export async function getUserBadges(userId: number): Promise<UserBadge[]> {
+async function userHasBadge(userId: string, badgeId: string): Promise<boolean> {
+  const row = await pbFirst<{ id: string }>(USER_BADGES_TABLE, {
+    user: { _eq: userId },
+    badge: { _eq: badgeId },
+  }).catch(() => null);
+  return !!row;
+}
+
+async function grantBadge(userId: string, badgeId: string): Promise<void> {
+  await pbCreate(USER_BADGES_TABLE, {
+    badge: badgeId,
+    user: userId,
+    source: 'earned',
+    active: true,
+  });
+}
+
+/** Get all badges owned by a user. */
+export async function getUserBadges(userId: string): Promise<UserBadge[]> {
   try {
-    const userBadgeFilter: Record<string, string> = {
-      [`filter[${UB_FIELDS.user}][_eq]`]: String(userId),
-      fields: UB_FIELDS.badge,
-      limit: '50',
-    };
-    if (USE_V2) {
-      userBadgeFilter[`filter[${UB_FIELDS.active}][_eq]`] = 'true';
-    } else {
-      userBadgeFilter[`filter[${UB_FIELDS.active}][_eq]`] = 'ativo';
-    }
-
-    const json = await directusFetch<{ data: Record<string, unknown>[] }>(`/items/${USER_BADGES_TABLE}`, {
-      params: userBadgeFilter,
+    const links = await pbList<{ badge: string }>(USER_BADGES_TABLE, {
+      filter: { user: { _eq: userId }, active: { _eq: true } },
+      fields: 'badge',
+      perPage: 50,
     });
-    const rows = json?.data ?? [];
-    if (!Array.isArray(rows) || rows.length === 0) return [];
-
-    const badgeIds = rows.map((r) => Number(r[UB_FIELDS.badge])).filter((id) => id > 0);
+    const badgeIds = links.map((r) => String(r.badge)).filter(Boolean);
     if (badgeIds.length === 0) return [];
 
-    const badgeFilter: Record<string, string> = {
-      [`filter[${BADGE_FIELDS.id}][_in]`]: badgeIds.join(','),
-      fields: `${BADGE_FIELDS.id},${BADGE_FIELDS.name},${BADGE_FIELDS.image}`,
-      limit: '50',
-    };
-    if (USE_V2) {
-      badgeFilter[`filter[${BADGE_FIELDS.active}][_eq]`] = 'true';
-    } else {
-      badgeFilter[`filter[${BADGE_FIELDS.active}][_eq]`] = 'ativo';
-    }
-
-    const bJson = await directusFetch<{ data: Record<string, unknown>[] }>(`/items/${BADGES_TABLE}`, {
-      params: badgeFilter,
+    const badges = await pbList<{ id: string; name: string; image: string }>(BADGES_TABLE, {
+      filter: { id: { _in: badgeIds }, active: { _eq: true } },
+      fields: 'id,name,image',
+      perPage: 50,
     });
-    return (bJson?.data ?? []).map((b) => ({
-      id: Number(b[BADGE_FIELDS.id]),
-      nome: String(b[BADGE_FIELDS.name] || ''),
-      imagem: String(b[BADGE_FIELDS.image] || ''),
+    return badges.map((b) => ({
+      id: String(b.id),
+      nome: String(b.name || ''),
+      imagem: String(b.image || ''),
     }));
   } catch {
     return [];
   }
 }
 
-/** Get badge image for a role name */
+/** Get badge image for a role name. */
 export function getRoleBadgeImage(roleName: string): string | null {
   return ROLE_BADGE_IMAGE[roleName.toLowerCase().trim()] ?? null;
 }
 
 /**
  * Get role badge images for a list of nicks (batch).
- *
- * Legacy: reads the `role` string column directly on usuarios.
- * v2: reads directus_role_id (UUID) then resolves through directus_roles.name.
+ * v2: read each user's role relation, expand to the role name, map to image.
  */
 export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<string, string | null>> {
   const result: Record<string, string | null> = {};
   if (!nicks.length) return result;
 
   try {
-    if (USE_V2) {
-      // v2: fetch users with directus_role_id, then one batch lookup on directus_roles
-      const usersJson = await directusFetch<{
-        data: { nick: string; directus_role_id: string | null }[];
-      }>(`/items/${USERS_TABLE}`, {
-        params: {
-          'filter[nick][_in]': nicks.join(','),
-          fields: 'nick,directus_role_id',
-          limit: String(nicks.length),
-        },
-      });
-      const users = usersJson?.data ?? [];
-      const roleIds = Array.from(
-        new Set(users.map((u) => u.directus_role_id).filter((id): id is string => !!id)),
-      );
-
-      let roleNameById = new Map<string, string>();
-      if (roleIds.length > 0) {
-        const rolesJson = await directusFetch<{ data: { id: string; name: string }[] }>(
-          `/roles`,
-          {
-            params: {
-              'filter[id][_in]': roleIds.join(','),
-              fields: 'id,name',
-              limit: String(roleIds.length),
-            },
-          },
-        );
-        for (const r of rolesJson?.data ?? []) {
-          roleNameById.set(String(r.id), String(r.name || ''));
-        }
-      }
-
-      for (const u of users) {
-        const nick = String(u?.nick || '');
-        const roleName = u.directus_role_id ? roleNameById.get(u.directus_role_id) ?? '' : '';
-        if (nick) result[nick] = getRoleBadgeImage(roleName);
-      }
-      return result;
-    }
-
-    // Legacy
-    const json = await directusFetch<{ data: { nick: string; role: string }[] }>(`/items/${USERS_TABLE}`, {
-      params: {
-        'filter[nick][_in]': nicks.join(','),
-        fields: 'nick,role',
-        limit: String(nicks.length),
-      },
+    const users = await pbList<{ nick: string; expand?: { role?: { name?: string } } }>(USERS_TABLE, {
+      filter: { nick: { _in: nicks } },
+      fields: 'nick,expand.role.name',
+      expand: 'role',
+      perPage: nicks.length,
     });
-    for (const u of json?.data ?? []) {
+    for (const u of users) {
       const nick = String(u?.nick || '');
-      const role = String(u?.role || '');
-      if (nick) result[nick] = getRoleBadgeImage(role);
+      const roleName = u.expand?.role?.name ?? '';
+      if (nick) result[nick] = getRoleBadgeImage(roleName);
     }
   } catch {}
 
@@ -207,10 +115,10 @@ export async function getRoleBadgesForNicks(nicks: string[]): Promise<Record<str
 }
 
 /**
- * Ensure a user has the badge corresponding to their role.
- * Also ensures they have the "member" badge.
+ * Ensure a user has the badge for their role, plus the "member" badge.
+ * No-op until ROLE_BADGE_MAP is repopulated with real badge ids (post Lot 6).
  */
-export async function ensureRoleBadge(userId: number, roleName: string): Promise<void> {
+export async function ensureRoleBadge(userId: string, roleName: string): Promise<void> {
   try {
     const key = roleName.toLowerCase().trim();
 

@@ -1,46 +1,44 @@
 import 'server-only';
 
-import { directusService, rItems } from './client';
+import { pbList } from './pb-helpers';
+import { TABLES } from './tables';
 
-type LikeRow = { id_comentario: number | string };
+type LikeRow = { comment: string };
 
-type LikesTable = 'noticias_coment_curtidas' | 'forum_coment_curtidas';
+type LikesTable = typeof TABLES.articleCommentLikes | typeof TABLES.forumCommentLikes;
 
 /**
- * Generic function to get likes count for comments
- * Uses the authenticated directusService (replaces the old lib/directus/likes.ts)
+ * Count likes per comment for a set of comment ids.
+ *
+ * v2: like tables (article_comment_likes / forum_comment_likes) reference the
+ * comment via the `comment` relation. Comment ids are PocketBase strings.
  */
 export async function getLikesMapForComments(
-    table: LikesTable,
-    commentIds: number[]
-): Promise<Record<number, number>> {
-    if (!commentIds?.length) return {};
+  table: LikesTable,
+  commentIds: string[],
+): Promise<Record<string, number>> {
+  if (!commentIds?.length) return {};
 
-    const likes = (await directusService.request(
-        rItems(table as any, {
-            filter: { id_comentario: { _in: commentIds } },
-            fields: ['id_comentario'],
-            limit: 5000,
-        } as any)
-    )) as LikeRow[];
+  const likes = await pbList<LikeRow>(table, {
+    filter: { comment: { _in: commentIds } },
+    fields: 'comment',
+    perPage: 5000,
+  });
 
-    return likes.reduce((acc: Record<number, number>, row: LikeRow) => {
-        const cid = Number(row.id_comentario);
-        acc[cid] = (acc[cid] ?? 0) + 1;
-        return acc;
-    }, {});
+  return likes.reduce((acc: Record<string, number>, row: LikeRow) => {
+    const cid = String(row.comment);
+    if (!cid) return acc;
+    acc[cid] = (acc[cid] ?? 0) + 1;
+    return acc;
+  }, {});
 }
 
-/**
- * Get likes map for news comments
- */
-export function getLikesMapForNewsComments(commentIds: number[]): Promise<Record<number, number>> {
-    return getLikesMapForComments('noticias_coment_curtidas', commentIds);
+/** Likes map for article (news) comments. */
+export function getLikesMapForNewsComments(commentIds: string[]): Promise<Record<string, number>> {
+  return getLikesMapForComments(TABLES.articleCommentLikes, commentIds);
 }
 
-/**
- * Get likes map for forum comments
- */
-export function getLikesMapForTopicComments(commentIds: number[]): Promise<Record<number, number>> {
-    return getLikesMapForComments('forum_coment_curtidas', commentIds);
+/** Likes map for forum comments. */
+export function getLikesMapForTopicComments(commentIds: string[]): Promise<Record<string, number>> {
+  return getLikesMapForComments(TABLES.forumCommentLikes, commentIds);
 }
