@@ -1,42 +1,36 @@
 import 'server-only';
 
-import { directusService, rItems } from './client';
-import { TABLES, USE_V2 } from './tables';
+import { pbFullList } from './pb-helpers';
+import { TABLES } from './tables';
 
 /**
  * In-memory cache mapping users.id <-> users.nick.
  *
- * Used by every service that has to translate between the legacy "author by
- * nick" world and the v2 "author M2O" world. Cache lives for the duration of
- * the Node process (server-only), rebuilds on cold start. Invalidate via
- * invalidateUserCache() if a service creates/renames a user.
+ * Used by services that translate between an "author by nick" value and the v2
+ * "author relation (id)" world. Cache lives for the Node process lifetime
+ * (server-only), rebuilds on cold start. Invalidate via invalidateUserCache()
+ * when a service creates/renames a user.
+ *
+ * IDs are PocketBase string ids (15-char), NOT integers.
  */
 
 type CacheState = {
-  idToNick: Map<number, string>;
-  nickToId: Map<string, number>; // lowercased key
+  idToNick: Map<string, string>;
+  nickToId: Map<string, string>; // lowercased nick -> id
 };
 
 let cache: CacheState | null = null;
 let inflight: Promise<CacheState> | null = null;
 
 async function buildCache(): Promise<CacheState> {
-  if (!USE_V2) {
-    return { idToNick: new Map(), nickToId: new Map() };
-  }
-  const rows = (await directusService
-    .request(
-      rItems(TABLES.users, {
-        limit: 5000,
-        fields: ['id', 'nick'],
-      } as any),
-    )
-    .catch(() => [] as { id: number; nick: string }[])) as { id: number; nick: string }[];
+  const rows = (await pbFullList<{ id: string; nick: string }>(TABLES.users, {
+    fields: 'id,nick',
+  }).catch(() => [] as { id: string; nick: string }[]));
 
-  const idToNick = new Map<number, string>();
-  const nickToId = new Map<string, number>();
+  const idToNick = new Map<string, string>();
+  const nickToId = new Map<string, string>();
   for (const u of rows) {
-    const id = Number(u.id);
+    const id = String(u.id || '');
     const nick = String(u.nick || '');
     if (!id || !nick) continue;
     idToNick.set(id, nick);
@@ -53,27 +47,29 @@ async function ensureCache(): Promise<CacheState> {
   return cache;
 }
 
-export async function resolveUserId(nick: string | null | undefined): Promise<number | null> {
-  if (!USE_V2 || !nick) return null;
+export async function resolveUserId(nick: string | null | undefined): Promise<string | null> {
+  if (!nick) return null;
   const c = await ensureCache();
   return c.nickToId.get(String(nick).toLowerCase()) ?? null;
 }
 
-export async function resolveUserNick(id: number | null | undefined): Promise<string | null> {
-  if (!USE_V2 || !id) return null;
+export async function resolveUserNick(id: string | null | undefined): Promise<string | null> {
+  if (!id) return null;
   const c = await ensureCache();
-  return c.idToNick.get(Number(id)) ?? null;
+  return c.idToNick.get(String(id)) ?? null;
 }
 
 /** Batch resolver; returns a map id -> nick for the ids that exist. */
-export async function resolveUserNicks(ids: Array<number | null | undefined>): Promise<Map<number, string>> {
-  if (!USE_V2) return new Map();
+export async function resolveUserNicks(
+  ids: Array<string | null | undefined>,
+): Promise<Map<string, string>> {
   const c = await ensureCache();
-  const out = new Map<number, string>();
+  const out = new Map<string, string>();
   for (const id of ids) {
     if (id == null) continue;
-    const n = c.idToNick.get(Number(id));
-    if (n) out.set(Number(id), n);
+    const key = String(id);
+    const n = c.idToNick.get(key);
+    if (n) out.set(key, n);
   }
   return out;
 }
@@ -84,7 +80,7 @@ export function invalidateUserCache(): void {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Timestamp helpers (legacy unix seconds <-> v2 ISO)                 */
+/*  Timestamp helpers (legacy unix seconds <-> ISO)                    */
 /* ------------------------------------------------------------------ */
 
 export function isoToUnixSeconds(iso: string | null | undefined): number | null {

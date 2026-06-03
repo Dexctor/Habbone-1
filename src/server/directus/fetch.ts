@@ -1,83 +1,54 @@
 import 'server-only';
 
-import { directusUrl, serviceToken } from './client';
+import { pbCreate, pbCount } from './pb-helpers';
 
 /**
- * Authenticated fetch to the Directus REST API.
- * Replaces ~24 manual fetch() calls across service files.
+ * Compatibility shims kept during the Directus -> PocketBase migration.
  *
- * Usage:
- * ```ts
- * const data = await directusFetch<{ data: MyType[] }>('/items/my_table?limit=10');
- * ```
+ * The old `directusFetch` was a thin authenticated REST wrapper around the
+ * Directus API. Only a couple of call sites still use these; the rest of the
+ * service layer has moved to the typed helpers in ./pb-helpers. These shims
+ * route the remaining legacy-shaped calls onto PocketBase.
+ *
+ * Prefer pb-helpers directly in new/ported code. These will be removed once
+ * the last call sites (badges create, admin count) are ported.
  */
-export async function directusFetch<T = any>(
-  path: string,
-  options?: {
-    method?: string;
-    body?: unknown;
-    params?: Record<string, string>;
-  },
-): Promise<T> {
-  const url = new URL(path.startsWith('http') ? path : `${directusUrl}${path}`);
 
-  if (options?.params) {
-    for (const [key, value] of Object.entries(options.params)) {
-      url.searchParams.set(key, value);
-    }
+/** Extract the collection name from a legacy "/items/<collection>" path. */
+function collectionFromPath(path: string): string {
+  const m = /^\/items\/([^/?]+)/.exec(path);
+  if (!m) {
+    throw new Error(`directusFetch shim: unsupported path "${path}" (expected /items/<collection>)`);
   }
-
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${serviceToken}`,
-  };
-
-  const fetchOptions: RequestInit = {
-    method: options?.method || 'GET',
-    headers,
-    cache: 'no-store',
-  };
-
-  if (options?.body) {
-    headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify(options.body);
-  }
-
-  const res = await fetch(url.toString(), fetchOptions);
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Directus ${res.status}: ${text.slice(0, 200)}`);
-  }
-
-  return res.json() as Promise<T>;
+  return decodeURIComponent(m[1]);
 }
 
 /**
- * Shorthand to count items via Directus meta.
+ * Minimal compatibility wrapper. Supports the one remaining shape used in the
+ * codebase: POST /items/<collection> with a JSON body (record creation).
  */
+export async function directusFetch<T = any>(
+  path: string,
+  options?: { method?: string; body?: unknown; params?: Record<string, string> },
+): Promise<T> {
+  const method = (options?.method || 'GET').toUpperCase();
+  const collection = collectionFromPath(path);
+
+  if (method === 'POST') {
+    return (await pbCreate(collection, (options?.body ?? {}) as Record<string, unknown>)) as T;
+  }
+
+  throw new Error(
+    `directusFetch shim: method ${method} on ${path} is not supported — use pb-helpers (pbList/pbOne/...) instead`,
+  );
+}
+
+/** Count items in a collection (optionally not filtered). */
 export async function directusCount(
   collection: string,
-  filter?: Record<string, string>,
+  _filter?: Record<string, string>,
 ): Promise<number> {
-  const url = new URL(`${directusUrl}/items/${encodeURIComponent(collection)}`);
-  url.searchParams.set('limit', '0');
-  url.searchParams.set('meta', 'total_count');
-
-  if (filter) {
-    for (const [key, value] of Object.entries(filter)) {
-      url.searchParams.set(key, value);
-    }
-  }
-
-  try {
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
-    });
-    if (!res.ok) return 0;
-    const json = await res.json();
-    return Number(json?.meta?.total_count ?? 0);
-  } catch {
-    return 0;
-  }
+  // The legacy filter shape (querystring) is not translated here; the only
+  // caller (admin.ts) passes no filter. Filtered counts use pbCount directly.
+  return pbCount(collection);
 }
