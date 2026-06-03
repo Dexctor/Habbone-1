@@ -2,7 +2,7 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
-import { directusUrl, serviceToken } from '@/server/directus/client';
+import { pbOne } from '@/server/directus/pb-helpers';
 import { TABLES } from '@/server/directus/tables';
 import { getRoleById } from '@/server/directus/roles';
 import { cleanUserId, decideGuard, isFounderRoleName } from '@/server/admin-guards-core';
@@ -15,21 +15,17 @@ export type AdminGuardResult =
 
 async function fetchTarget(userId: string) {
   const cleanId = cleanUserId(userId);
-  const res = await fetch(
-    `${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}?fields=id,nick,directus_role_id`,
-    {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
-    },
-  );
-  if (!res.ok) return null;
-  const json = await res.json();
-  const data = json?.data;
+  // v2: role is a relation column on the users collection.
+  const data = await pbOne<{ id: string; nick: string; role: string | null }>(
+    USERS_TABLE,
+    cleanId,
+    { fields: 'id,nick,role' },
+  ).catch(() => null);
   if (!data) return null;
   return {
     id: String(data.id),
     nick: String(data.nick || ''),
-    roleId: data.directus_role_id ? String(data.directus_role_id) : null,
+    roleId: data.role ? String(data.role) : null,
   };
 }
 

@@ -166,7 +166,7 @@ export async function setAdminUserRole(userId: string, roleId: string): Promise<
   }
 
   // Auto-assign role badge (non-blocking)
-  void ensureRoleBadge(Number(cleanId), roleName);
+  void ensureRoleBadge(String(cleanId), roleName);
 
   return { data: true };
 }

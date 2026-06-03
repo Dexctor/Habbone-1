@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
 
         let user: any = null;
         for (const candidate of candidates) {
-          if (passwordsMatch(password, candidate.senha)) {
+          if (passwordsMatch(password, candidate.senha ?? '')) {
             user = candidate;
             break;
           }
@@ -50,13 +50,13 @@ export const authOptions: NextAuthOptions = {
 
         if (!isBcrypt(user.senha)) {
           try {
-            await upgradePasswordToBcrypt(Number(user.id), password);
+            await upgradePasswordToBcrypt(String(user.id), password);
           } catch {}
         }
 
         try {
           const core = await getHabboUserByNameForHotel(user.nick, hotelCode, { cache: false });
-          void tryUpdateHabboSnapshotForUser(Number(user.id), core);
+          void tryUpdateHabboSnapshotForUser(String(user.id), core);
 
           // Detect pseudo change : compare Habbo API nick with stored one
           const apiUniqueId = (core as any)?.uniqueId;
@@ -65,7 +65,7 @@ export const authOptions: NextAuthOptions = {
           if (apiUniqueId && apiNick) {
             void syncHabboName(String(apiUniqueId), String(apiNick), {
               hotel: hotelCode,
-              userId: Number(user.id),
+              userId: String(user.id),
               previousNick: storedNick ? String(storedNick) : undefined,
             });
           }
@@ -108,7 +108,7 @@ export const authOptions: NextAuthOptions = {
         const role = computedAdminAccess ? 'admin' : 'member';
 
         // Auto-assign role badge on login (non-blocking)
-        void ensureRoleBadge(Number(user.id), directusRoleName || role);
+        void ensureRoleBadge(String(user.id), directusRoleName || role);
 
         return {
           id: String(user.id),
