@@ -28,20 +28,33 @@ function readMainEnv(key: string): string | undefined {
 export const DIRECTUS_URL = process.env.DIRECTUS_URL || readMainEnv('NEXT_PUBLIC_DIRECTUS_URL');
 export const DIRECTUS_TOKEN = process.env.DIRECTUS_TOKEN || readMainEnv('DIRECTUS_SERVICE_TOKEN');
 
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function directusGetAll<T = any>(table: string, fields: string): Promise<T[]> {
   if (!DIRECTUS_URL || !DIRECTUS_TOKEN) throw new Error('legacy Directus creds missing');
-  const res = await fetch(`${DIRECTUS_URL}/items/${table}?limit=-1&fields=${fields}`, {
-    headers: { Authorization: `Bearer ${DIRECTUS_TOKEN}` },
-    cache: 'no-store' as RequestCache,
-  });
-  if (!res.ok) {
-    // Some legacy tables are blocked by Directus role permissions (403) or
-    // missing (404). Skip them gracefully rather than aborting the whole run.
-    console.log(`     ⚠ ${table}: Directus GET -> ${res.status} (skipped)`);
+  // Directus sometimes throttles bursts with a transient 403/429. Retry with
+  // backoff before giving up, so we don't lose a table to a momentary limit.
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(`${DIRECTUS_URL}/items/${table}?limit=-1&fields=${fields}`, {
+      headers: { Authorization: `Bearer ${DIRECTUS_TOKEN}` },
+      cache: 'no-store' as RequestCache,
+    });
+    if (res.ok) {
+      const json = (await res.json()) as { data: T[] };
+      return json.data || [];
+    }
+    if ((res.status === 403 || res.status === 429) && attempt < maxAttempts) {
+      const delay = 1500 * attempt;
+      console.log(`     … ${table}: HTTP ${res.status} (transient?), retry ${attempt}/${maxAttempts - 1} in ${delay}ms`);
+      await wait(delay);
+      continue;
+    }
+    // 404 (missing) or persistent failure -> skip gracefully.
+    console.log(`     ⚠ ${table}: Directus GET -> ${res.status} (skipped after ${attempt} attempt(s))`);
     return [];
   }
-  const json = (await res.json()) as { data: T[] };
-  return json.data || [];
+  return [];
 }
 
 // ── PocketBase (superuser) ──────────────────────────────────────────────────
