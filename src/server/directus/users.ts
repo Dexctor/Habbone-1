@@ -319,7 +319,16 @@ export async function verifyLogin(nick: string, password: string) {
     const auth = await client.collection(USERS_TABLE).authWithPassword(nick, password);
     const row = auth?.record;
     return row ? v2ToLegacyRow(row) : null;
-  } catch {
+  } catch (err: any) {
+    // Distinguish bad credentials from backend failure. PocketBase returns
+    // 400/401/403/404 for invalid logins (-> null, no noise). Anything else
+    // (timeout, 5xx, network) is an infra problem worth logging — masking it
+    // would make outages look like wrong passwords and hide attacks.
+    const status = Number(err?.status) || 0;
+    if (status && status < 500 && status !== 429) {
+      return null;
+    }
+    console.error(`[auth] verifyLogin backend error (status ${status || 'network'}): ${err?.message || err}`);
     return null;
   } finally {
     client.authStore.clear();

@@ -12,6 +12,15 @@ import { getRoleById } from '@/server/directus/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
 import { ensureRoleBadge } from '@/server/directus/badges';
 import { syncHabboName } from '@/server/directus/pseudo-changes';
+import { checkRateLimitByKey } from '@/server/rate-limit';
+
+// Fail fast on a missing/weak signing secret rather than silently degrading.
+// In production this must be set and reasonably long (NextAuth signs the JWT
+// with it; the middleware reads the same secret via getToken).
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
+if (process.env.NODE_ENV === 'production' && (!NEXTAUTH_SECRET || NEXTAUTH_SECRET.length < 16)) {
+  throw new Error('NEXTAUTH_SECRET manquant ou trop court (>= 16 caractères requis en production)');
+}
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
@@ -27,8 +36,16 @@ export const authOptions: NextAuthOptions = {
         const password = (creds?.password as string | undefined) || '';
         if (!nick || !password) return null;
 
+        // Brute-force protection. authorize() gets no Request (so no client IP),
+        // so we throttle per-account by normalised nick. 10 attempts / 10 min.
+        const rl = checkRateLimitByKey(`login:${nick.toLowerCase()}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+        if (!rl.ok) {
+          throw new Error('Trop de tentatives. Réessayez plus tard.');
+        }
+
         // Native PocketBase auth: validates nick+password (bcrypt) in one call.
-        // Works for both app-created users and legacy users imported via SQL.
+        // PB matches the identity case-insensitively; works for both app-created
+        // users and legacy users imported via SQL.
         const user: any = await verifyLogin(nick, password);
         if (!user) return null;
 

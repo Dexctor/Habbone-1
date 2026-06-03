@@ -52,6 +52,16 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.redirect(url);
     return applySecurityHeaders(res);
   }
+
+  // Defence in depth for /admin: require the admin role at the edge, on top of
+  // the per-page/route assertAdmin checks. Closes the gap if a page forgets to
+  // call assertAdmin. The token is still re-validated server-side by assertAdmin
+  // (this only blocks obviously non-admin sessions early).
+  if (req.nextUrl.pathname.startsWith('/admin') && (token as { role?: string }).role !== 'admin') {
+    const res = NextResponse.redirect(new URL('/', req.url));
+    return applySecurityHeaders(res);
+  }
+
   const res = NextResponse.next();
   return applySecurityHeaders(res);
 }

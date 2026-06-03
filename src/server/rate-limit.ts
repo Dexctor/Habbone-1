@@ -39,6 +39,47 @@ export function getClientIdentifier(req: Request): string {
   return 'anon'
 }
 
+/**
+ * Rate-limit by an explicit string identifier (no Request object available).
+ *
+ * Used where we can't read the client IP — notably NextAuth's `authorize`
+ * callback, which receives no Request. Pass a stable key such as
+ * `login:<nick>` to throttle brute-force against a specific account.
+ *
+ * Returns { ok, retryAfter } — `retryAfter` is seconds until the window resets.
+ */
+export function checkRateLimitByKey(
+  identifier: string,
+  opts?: { limit?: number; windowMs?: number },
+): { ok: boolean; retryAfter: number } {
+  if (String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() === 'true') {
+    return { ok: true, retryAfter: 0 }
+  }
+  const windowMs = Math.max(1000, opts?.windowMs ?? DEFAULT_WINDOW_MS)
+  const limit = Math.max(1, opts?.limit ?? DEFAULT_LIMIT)
+  const store = getStore()
+
+  if (store.size > MAX_STORE_SIZE) {
+    const nowMs = now()
+    for (const [key, entry] of store) {
+      if (entry.resetAt <= nowMs) store.delete(key)
+      if (store.size <= MAX_STORE_SIZE * 0.8) break
+    }
+  }
+
+  const nowMs = now()
+  let entry = store.get(identifier)
+  if (!entry || entry.resetAt <= nowMs) {
+    entry = { count: 0, resetAt: nowMs + windowMs }
+    store.set(identifier, entry)
+  }
+  if (limit - entry.count <= 0) {
+    return { ok: false, retryAfter: Math.ceil((entry.resetAt - nowMs) / 1000) }
+  }
+  entry.count += 1
+  return { ok: true, retryAfter: 0 }
+}
+
 export function checkRateLimit(
   req: Request,
   opts: { key: string; limit?: number; windowMs?: number }
