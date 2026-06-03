@@ -1,36 +1,45 @@
 import 'server-only';
 
-import {
-  directusService,
-  directusUrl,
-  serviceToken,
-  rItems,
-  rItem,
-  uItem,
-  dItem,
-} from './client';
-import type { DirectusUserLite, CollectionResponse } from './types';
+import { pbList, pbOne, pbUpdate, pbDelete, pbCount } from './pb-helpers';
+import { TABLES } from './tables';
+import type { DirectusUserLite } from './types';
 
+/**
+ * Admin users service (PocketBase).
+ *
+ * Previously operated on Directus' internal `directus_users`. In PocketBase the
+ * app users live in the `users` auth collection with a `role` relation. We expose
+ * the same DirectusUserLite shape so admin UI code doesn't change.
+ */
+
+const USERS = TABLES.users;
+
+const USER_FIELDS = 'id,email,nick,active,banned,role,expand.role.id,expand.role.name,expand.role.admin_access,expand.role.app_access';
+
+function toLite(row: any): DirectusUserLite {
+  const role = row?.expand?.role;
+  return {
+    id: String(row.id),
+    email: row.email ?? null,
+    first_name: row.nick ?? null, // map nick -> first_name slot for UI compat
+    last_name: null,
+    status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
+    role: role
+      ? {
+          id: String(role.id),
+          name: role.name,
+          admin_access: role.admin_access === true,
+          app_access: role.app_access === true,
+        }
+      : (row.role ? String(row.role) : null),
+  };
+}
 
 export async function getDirectusUserById(userId: string): Promise<DirectusUserLite | null> {
-  const row = await directusService
-    .request(
-      rItem('directus_users', userId, {
-        fields: [
-          'id',
-          'email',
-          'first_name',
-          'last_name',
-          'status',
-          'role.id',
-          'role.name',
-          'role.admin_access',
-          'role.app_access',
-        ] as any,
-      } as any),
-    )
-    .catch(() => null);
-  return (row ?? null) as DirectusUserLite | null;
+  const row = await pbOne<any>(USERS, userId, { fields: USER_FIELDS, expand: 'role' }).catch(
+    () => null,
+  );
+  return row ? toLite(row) : null;
 }
 
 export async function searchUsers(
@@ -42,61 +51,37 @@ export async function searchUsers(
 ): Promise<{ items: DirectusUserLite[]; total: number }> {
   const filter: Record<string, unknown> = {};
   if (roleId) filter.role = { _eq: roleId };
-  if (status) filter.status = { _eq: status };
+  if (status === 'active') filter.active = { _eq: true };
+  if (status === 'suspended') filter.banned = { _eq: true };
+  // free-text search across nick/email
+  if (q) {
+    filter._or = [{ nick: { _contains: q } }, { email: { _contains: q } }];
+  }
+  const hasFilter = Object.keys(filter).length > 0;
 
-  const items = (await directusService
-    .request(
-      rItems('directus_users', {
-        search: q || undefined,
-        limit,
-        page,
-        filter: Object.keys(filter).length ? (filter as any) : undefined,
-        fields: [
-          'id',
-          'email',
-          'first_name',
-          'last_name',
-          'status',
-          'role.id',
-          'role.name',
-          'role.admin_access',
-          'role.app_access',
-        ] as any,
-        sort: ['email'] as any,
-      } as any),
-    )
-    .catch(() => [])) as DirectusUserLite[];
+  const [items, total] = await Promise.all([
+    pbList<any>(USERS, {
+      filter: hasFilter ? filter : undefined,
+      perPage: limit,
+      page,
+      sort: 'nick',
+      fields: USER_FIELDS,
+      expand: 'role',
+    }).catch(() => [] as any[]),
+    pbCount(USERS, hasFilter ? filter : undefined).catch(() => 0),
+  ]);
 
-  const url = new URL(`${directusUrl}/items/directus_users`);
-  if (q) url.searchParams.set('search', q);
-  if (roleId) url.searchParams.set('filter[role][_eq]', roleId);
-  if (status) url.searchParams.set('filter[status][_eq]', status);
-  url.searchParams.set('limit', '0');
-  url.searchParams.set('meta', 'total_count');
-  let total = items.length;
-  try {
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
-    });
-    if (response.ok) {
-      const json = (await response.json()) as CollectionResponse<DirectusUserLite>;
-      if (typeof json?.meta?.total_count === 'number') {
-        total = json.meta.total_count;
-      }
-    }
-  } catch { }
-
-  return { items, total };
+  return { items: items.map(toLite), total };
 }
 
 export async function setDirectusUserStatus(userId: string, status: 'active' | 'suspended') {
-  const payload: Partial<DirectusUserLite> = { status };
-  return directusService.request(uItem('directus_users', userId, payload as any));
+  const payload =
+    status === 'suspended' ? { banned: true } : { banned: false, active: true };
+  return pbUpdate(USERS, userId, payload);
 }
 
 export async function deleteDirectusUser(userId: string) {
-  return directusService.request(dItem('directus_users', userId));
+  return pbDelete(USERS, userId);
 }
 
 export type { DirectusUserLite };
