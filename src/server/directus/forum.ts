@@ -130,8 +130,15 @@ export async function listForumTopicsByAuthorService(author: string, limit = 30)
   return v2TopicsToLegacy(rows);
 }
 
-export function getPublicTopics(limit = 50): Promise<ForumTopicRecord[]> {
-  return adminListForumTopics(limit);
+export async function getPublicTopics(limit = 50): Promise<ForumTopicRecord[]> {
+  // Public list: only active topics (admin sees all via adminListForumTopics).
+  const rows = await pbList<V2Topic>(TABLES.forumTopics, {
+    perPage: limit,
+    sort: TOPIC_LIST_SORT,
+    fields: TOPIC_FIELDS,
+    filter: { status: { _eq: 'active' } },
+  });
+  return v2TopicsToLegacy(rows);
 }
 
 export async function getPublicTopicById(id: string): Promise<ForumTopicRecord | null> {
