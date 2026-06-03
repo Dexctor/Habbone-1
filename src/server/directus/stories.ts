@@ -16,6 +16,8 @@ type StoryRowInput = {
   status?: string | null;
 };
 
+// NB: the `stories` collection has NO system `created` field (unlike the others).
+// Use `published_at` for ordering/dates.
 type V2StoryRow = {
   id: string;
   title: string | null;
@@ -23,7 +25,6 @@ type V2StoryRow = {
   author: string | null;
   status: string | null;
   published_at: string | null;
-  created: string | null;
 };
 
 // ============ TRANSLATORS ============
@@ -37,9 +38,9 @@ async function v2StoriesToLegacy(rows: V2StoryRow[]): Promise<StoryRecord[]> {
     imagem: r.image ?? null,
     titulo: r.title ?? null,
     status: r.status ?? null,
-    data: isoToUnixSeconds(r.published_at ?? r.created)?.toString() ?? null,
-    dta: isoToUnixSeconds(r.published_at ?? r.created),
-    date_created: r.created ?? null,
+    data: isoToUnixSeconds(r.published_at)?.toString() ?? null,
+    dta: isoToUnixSeconds(r.published_at),
+    date_created: r.published_at ?? null,
   })) as unknown as StoryRecord[];
 }
 
@@ -120,9 +121,9 @@ export async function countStoriesThisMonthByAuthor(author: string): Promise<num
 export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
   try {
     const rows = await pbList<V2StoryRow>(TABLE, {
-      sort: '-created',
+      sort: '-published_at',
       perPage: limit,
-      fields: 'id,title,image,author,status,published_at,created',
+      fields: 'id,title,image,author,status,published_at',
     });
     return v2StoriesToLegacy(rows);
   } catch {
