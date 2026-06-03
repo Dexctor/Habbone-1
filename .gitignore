@@ -46,4 +46,4 @@ public/img/*.exe
 # backups
 *.bak
 
-.claude/
+.claude/.env.vps
