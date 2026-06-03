@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
-import { uploadFileToDirectus } from '@/server/directus/stories';
-import { directusUrl } from '@/server/directus/client';
 import { validateUploadedFile } from '@/server/upload-security';
 
 /**
  * POST /api/admin/upload
  * Accepts multipart/form-data with a single file field named "file".
- * Uploads the file to Directus assets and returns the public URL.
- * Returns { ok: true, url: "https://<directus>/assets/<id>" }
+ *
+ * TODO(migration): upload PB. Cette route téléversait vers l'API Directus /files
+ * (supprimée pendant la migration PocketBase). PocketBase n'expose pas la même
+ * API de fichiers et la destination de stockage (collection de fichiers PB vs
+ * hôte externe) n'est pas encore décidée. En attendant, on valide quand même le
+ * fichier (auth + MIME + taille) puis on renvoie un 501 clair. L'upload réel
+ * sera implémenté dans un lot ultérieur.
  */
 
 export const runtime = 'nodejs';
@@ -39,20 +42,11 @@ export const POST = withAdmin(async (req) => {
       return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 });
     }
 
-    const filename = file.name?.trim() || `shop-${Date.now()}.png`;
-    const safeFile = new File([new Uint8Array(validation.buffer)], filename, {
-      type: validation.detectedMime,
-    });
-    const uploaded = await uploadFileToDirectus(safeFile, filename, validation.detectedMime);
-    const id = String(uploaded?.id || '').trim();
-
-    if (!id) {
-      return NextResponse.json({ error: 'Upload échoué — pas d\'ID retourné' }, { status: 500 });
-    }
-
-    const publicUrl = `${directusUrl}/assets/${encodeURIComponent(id)}`;
-
-    return NextResponse.json({ ok: true, url: publicUrl });
+    // TODO(migration): upload PB — implémenter le stockage du fichier validé.
+    return NextResponse.json(
+      { error: 'Upload non disponible (migration PocketBase en cours)' },
+      { status: 501 },
+    );
   } catch (e: unknown) {
     console.error('[upload] Error:', e);
     const message = e instanceof Error ? e.message : 'Erreur lors de l\'upload';

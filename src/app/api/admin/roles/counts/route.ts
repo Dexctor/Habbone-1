@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
-import { directusUrl, serviceToken } from '@/server/directus/client';
+import { pbCount } from '@/server/directus/pb-helpers';
+import { listRoles } from '@/server/directus/roles';
 import { TABLES } from '@/server/directus/tables';
 
 /**
@@ -8,46 +9,31 @@ import { TABLES } from '@/server/directus/tables';
  * Returns a map { [roleId]: memberCount } aggregated over the whole users
  * table. Used by the Roles panel to show "N membres" per role without pulling
  * the full user list.
+ *
+ * v2 schema: the role is a relation column (`role`) on the users collection.
  */
 export const dynamic = 'force-dynamic';
 
-type Bucket = {
-  directus_role_id: string | null;
-  count: { id: number };
-};
+const USERS_TABLE = TABLES.users;
 
 export const GET = withAdmin(async () => {
-  const params = new URLSearchParams();
-  params.set('aggregate[count]', 'id');
-  params.append('groupBy[]', 'directus_role_id');
-  params.set('limit', '-1');
+  try {
+    const roles = await listRoles();
 
-  const res = await fetch(
-    `${directusUrl}/items/${encodeURIComponent(TABLES.users)}?${params}`,
-    {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
-    },
-  );
+    const [perRole, withoutRole] = await Promise.all([
+      Promise.all(
+        roles.map(async (role) => [String(role.id), await pbCount(USERS_TABLE, { role: { _eq: role.id } })] as const),
+      ),
+      pbCount(USERS_TABLE, { role: { _empty: true } }),
+    ]);
 
-  if (!res.ok) {
+    const counts: Record<string, number> = {};
+    for (const [roleId, count] of perRole) {
+      if (count > 0) counts[roleId] = count;
+    }
+
+    return NextResponse.json({ ok: true, counts, withoutRole });
+  } catch {
     return NextResponse.json({ error: 'COUNTS_FETCH_FAILED' }, { status: 500 });
   }
-
-  const json = (await res.json()) as { data?: Bucket[] };
-  const buckets = json.data ?? [];
-
-  const counts: Record<string, number> = {};
-  let withoutRole = 0;
-
-  for (const bucket of buckets) {
-    const count = Number(bucket.count?.id ?? 0);
-    if (bucket.directus_role_id) {
-      counts[bucket.directus_role_id] = count;
-    } else {
-      withoutRole += count;
-    }
-  }
-
-  return NextResponse.json({ ok: true, counts, withoutRole });
 }, { key: 'admin:roles:counts', limit: 60, windowMs: 60_000 });

@@ -54,7 +54,7 @@ function audit(
   caller: AdminCaller,
   action: AdminAction,
   targetType: 'topic' | 'post' | 'article' | 'comment',
-  targetId: number,
+  targetId: string,
   details?: Record<string, unknown>,
 ) {
   return logAdminAction({
@@ -73,7 +73,7 @@ function audit(
 
 export async function updateTopicAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const patch = {
     titulo: String(formData.get('titulo') || ''),
@@ -92,7 +92,7 @@ export async function updateTopicAction(formData: FormData) {
 
 export async function deleteTopicAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteForumTopic(id);
   await audit(caller, 'content.delete', 'topic', id);
@@ -106,7 +106,7 @@ export async function deleteTopicAction(formData: FormData) {
 
 export async function updatePostAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const conteudo = String(formData.get('conteudo') || '');
   await adminUpdateForumPost(id, { conteudo });
@@ -117,7 +117,7 @@ export async function updatePostAction(formData: FormData) {
 
 export async function deletePostAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteForumPost(id);
   await audit(caller, 'content.delete', 'post', id);
@@ -129,7 +129,7 @@ export async function deletePostAction(formData: FormData) {
 
 export async function updateArticleAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const patch = {
     titulo: String(formData.get('titulo') || ''),
@@ -147,7 +147,7 @@ export async function updateArticleAction(formData: FormData) {
 
 export async function deleteArticleAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteNews(id);
   await audit(caller, 'content.delete', 'article', id);
@@ -161,7 +161,7 @@ export async function deleteArticleAction(formData: FormData) {
 
 export async function updateForumCommentAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const comentario = String(formData.get('comentario') || '');
   await adminUpdateForumComment(id, { comentario });
@@ -172,7 +172,7 @@ export async function updateForumCommentAction(formData: FormData) {
 
 export async function deleteForumCommentAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteForumComment(id);
   await audit(caller, 'content.delete', 'comment', id, { source: 'forum' });
@@ -182,7 +182,7 @@ export async function deleteForumCommentAction(formData: FormData) {
 
 export async function updateNewsCommentAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const comentario = String(formData.get('comentario') || '');
   await adminUpdateNewsComment(id, { comentario });
@@ -193,7 +193,7 @@ export async function updateNewsCommentAction(formData: FormData) {
 
 export async function deleteNewsCommentAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteNewsComment(id);
   await audit(caller, 'content.delete', 'comment', id, { source: 'news' });
@@ -205,7 +205,7 @@ export async function deleteNewsCommentAction(formData: FormData) {
 
 export async function updateStoryAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   const patch: Record<string, string> = {
     status: String(formData.get('status') || 'public'),
@@ -221,7 +221,7 @@ export async function updateStoryAction(formData: FormData) {
 
 export async function deleteStoryAction(formData: FormData) {
   const caller = await requireAdmin();
-  const id = Number(formData.get('id') || 0);
+  const id = String(formData.get('id') || '');
   if (!id) return;
   await adminDeleteStory(id);
   await audit(caller, 'content.delete', 'article', id, { kind: 'story' });

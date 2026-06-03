@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
-import { directusUrl, serviceToken } from '@/server/directus/client'
-import { TABLES, USE_V2 } from '@/server/directus/tables'
+import { pbList, pbCreate, pbUpdate, pbDelete } from '@/server/directus/pb-helpers'
+import { TABLES } from '@/server/directus/tables'
 
 export const dynamic = 'force-dynamic';
 
@@ -23,54 +23,51 @@ function normalizeLink(input: string): string {
 
 const TABLE = TABLES.sponsors;
 
-// App-facing response shape (legacy-style): { id, nome, link, imagem, status }
-// Maps to either parceiros (legacy) or sponsors (v2).
-function mapDbRow(row: any): Record<string, unknown> {
-  if (USE_V2) {
-    return {
-      id: Number(row.id),
-      nome: row.name ?? '',
-      link: row.link ?? '',
-      imagem: row.image ?? '',
-      status: row.active ? 'ativo' : 'inativo',
-    };
-  }
+// v2 sponsors row (English columns: id, name, link, image, active, sort).
+type SponsorRow = {
+  id: string;
+  name?: string | null;
+  link?: string | null;
+  image?: string | null;
+  active?: boolean | null;
+  sort?: number | null;
+};
+
+// App-facing response shape (legacy-style): { id, nome, link, imagem, status }.
+// PB ids sont des STRINGS -> on les conserve tels quels (jamais Number()).
+function mapDbRow(row: SponsorRow): Record<string, unknown> {
   return {
-    id: Number(row.id),
-    nome: row.nome ?? '',
+    id: String(row.id),
+    nome: row.name ?? '',
     link: row.link ?? '',
-    imagem: row.imagem ?? '',
-    status: row.status ?? 'ativo',
+    imagem: row.image ?? '',
+    status: row.active ? 'ativo' : 'inativo',
   };
 }
 
+// Traduit le payload app (nome/link/imagem/status) vers les colonnes v2.
 function appToDb(input: { nome?: string; link?: string; imagem?: string; status?: string }): Record<string, unknown> {
-  if (USE_V2) {
-    const db: Record<string, unknown> = {};
-    if (input.nome !== undefined) db.name = input.nome;
-    if (input.link !== undefined) db.link = input.link;
-    if (input.imagem !== undefined) db.image = input.imagem;
-    if (input.status !== undefined) db.active = input.status === 'ativo';
-    return db;
-  }
-  return { ...input };
+  const db: Record<string, unknown> = {};
+  if (input.nome !== undefined) db.name = input.nome;
+  if (input.link !== undefined) db.link = input.link;
+  if (input.imagem !== undefined) db.image = input.imagem;
+  if (input.status !== undefined) db.active = input.status === 'ativo';
+  return db;
 }
 
 // GET: list all pubs
 export const GET = withAdmin(async () => {
-  const fields = USE_V2 ? 'id,name,link,image,active' : 'id,nome,link,imagem,status';
-  const url = new URL(`${directusUrl}/items/${encodeURIComponent(TABLE)}`);
-  url.searchParams.set('fields', fields);
-  url.searchParams.set('sort', '-id');
-  url.searchParams.set('limit', '50');
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return NextResponse.json({ data: [] });
-  const json = await res.json();
-  const data = (json?.data ?? []).map(mapDbRow);
-  return NextResponse.json({ data });
+  try {
+    const rows = await pbList<SponsorRow>(TABLE, {
+      fields: 'id,name,link,image,active',
+      sort: '-created',
+      perPage: 50,
+    });
+    const data = rows.map(mapDbRow);
+    return NextResponse.json({ data });
+  } catch {
+    return NextResponse.json({ data: [] });
+  }
 }, { key: 'admin:pub:read', limit: 120, windowMs: 60_000 });
 
 // Validation tolérante du lien : on n'exige pas .url() strict pour ne pas
@@ -83,8 +80,12 @@ const CreateSchema = z.object({
   status: z.enum(['ativo', 'inativo']).optional().default('ativo'),
 });
 
+// PB ids = strings. Le panneau admin renvoie l'id reçu du GET ; on l'accepte
+// en string ou number et on le coerce en string pour les helpers PB.
+const idSchema = z.union([z.string().min(1), z.number().int().positive()]).transform((v) => String(v));
+
 const UpdateSchema = z.object({
-  id: z.number().int().positive(),
+  id: idSchema,
   nome: z.string().min(1).max(100).optional(),
   link: z.string().min(1).max(500).optional(),
   imagem: z.string().min(1).max(500).optional(),
@@ -92,7 +93,7 @@ const UpdateSchema = z.object({
 });
 
 const DeleteSchema = z.object({
-  id: z.number().int().positive(),
+  id: idSchema,
 });
 
 // POST: create, update or delete pub
@@ -114,11 +115,11 @@ export const POST = withAdmin(async (req) => {
   if (action === 'delete') {
     const parsed = DeleteSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'INVALID_BODY' }, { status: 400 });
-    const res = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}/${parsed.data.id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${serviceToken}` },
-    });
-    if (!res.ok && res.status !== 204) return NextResponse.json({ error: 'DELETE_FAILED' }, { status: 500 });
+    try {
+      await pbDelete(TABLE, parsed.data.id);
+    } catch {
+      return NextResponse.json({ error: 'DELETE_FAILED' }, { status: 500 });
+    }
     invalidatePub();
     return NextResponse.json({ ok: true });
   }
@@ -129,15 +130,13 @@ export const POST = withAdmin(async (req) => {
     const { id, ...patch } = parsed.data;
     if (patch.link !== undefined) patch.link = normalizeLink(patch.link);
     const dbPatch = appToDb(patch);
-    const res = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}/${id}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(dbPatch),
-    });
-    if (!res.ok) return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 });
-    const json = await res.json();
-    invalidatePub();
-    return NextResponse.json({ ok: true, data: json?.data ? mapDbRow(json.data) : null });
+    try {
+      const updated = await pbUpdate<SponsorRow>(TABLE, id, dbPatch);
+      invalidatePub();
+      return NextResponse.json({ ok: true, data: updated ? mapDbRow(updated) : null });
+    } catch {
+      return NextResponse.json({ error: 'UPDATE_FAILED' }, { status: 500 });
+    }
   }
 
   // CREATE
@@ -147,16 +146,12 @@ export const POST = withAdmin(async (req) => {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
   const data = { ...parsed.data, link: normalizeLink(parsed.data.link) };
-  const payload = USE_V2
-    ? { ...appToDb(data), sort: 0 }
-    : { ...data, autor: 'admin', data: Math.floor(Date.now() / 1000) };
-  const res = await fetch(`${directusUrl}/items/${encodeURIComponent(TABLE)}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) return NextResponse.json({ error: 'CREATE_FAILED' }, { status: 500 });
-  const json = await res.json();
-  invalidatePub();
-  return NextResponse.json({ ok: true, data: json?.data ? mapDbRow(json.data) : null });
+  const payload = { ...appToDb(data), sort: 0 };
+  try {
+    const created = await pbCreate<SponsorRow>(TABLE, payload);
+    invalidatePub();
+    return NextResponse.json({ ok: true, data: created ? mapDbRow(created) : null });
+  } catch {
+    return NextResponse.json({ error: 'CREATE_FAILED' }, { status: 500 });
+  }
 }, { key: 'admin:pub', limit: 30, windowMs: 60_000 });

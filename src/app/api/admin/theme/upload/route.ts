@@ -4,10 +4,14 @@ import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { withAdmin } from '@/server/api-helpers';
-import { directusUrl } from '@/server/directus/client';
-import { uploadFileToDirectus } from '@/server/directus/stories';
-import { isThemeStoredInDirectus, themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
+import { themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
 import { validateUploadedFile } from '@/server/upload-security';
+
+// TODO(migration): upload PB. Cette route téléversait vers l'API Directus /files
+// quand le thème était stocké côté Directus. Ce mode a été retiré pendant la
+// migration PocketBase : le thème est désormais toujours stocké en local
+// (public/uploads/theme) et l'upload écrit directement sur le filesystem local.
+// L'upload PocketBase éventuel sera traité dans un lot ultérieur.
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -41,17 +45,6 @@ async function uploadToLocalPublicDir(file: File, target: string, buffer: Buffer
   return `/uploads/theme/${fileName}`;
 }
 
-async function uploadToDirectusAssets(file: File, buffer: Buffer, detectedMime: string): Promise<string> {
-  const fallbackExt = extensionFromFile(file);
-  const sourceName = (file.name || '').trim();
-  const filename = sourceName || `theme-${Date.now()}.${fallbackExt}`;
-  const safeFile = new File([new Uint8Array(buffer)], filename, { type: detectedMime });
-  const uploaded = await uploadFileToDirectus(safeFile, filename, detectedMime);
-  const id = String(uploaded?.id || '').trim();
-  if (!id) throw new Error('DIRECTUS_UPLOAD_NO_ID');
-  return `${directusUrl}/assets/${encodeURIComponent(id)}`;
-}
-
 export const POST = withAdmin(async (req) => {
   const formData = await req.formData().catch(() => null);
   if (!formData) {
@@ -76,9 +69,7 @@ export const POST = withAdmin(async (req) => {
   }
 
   try {
-    const uploadedUrl = isThemeStoredInDirectus()
-      ? await uploadToDirectusAssets(file, validation.buffer, validation.detectedMime)
-      : await uploadToLocalPublicDir(file, target, validation.buffer);
+    const uploadedUrl = await uploadToLocalPublicDir(file, target, validation.buffer);
 
     const settings = await writeThemeSettings(
       target === 'logo'

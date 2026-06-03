@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
-import { directusUrl, serviceToken } from '@/server/directus/client'
+import { pbFirst } from '@/server/directus/pb-helpers'
 import { TABLES } from '@/server/directus/tables'
 import { getUserBadges } from '@/server/directus/badges'
-
-const USERS_TABLE = TABLES.users
 
 export const dynamic = 'force-dynamic'
 
@@ -14,20 +12,15 @@ export async function GET(req: Request) {
 
   try {
     // Find user ID by nick
-    const url = new URL(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}`)
-    url.searchParams.set('filter[nick][_eq]', nick)
-    url.searchParams.set('fields', 'id')
-    url.searchParams.set('limit', '1')
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${serviceToken}` },
-      cache: 'no-store',
-    })
-    if (!res.ok) return NextResponse.json({ badges: [] })
-    const json = await res.json()
-    const userId = json?.data?.[0]?.id
+    const user = await pbFirst<{ id: string }>(
+      TABLES.users,
+      { nick: { _eq: nick } },
+      { fields: 'id' },
+    )
+    const userId = user?.id
     if (!userId) return NextResponse.json({ badges: [] })
 
-    const badges = await getUserBadges(Number(userId))
+    const badges = await getUserBadges(String(userId))
     return NextResponse.json({ badges })
   } catch {
     return NextResponse.json({ badges: [] })

@@ -1,41 +1,35 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
-import { directusUrl, serviceToken } from '@/server/directus/client'
-import { TABLES, USE_V2 } from '@/server/directus/tables'
+import { pbOne, pbUpdate } from '@/server/directus/pb-helpers'
+import { TABLES } from '@/server/directus/tables'
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards'
 import { logAdminAction } from '@/server/directus/admin-logs'
 
 const MAX_BALANCE = 10_000_000
 const USERS_TABLE = TABLES.users
-const COINS_COL = USE_V2 ? 'coins' : 'moedas'
 
 const BodySchema = z.object({
   userId: z.string().min(1),
   amount: z.number().int().min(1, 'Montant minimum: 1').max(100000, 'Montant maximum: 100 000'),
 })
 
+type UserCoinsRow = { id: string; nick: string | null; coins: number | null }
+
+function cleanUserId(id: string) {
+  return id.startsWith('legacy:') ? id.split(':')[1] : id
+}
+
 async function getUserById(id: string) {
-  const cleanId = id.startsWith('legacy:') ? id.split(':')[1] : id
-  const res = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}?fields=id,nick,${COINS_COL}`, {
-    headers: { Authorization: `Bearer ${serviceToken}` },
-    cache: 'no-store',
-  })
-  if (!res.ok) return null
-  const json = await res.json()
-  return json?.data ?? null
+  return pbOne<UserCoinsRow>(USERS_TABLE, cleanUserId(id), { fields: 'id,nick,coins' }).catch(
+    () => null,
+  )
 }
 
 async function updateUserCoins(id: string, newBalance: number) {
-  const cleanId = id.startsWith('legacy:') ? id.split(':')[1] : id
-  const res = await fetch(`${directusUrl}/items/${encodeURIComponent(USERS_TABLE)}/${cleanId}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${serviceToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ [COINS_COL]: newBalance }),
-  })
-  if (!res.ok) return null
-  const json = await res.json()
-  return json?.data ?? null
+  return pbUpdate<UserCoinsRow>(USERS_TABLE, cleanUserId(id), { coins: newBalance }).catch(
+    () => null,
+  )
 }
 
 export const POST = withAdmin(async (req, { user: caller }) => {
@@ -61,7 +55,7 @@ export const POST = withAdmin(async (req, { user: caller }) => {
     return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
   }
 
-  const currentBalance = Number(user[COINS_COL]) || 0
+  const currentBalance = Number(user.coins) || 0
   const newBalance = currentBalance + amount
 
   if (newBalance > MAX_BALANCE) {
