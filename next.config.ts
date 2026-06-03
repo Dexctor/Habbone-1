@@ -15,10 +15,15 @@ const nextConfig: NextConfig = {
       // Habbone (legacy/news links)
       { protocol: 'https', hostname: 'habbone.fr', pathname: '/**' },
       { protocol: 'http', hostname: 'habbone.fr', pathname: '/**' },
-      // Directus API (production)
+      // Directus API (production) — legacy, kept during transition
       { protocol: 'https', hostname: 'api.habbone.fr', pathname: '/**' },
       // Local Directus dev server
       { protocol: 'http', hostname: 'localhost', port: '8055', pathname: '/**' },
+      // PocketBase (production) — uploaded images are served from here
+      { protocol: 'https', hostname: 'pb.habbone.fr', pathname: '/**' },
+      // PocketBase (local dev)
+      { protocol: 'http', hostname: '127.0.0.1', port: '8090', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', port: '8090', pathname: '/**' },
     ],
   },
 };
