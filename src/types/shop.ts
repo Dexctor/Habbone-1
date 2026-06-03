@@ -2,8 +2,10 @@
 /*  Types partagés pour la Boutique (client + serveur)                  */
 /* ------------------------------------------------------------------ */
 
+// NOTE: ids are PocketBase string ids (15-char) post-migration.
+// UI consumers that still assume numeric ids are updated in Lot 5.
 export interface ShopItem {
-  id: number;
+  id: string;
   nome: string;
   descricao?: string;
   imagem: string;
@@ -13,10 +15,10 @@ export interface ShopItem {
 }
 
 export interface ShopOrder {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   user_nick?: string;
-  item_id: number;
+  item_id: string;
   item_nome?: string;
   item_imagem?: string;
   preco: number;
@@ -24,7 +26,7 @@ export interface ShopOrder {
 }
 
 export interface AdminNotification {
-  id: number;
+  id: string;
   type: string;
   title: string;
   message?: string;
