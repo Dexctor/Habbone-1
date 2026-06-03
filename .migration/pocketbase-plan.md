@@ -245,6 +245,28 @@ Le script existant `scripts/migration/01-create-collections.ts` (Directus) sert 
 
 ---
 
+## 8 ter. Lot 2 — POC import bcrypt : ✅ RÉSOLU (testé de bout en bout)
+
+**Question** : peut-on importer les hash bcrypt legacy pour un login transparent ?
+**Réponse** : OUI, via SQL direct (pas via REST).
+
+| Voie testée | Résultat |
+|---|---|
+| REST `POST users` avec `password` = hash bcrypt brut | ❌ HTTP 400 — PB exige `password`+`passwordConfirm` en clair et re-hashe |
+| REST `POST users` avec mot de passe **en clair** | ✅ marche, mais on n'a pas le clair (uniquement les hash) |
+| **SQL `UPDATE users SET password = '<hash $2y$ legacy>'`** | ✅ **login HTTP 200** avec le mot de passe d'origine |
+| Contrôle négatif (mauvais mot de passe) | ✅ HTTP 400 (rejeté) |
+
+**Format confirmé** : PocketBase stocke en **bcrypt `$2a$10$`, longueur 60** — identique au legacy.
+Les hash PHP/Habbo en **`$2y$`** sont acceptés tels quels (interopérables).
+
+**Recette de migration des mots de passe** (pour `02-migrate-data.ts`) :
+1. Créer chaque user via REST avec un mot de passe **placeholder** (PB génère `id`, `tokenKey`…).
+2. **Écraser** la colonne `password` avec le vrai hash bcrypt legacy via `UPDATE` SQL (batch SQLite).
+3. Login transparent garanti. Les 23 utilisateurs gardent leur mot de passe actuel.
+
+---
+
 ## 9. Ce qui est DÉJÀ fait / réutilisable
 
 - ✅ Modèle de données complet (`schema-v2.md`) — 17 collections spécifiées.
@@ -252,3 +274,6 @@ Le script existant `scripts/migration/01-create-collections.ts` (Directus) sert 
 - ✅ Logique de migration (séquencement, dates, nick→id, bcrypt) — décrite, à re-porter sur l'API PB.
 - ✅ Branche `migration/pocketbase-clean` créée depuis `main`.
 - ✅ Volume négligeable (302 lignes) — aucune contrainte technique de scale.
+- ✅ **Lot 0** : PocketBase local opérationnel (superuser, auth API confirmée).
+- ✅ **Lot 1** : 20 collections créées et vérifiées (27 relations valides, 5 index uniques) — scripts `scripts/migration-pb/01a-01d`.
+- ✅ **Lot 2** : import bcrypt prouvé (login transparent via hash legacy en SQL).
