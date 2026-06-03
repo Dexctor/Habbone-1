@@ -2,11 +2,8 @@
 import type { NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import {
-  listUsersByNick,
+  verifyLogin,
   normalizeHotelCode,
-  passwordsMatch,
-  upgradePasswordToBcrypt,
-  isBcrypt,
   asTrue,
   asFalse,
   tryUpdateHabboSnapshotForUser,
@@ -30,29 +27,15 @@ export const authOptions: NextAuthOptions = {
         const password = (creds?.password as string | undefined) || '';
         if (!nick || !password) return null;
 
-        const candidates = await listUsersByNick(nick);
-        if (!candidates.length) return null;
-
-        let user: any = null;
-        for (const candidate of candidates) {
-          if (passwordsMatch(password, candidate.senha ?? '')) {
-            user = candidate;
-            break;
-          }
-        }
-
+        // Native PocketBase auth: validates nick+password (bcrypt) in one call.
+        // Works for both app-created users and legacy users imported via SQL.
+        const user: any = await verifyLogin(nick, password);
         if (!user) return null;
 
         const hotelCode = normalizeHotelCode((user as any)?.habbo_hotel);
 
         if (asTrue(user.banido)) throw new Error('Compte banni.');
         if (asFalse(user.ativado)) throw new Error('Compte non activé.');
-
-        if (!isBcrypt(user.senha)) {
-          try {
-            await upgradePasswordToBcrypt(String(user.id), password);
-          } catch {}
-        }
 
         try {
           const core = await getHabboUserByNameForHotel(user.nick, hotelCode, { cache: false });

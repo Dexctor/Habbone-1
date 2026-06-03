@@ -1,13 +1,15 @@
 import 'server-only';
 
+import PocketBase from 'pocketbase';
+
 import type { HabboUserCore } from '@/lib/habbo';
 
 import { pbList, pbOne, pbFirst, pbCreate, pbUpdate } from './pb-helpers';
 import { TABLES } from './tables';
-import { hashPassword } from './security';
 import type { HabboVerificationStatus } from './types';
 
 const USERS_TABLE = TABLES.users;
+const PB_URL = (process.env.POCKETBASE_URL || 'http://127.0.0.1:8090').replace(/\/$/, '');
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -200,12 +202,12 @@ export async function createUser(data: {
   verifiedAt?: string | null;
   ativado?: 's' | 'n';
 }) {
-  const password = hashPassword(data.senha);
+  // PocketBase auth collections hash the password themselves: pass the PLAIN
+  // password (NOT a pre-hashed value) or it would be double-hashed.
   const payload: Record<string, unknown> = {
     nick: data.nick,
-    // PB auth requires password + passwordConfirm on create via the records API.
-    password,
-    passwordConfirm: password,
+    password: data.senha,
+    passwordConfirm: data.senha,
     email: data.email ?? '',
     mission: data.missao ?? 'Mission Habbo: HabboOneRegister-0',
     active: data.ativado === 's',
@@ -225,13 +227,13 @@ export async function createUser(data: {
 /* ------------------------------------------------------------------ */
 
 export async function upgradePasswordToBcrypt(userId: string, plain: string) {
-  const password = hashPassword(plain);
-  return pbUpdate(USERS_TABLE, userId, { password, passwordConfirm: password });
+  // PB hashes itself (bcrypt). No legacy MD5->bcrypt upgrade needed anymore;
+  // just (re)set the plain password and PB stores a bcrypt hash.
+  return pbUpdate(USERS_TABLE, userId, { password: plain, passwordConfirm: plain });
 }
 
 export async function changeUserPassword(userId: string, newPassword: string) {
-  const password = hashPassword(newPassword);
-  return pbUpdate(USERS_TABLE, userId, { password, passwordConfirm: password });
+  return pbUpdate(USERS_TABLE, userId, { password: newPassword, passwordConfirm: newPassword });
 }
 
 export async function updateUserTwitter(userId: string, twitter: string | null) {
@@ -291,6 +293,37 @@ export async function getUserMoedas(userId: string): Promise<number> {
   const value = row?.coins;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Login verification (PocketBase native auth)                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Verify a nick+password against PocketBase's native auth.
+ *
+ * Uses a throwaway PocketBase instance (NOT the shared superuser client) so the
+ * auth attempt never touches the service-account authStore. Returns the user row
+ * (legacy shape) on success, or null on bad credentials.
+ *
+ * PB's authWithPassword works for both:
+ *  - users created through createUser (PB hashed the plain password), and
+ *  - legacy users whose bcrypt hash was written straight into the password
+ *    column via SQL (proven in Lot 2).
+ */
+export async function verifyLogin(nick: string, password: string) {
+  if (!nick || !password) return null;
+  const client = new PocketBase(PB_URL);
+  client.autoCancellation(false);
+  try {
+    const auth = await client.collection(USERS_TABLE).authWithPassword(nick, password);
+    const row = auth?.record;
+    return row ? v2ToLegacyRow(row) : null;
+  } catch {
+    return null;
+  } finally {
+    client.authStore.clear();
+  }
 }
 
 export { isBcrypt, md5, hashPassword, passwordsMatch } from './security';
