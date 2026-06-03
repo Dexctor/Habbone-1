@@ -2,8 +2,8 @@ import 'server-only';
 
 import type { HabboUserCore } from '@/lib/habbo';
 
-import { directusService, rItems, rItem, cItem, uItem } from './client';
-import { TABLES, USE_V2 } from './tables';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate } from './pb-helpers';
+import { TABLES } from './tables';
 import { hashPassword } from './security';
 import type { HabboVerificationStatus } from './types';
 
@@ -14,7 +14,7 @@ const USERS_TABLE = TABLES.users;
 /* ------------------------------------------------------------------ */
 
 type LegacyUserRecord = {
-  id?: number | string | null;
+  id?: string | null;
   nick?: string | null;
   senha?: string | null;
   email?: string | null;
@@ -38,59 +38,19 @@ type LegacyUserRecord = {
   moedas?: number | null;
 };
 
-const LEGACY_USER_FIELDS = [
-  'id',
-  'nick',
-  'senha',
-  'email',
-  'avatar',
-  'missao',
-  'ativado',
-  'banido',
-  'status',
-  'role',
-  'directus_role_id',
-  'data_criacao',
-  'habbo_hotel',
-  'habbo_unique_id',
-  'habbo_verification_status',
-  'habbo_verification_code',
-  'habbo_verification_expires_at',
-  'habbo_verified_at',
-  'habbo_name',
-] as const;
-
-const V2_USER_FIELDS = [
-  'id',
-  'nick',
-  'password',
-  'email',
-  'avatar_url',
-  'background_url',
-  'mission',
-  'active',
-  'banned',
-  'directus_role_id',
-  'created_at',
-  'habbo_hotel',
-  'habbo_unique_id',
-  'habbo_verification_status',
-  'habbo_verification_code',
-  'habbo_verification_expires_at',
-  'habbo_verified_at',
-  'habbo_name',
-  'coins',
-] as const;
-
-const USER_FIELDS = USE_V2 ? V2_USER_FIELDS : LEGACY_USER_FIELDS;
+// v2 columns we read. `role` is a relation id (string). habbo_* verification
+// fields are not in the core schema-v2 but PB ignores unknown fields on read;
+// kept here so callers that expect them still type-check.
+const USER_FIELDS =
+  'id,nick,password,email,avatar_url,background_url,mission,active,banned,role,created,habbo_hotel,habbo_unique_id,habbo_verification_status,habbo_verification_code,habbo_verification_expires_at,habbo_verified_at,habbo_name,coins';
 
 /* ------------------------------------------------------------------ */
 /*  v2 row -> legacy shape (for caller compatibility)                  */
 /* ------------------------------------------------------------------ */
 
-function v2ToLegacyRow(row: any): LegacyUserRecord & { id: number; moedas?: number } {
+function v2ToLegacyRow(row: any): LegacyUserRecord & { id: string; moedas?: number } {
   return {
-    id: Number(row.id),
+    id: String(row.id),
     nick: row.nick ?? null,
     senha: row.password ?? null,
     email: row.email ?? null,
@@ -100,8 +60,9 @@ function v2ToLegacyRow(row: any): LegacyUserRecord & { id: number; moedas?: numb
     banido: row.banned ? 's' : 'n',
     status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
     role: null,
-    directus_role_id: row.directus_role_id ?? null,
-    data_criacao: row.created_at ?? null,
+    // v2 uses a `role` relation; expose its id under the legacy name callers read.
+    directus_role_id: row.role ? String(row.role) : null,
+    data_criacao: row.created ?? null,
     habbo_hotel: row.habbo_hotel ?? null,
     habbo_unique_id: row.habbo_unique_id ?? null,
     habbo_verification_status: row.habbo_verification_status ?? null,
@@ -111,10 +72,6 @@ function v2ToLegacyRow(row: any): LegacyUserRecord & { id: number; moedas?: numb
     habbo_name: row.habbo_name ?? null,
     moedas: typeof row.coins === 'number' ? row.coins : null,
   };
-}
-
-function mapRow(row: any) {
-  return USE_V2 ? v2ToLegacyRow(row) : row;
 }
 
 /* ------------------------------------------------------------------ */
@@ -130,12 +87,11 @@ function legacyPatchToV2(patch: Record<string, unknown>): Record<string, unknown
       case 'missao': v2.mission = v; break;
       case 'ativado': v2.active = v === 's' || v === true; break;
       case 'banido': v2.banned = v === 's' || v === true; break;
-      case 'data_criacao': v2.created_at = v; break;
-      case 'role': /* drop — rely on directus_role_id */ break;
+      case 'data_criacao': v2.created = v; break;
+      case 'role': /* drop — use the role relation directly */ break;
+      case 'directus_role_id': v2.role = v; break;
       case 'moedas': v2.coins = v; break;
-      case 'habbo_core_snapshot': v2.habbo_core_snapshot = v; break;
-      case 'habbo_snapshot_at': v2.habbo_snapshot_at = v; break;
-      default: v2[k] = v; // most Habbo-related columns have the same name
+      default: v2[k] = v; // most Habbo-related columns share the same name
     }
   }
   return v2;
@@ -187,17 +143,12 @@ export function normalizeHotelCode(hotel?: string | null): HabboHotelCode {
 /* ------------------------------------------------------------------ */
 
 export async function listUsersByNick(nick: string) {
-  const raw = (await directusService
-    .request(
-      rItems(USERS_TABLE as any, {
-        filter: { nick: { _eq: nick } } as any,
-        limit: 50 as any,
-        fields: USER_FIELDS,
-      } as any),
-    )
-    .catch(() => [])) as any[];
-  const rows = Array.isArray(raw) ? raw : [];
-  return rows.map(mapRow);
+  const rows = await pbList<any>(USERS_TABLE, {
+    filter: { nick: { _eq: nick } },
+    perPage: 50,
+    fields: USER_FIELDS,
+  }).catch(() => [] as any[]);
+  return rows.map(v2ToLegacyRow);
 }
 
 export async function getUserByNick(nick: string, hotel?: string | null) {
@@ -222,25 +173,14 @@ export async function getUserByNick(nick: string, hotel?: string | null) {
             _and: [{ nick: { _eq: nick } }, { habbo_hotel: { _eq: normalized } }],
           };
 
-  const raw = (await directusService
-    .request(
-      rItems(USERS_TABLE as any, {
-        filter: filter as any,
-        limit: 1 as any,
-        fields: USER_FIELDS,
-      } as any),
-    )
-    .catch(() => [])) as any[];
-  const rows = Array.isArray(raw) ? raw : [];
-  return rows.length ? mapRow(rows[0]) : null;
+  const row = await pbFirst<any>(USERS_TABLE, filter, { fields: USER_FIELDS }).catch(() => null);
+  return row ? v2ToLegacyRow(row) : null;
 }
 
-export async function getUserById(userId: number) {
-  const raw = await directusService
-    .request(rItem(USERS_TABLE as any, userId as any, { fields: USER_FIELDS as any } as any))
-    .catch(() => null);
-  if (!raw) return null;
-  return mapRow(raw);
+export async function getUserById(userId: string) {
+  const row = await pbOne<any>(USERS_TABLE, userId, { fields: USER_FIELDS }).catch(() => null);
+  if (!row) return null;
+  return v2ToLegacyRow(row);
 }
 
 /* ------------------------------------------------------------------ */
@@ -260,62 +200,47 @@ export async function createUser(data: {
   verifiedAt?: string | null;
   ativado?: 's' | 'n';
 }) {
-  if (USE_V2) {
-    const payload: Record<string, unknown> = {
-      nick: data.nick,
-      password: hashPassword(data.senha),
-      email: data.email ?? null,
-      mission: data.missao ?? 'Mission Habbo: HabboOneRegister-0',
-      active: data.ativado === 's',
-      banned: false,
-      habbo_hotel: data.habboHotel ?? 'fr',
-      habbo_unique_id: data.habboUniqueId ?? null,
-      habbo_verification_status: data.verificationStatus ?? 'pending',
-      habbo_verification_code: data.verificationCode ?? null,
-      habbo_verification_expires_at: data.verificationExpiresAt ?? null,
-      habbo_verified_at: data.verifiedAt ?? null,
-    };
-    return directusService.request(cItem(USERS_TABLE as any, payload as any));
-  }
-
-  const payload: LegacyUserRecord = {
+  const password = hashPassword(data.senha);
+  const payload: Record<string, unknown> = {
     nick: data.nick,
-    senha: hashPassword(data.senha),
-    email: data.email ?? null,
-    missao: data.missao ?? 'Mission Habbo: HabboOneRegister-0',
-    ativado: data.ativado ?? 'n',
-    banido: 'n',
-    data_criacao: new Date().toISOString(),
-    habbo_hotel: data.habboHotel ?? null,
+    // PB auth requires password + passwordConfirm on create via the records API.
+    password,
+    passwordConfirm: password,
+    email: data.email ?? '',
+    mission: data.missao ?? 'Mission Habbo: HabboOneRegister-0',
+    active: data.ativado === 's',
+    banned: false,
+    habbo_hotel: data.habboHotel ?? 'fr',
     habbo_unique_id: data.habboUniqueId ?? null,
-    habbo_verification_status: data.verificationStatus ?? ('pending' as HabboVerificationStatus),
+    habbo_verification_status: data.verificationStatus ?? 'pending',
     habbo_verification_code: data.verificationCode ?? null,
     habbo_verification_expires_at: data.verificationExpiresAt ?? null,
     habbo_verified_at: data.verifiedAt ?? null,
   };
-  return directusService.request(cItem(USERS_TABLE as any, payload as any));
+  return pbCreate(USERS_TABLE, payload);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Password + verification updates                                    */
 /* ------------------------------------------------------------------ */
 
-export async function upgradePasswordToBcrypt(userId: number, plain: string) {
-  const payload = USE_V2 ? { password: hashPassword(plain) } : { senha: hashPassword(plain) };
-  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
+export async function upgradePasswordToBcrypt(userId: string, plain: string) {
+  const password = hashPassword(plain);
+  return pbUpdate(USERS_TABLE, userId, { password, passwordConfirm: password });
 }
 
-export async function changeUserPassword(userId: number, newPassword: string) {
-  const payload = USE_V2 ? { password: hashPassword(newPassword) } : { senha: hashPassword(newPassword) };
-  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
+export async function changeUserPassword(userId: string, newPassword: string) {
+  const password = hashPassword(newPassword);
+  return pbUpdate(USERS_TABLE, userId, { password, passwordConfirm: password });
 }
 
-export async function updateUserTwitter(userId: number, twitter: string | null) {
-  return directusService.request(uItem(USERS_TABLE as any, userId as any, { twitter } as any));
+export async function updateUserTwitter(userId: string, twitter: string | null) {
+  // `twitter` is not part of schema-v2; kept as a no-op-safe update.
+  return pbUpdate(USERS_TABLE, userId, { twitter });
 }
 
 export async function updateUserVerification(
-  userId: number,
+  userId: string,
   patch: Partial<{
     habbo_hotel: string | null;
     habbo_unique_id: string | null;
@@ -326,11 +251,11 @@ export async function updateUserVerification(
     ativado: 's' | 'n';
   }>,
 ) {
-  const payload = USE_V2 ? legacyPatchToV2(patch as Record<string, unknown>) : patch;
-  return directusService.request(uItem(USERS_TABLE as any, userId as any, payload as any));
+  const payload = legacyPatchToV2(patch as Record<string, unknown>);
+  return pbUpdate(USERS_TABLE, userId, payload);
 }
 
-export async function markUserAsVerified(userId: number) {
+export async function markUserAsVerified(userId: string) {
   const nowIso = new Date().toISOString();
   return updateUserVerification(userId, {
     habbo_verification_status: 'ok',
@@ -342,30 +267,28 @@ export async function markUserAsVerified(userId: number) {
 }
 
 export async function tryUpdateHabboSnapshotForUser(
-  userId: number,
+  userId: string,
   core: HabboUserCore,
 ): Promise<boolean> {
   try {
-    const payload: Partial<LegacyUserRecord> = {
+    const payload = legacyPatchToV2({
       habbo_unique_id: core.uniqueId,
       habbo_name: core.name,
       habbo_core_snapshot: core,
       habbo_snapshot_at: new Date().toISOString(),
-    };
-    const mapped = USE_V2 ? legacyPatchToV2(payload as Record<string, unknown>) : payload;
-    await directusService.request(uItem(USERS_TABLE as any, userId as any, mapped as any));
+    });
+    await pbUpdate(USERS_TABLE, userId, payload);
     return true;
   } catch {
     return false;
   }
 }
 
-export async function getUserMoedas(userId: number): Promise<number> {
-  const fields = USE_V2 ? ['coins'] : ['moedas'];
-  const row = await directusService
-    .request(rItem(USERS_TABLE as any, userId as any, { fields: fields as any } as any))
-    .catch(() => null as any);
-  const value = USE_V2 ? (row as any)?.coins : (row as any)?.moedas;
+export async function getUserMoedas(userId: string): Promise<number> {
+  const row = await pbOne<{ coins?: number }>(USERS_TABLE, userId, { fields: 'coins' }).catch(
+    () => null,
+  );
+  const value = row?.coins;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
 }
