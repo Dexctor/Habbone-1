@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
+import { pbUploadFile } from '@/server/directus/pb-helpers'
 
 /**
  * POST /api/upload/image
  * Accepts multipart/form-data with a single file field named "file".
- *
- * TODO(migration): upload PB. Cette route téléversait vers l'API Directus /files
- * (supprimée pendant la migration PocketBase). PocketBase n'expose pas la même
- * API de fichiers et la destination de stockage n'est pas encore décidée. On
- * valide quand même le fichier (auth + MIME + taille) puis on renvoie un 501
- * clair. L'upload réel sera implémenté dans un lot ultérieur.
+ * Stores the image in the PocketBase `uploads` collection and returns
+ * { url, id } — the served file URL and the upload record id.
  */
+
+export const runtime = 'nodejs'
 
 const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
@@ -31,11 +30,8 @@ export const POST = withAuth(async (req) => {
       return NextResponse.json({ error: 'Fichier trop volumineux (max 5MB)' }, { status: 400 })
     }
 
-    // TODO(migration): upload PB — implémenter le stockage du fichier validé.
-    return NextResponse.json(
-      { error: 'Upload non disponible (migration PocketBase en cours)' },
-      { status: 501 },
-    )
+    const { id, url } = await pbUploadFile(file, { context: 'image' })
+    return NextResponse.json({ ok: true, url, id })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     return NextResponse.json(

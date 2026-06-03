@@ -128,3 +128,26 @@ export async function pbCount(collection: string, filter?: Record<string, unknow
   const res = await pb.collection(collection).getList(1, 1, params);
   return res.totalItems;
 }
+
+/**
+ * Upload a file to the `uploads` collection and return its public URL + id.
+ *
+ * Replaces the old Directus /files API. PocketBase attaches files to records,
+ * so we store each upload as a row in the dedicated `uploads` collection (file
+ * field, public read) and return the served file URL.
+ */
+export async function pbUploadFile(
+  file: File,
+  meta?: { uploadedBy?: string; context?: string },
+): Promise<{ id: string; url: string }> {
+  const pb = await pbAdmin();
+  const form = new FormData();
+  form.append('file', file);
+  if (meta?.uploadedBy) form.append('uploaded_by', meta.uploadedBy);
+  if (meta?.context) form.append('context', meta.context);
+
+  const rec: any = await pb.collection('uploads').create(form);
+  const filename = Array.isArray(rec.file) ? rec.file[0] : rec.file;
+  const url = pb.files.getURL(rec, filename);
+  return { id: rec.id, url };
+}
