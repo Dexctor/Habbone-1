@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       }
 
       const user = users[0] as any
-      const userId = Number(user.id)
+      const userId = String(user.id)
       const code = generateVerificationCode()
       const expiresAt = computeVerificationExpiry()
 
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       }
 
       const user = users[0] as any
-      const userId = Number(user.id)
+      const userId = String(user.id)
       const storedCode = String(user.habbo_verification_code || '')
       const expiresAt = user.habbo_verification_expires_at
       const hotel = normalizeHotelCode(user.habbo_hotel)

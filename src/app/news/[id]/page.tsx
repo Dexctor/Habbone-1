@@ -28,9 +28,9 @@ type NewsDetailProps = {
 
 export default async function NewsDetailPage(props: NewsDetailProps) {
   const { id } = await props.params
-  const newsId = Number(id || 0)
+  const newsId = String(id || '')
 
-  if (!Number.isFinite(newsId) || newsId <= 0) {
+  if (!newsId) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-16 text-center text-sm text-[#BEBECE]/55">
         Article introuvable.
@@ -65,10 +65,10 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
 
   const comments: NewsCommentRecord[] = Array.isArray(commentsRaw) ? (commentsRaw as NewsCommentRecord[]) : []
   const commentIds = comments
-    .map((comment) => Number(comment?.id))
-    .filter((value) => Number.isFinite(value) && value > 0)
+    .map((comment) => String(comment?.id || ''))
+    .filter((value) => value.length > 0)
   const [likesMap, roleBadgesMap] = await Promise.all([
-    getLikesMapForNewsComments(commentIds).catch(() => ({} as Record<number, number>)),
+    getLikesMapForNewsComments(commentIds).catch(() => ({} as Record<string, number>)),
     getRoleBadgesForNicks([
       ...(newsItem.autor ? [stripHtml(newsItem.autor)] : []),
       ...comments.map((c) => stripHtml(c.autor || '')).filter(Boolean),
@@ -196,11 +196,11 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
               return (
                 <CommentBubble
                   key={comment.id}
-                  id={Number(comment.id)}
+                  id={String(comment.id)}
                   author={commentAuthor}
                   date={commentDate}
                   html={comment.comentario || ""}
-                  likes={likesMap[Number(comment.id)] ?? 0}
+                  likes={likesMap[String(comment.id)] ?? 0}
                   avatarNick={commentAuthor}
                   canInteract={isAuthenticated}
                   likeEndpoint={`/api/news/comments/${comment.id}/like`}

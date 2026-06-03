@@ -104,7 +104,8 @@ async function enrichUsers(rolesCollectionId: string): Promise<void> {
   });
   mergedFields.push(...toAdd);
 
-  if (toAdd.length === 0 && users.passwordAuth?.identityFields?.includes('nick')) {
+  const currentIdentity = (users as any).passwordAuth?.identityFields as string[] | undefined;
+  if (toAdd.length === 0 && currentIdentity?.includes('nick')) {
     log('  • users already enriched — skip');
     return;
   }

@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       code,
     })
 
-    await updateUserVerification(Number((user as any).id), {
+    await updateUserVerification(String((user as any).id), {
       habbo_verification_status: 'pending',
       habbo_verification_code: code,
       habbo_verification_expires_at: expiresAt,

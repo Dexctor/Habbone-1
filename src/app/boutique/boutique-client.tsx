@@ -29,8 +29,8 @@ function ShopCard({
   item: ShopItem
   coins: number
   loggedIn: boolean
-  onBuy: (id: number) => void
-  buying: number | null
+  onBuy: (id: string) => void
+  buying: string | null
 }) {
   const soldOut = item.estoque <= 0
   const cantAfford = coins < item.preco
@@ -174,7 +174,7 @@ export default function BoutiqueClient({
   const [page, setPage] = useState(0)
   const [items, setItems] = useState<ShopItem[]>(initialItems)
   const [coins, setCoins] = useState(initialCoins)
-  const [buying, setBuying] = useState<number | null>(null)
+  const [buying, setBuying] = useState<string | null>(null)
   const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null)
 
   // Purchase execution (called after dialog confirm)
@@ -211,7 +211,7 @@ export default function BoutiqueClient({
   }, [coins])
 
   // Open confirm dialog
-  const handleBuy = useCallback((itemId: number) => {
+  const handleBuy = useCallback((itemId: string) => {
     if (!loggedIn) {
       toast.error('Connecte-toi pour acheter')
       return

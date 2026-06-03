@@ -65,7 +65,7 @@ export const POST = withAdmin(async (req) => {
 
   // ── Update item ──
   if (action === 'update') {
-    const id = Number(body.id);
+    const id = String(body.id ?? '');
     if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
     const { action: _, id: __, ...patch } = body;
     const item = await updateShopItem(id, patch);
@@ -76,7 +76,7 @@ export const POST = withAdmin(async (req) => {
 
   // ── Delete item ──
   if (action === 'delete') {
-    const id = Number(body.id);
+    const id = String(body.id ?? '');
     if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
     const ok = await deleteShopItem(id);
     if (!ok) return NextResponse.json({ error: 'Suppression échouée' }, { status: 500 });
@@ -86,7 +86,7 @@ export const POST = withAdmin(async (req) => {
 
   // ── Update order status ──
   if (action === 'update_order') {
-    const id = Number(body.id);
+    const id = String(body.id ?? '');
     const status = body.status;
     if (!id) {
       return NextResponse.json({ error: 'ID manquant' }, { status: 400 });

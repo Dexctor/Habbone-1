@@ -5,7 +5,7 @@ import { withAuth } from '@/server/api-helpers';
 import { purchaseItem } from '@/server/directus/shop';
 
 const BodySchema = z.object({
-  itemId: z.number().int().min(1),
+  itemId: z.coerce.string().trim().min(1),
 });
 
 export const POST = withAuth(async (req, { user, nick }) => {
@@ -22,7 +22,7 @@ export const POST = withAuth(async (req, { user, nick }) => {
   }
 
   // Execute purchase
-  const result = await purchaseItem(Number(userId), nick, parsed.data.itemId);
+  const result = await purchaseItem(String(userId), nick, parsed.data.itemId);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error || 'Erreur' }, { status: 400 });

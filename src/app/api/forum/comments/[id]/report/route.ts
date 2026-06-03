@@ -4,8 +4,8 @@ import { reportForumComment } from '@/server/directus/forum'
 import { buildError } from '@/types/api'
 
 export const POST = withAuth(async (_req, { nick, params }) => {
-  const commentId = Number(params?.id || 0)
-  if (!Number.isFinite(commentId) || commentId <= 0) {
+  const commentId = String(params?.id || '')
+  if (!commentId) {
     return NextResponse.json(buildError('Identifiant commentaire invalide', { code: 'INVALID_ID' }), { status: 400 })
   }
   try {

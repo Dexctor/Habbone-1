@@ -23,7 +23,7 @@ export const POST = withAdmin(async (req) => {
   const { action } = body || {};
 
   if (action === 'read') {
-    const id = Number(body.id);
+    const id = String(body.id ?? '');
     if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
     await markNotificationRead(id);
     return NextResponse.json({ ok: true });

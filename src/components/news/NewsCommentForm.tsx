@@ -7,7 +7,7 @@ import RichEditor from "@/components/editor/RichEditor";
 import { Button } from "@/components/ui/button";
 import { stripHtml } from "@/lib/text-utils";
 
-export default function NewsCommentForm({ newsId }: { newsId: number }) {
+export default function NewsCommentForm({ newsId }: { newsId: string }) {
   const router = useRouter();
   const [editorKey, setEditorKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);

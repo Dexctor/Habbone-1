@@ -6,7 +6,7 @@ import { Heart, Flag } from "lucide-react"
 import { habboAvatarSmile } from "@/lib/habbo-imaging"
 
 type CommentBubbleProps = {
-  id?: number
+  id?: string
   author: string
   date?: string | null
   html: string

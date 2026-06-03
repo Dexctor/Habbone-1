@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import RichEditor from "@/components/editor/RichEditor";
 import { stripHtml } from "@/lib/text-utils";
 
-export default function ForumCommentForm({ topicId }: { topicId: number }) {
+export default function ForumCommentForm({ topicId }: { topicId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editorKey, setEditorKey] = useState(0);

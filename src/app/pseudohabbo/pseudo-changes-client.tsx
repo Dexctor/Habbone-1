@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 
 type PseudoChange = {
-  id: number
+  id: string
   oldNick: string
   newNick: string
   hotel: string

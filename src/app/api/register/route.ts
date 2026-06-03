@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     });
 
     try {
-      await updateUserVerification(Number((user as any)?.id), {
+      await updateUserVerification(String((user as any)?.id), {
         habbo_verification_status: 'pending',
         habbo_verification_code: verificationCode,
         habbo_verification_expires_at: verificationExpiresAt,
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     // Étape 3: Stocker un snapshot basique (best-effort, n'échoue pas l'inscription)
-    void tryUpdateHabboSnapshotForUser(Number((user as any).id), habboCore);
+    void tryUpdateHabboSnapshotForUser(String((user as any).id), habboCore);
 
     const payload: any = {
       ok: true,

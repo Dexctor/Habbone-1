@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const session = await getServerSession(authOptions)
-  const userId = Number((session?.user as any)?.id)
+  const userId = String((session?.user as any)?.id ?? '')
   if (!userId) {
     return NextResponse.json({ error: 'Non authentifie' }, { status: 401 })
   }

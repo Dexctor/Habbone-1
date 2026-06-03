@@ -15,8 +15,8 @@ const BodySchema = z.object({
 });
 
 export const POST = withAuth(async (req, { nick, user, params }) => {
-  const newsId = Number(params?.id ?? 0);
-  if (!Number.isFinite(newsId) || newsId <= 0) {
+  const newsId = String(params?.id ?? '');
+  if (!newsId) {
     return NextResponse.json(buildError("Identifiant article invalide", { code: "INVALID_ID" }), {
       status: 400,
     });

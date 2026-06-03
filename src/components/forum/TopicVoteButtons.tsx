@@ -5,7 +5,7 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 
 type Props = {
-  topicId: number;
+  topicId: string;
   initial?: { up: number; down: number };
   canVote?: boolean;
 };

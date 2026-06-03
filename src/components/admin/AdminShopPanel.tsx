@@ -29,7 +29,7 @@ import { mediaUrl } from "@/lib/media-url";
 /* ------------------------------------------------------------------ */
 
 type EditState = {
-  id: number | null;
+  id: string | null;
   nome: string;
   descricao: string;
   imagem: string;
@@ -274,7 +274,7 @@ function ItemsTab() {
   const items = data ?? [];
   const [edit, setEdit] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const startCreate = () => {
@@ -557,7 +557,7 @@ function ItemsTab() {
 function OrdersTab() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const ordersUrl = useMemo(() => {
     const params = new URLSearchParams({ view: "orders", page: String(page) });
@@ -599,7 +599,7 @@ function OrdersTab() {
     [statusFilter],
   );
 
-  const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     // Capture la ligne actuelle pour pouvoir rollback en cas d'échec
     const previous = orders.find((o) => o.id === orderId);
     if (!previous) return;

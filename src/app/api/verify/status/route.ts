@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         : users.find((entry: any) => String((entry as any)?.habbo_verification_code || '').toLowerCase() === lowerCode) ??
           users[0]
 
-    const id = Number((user as any)?.id ?? 0)
+    const id = String((user as any)?.id ?? '')
     const status = String((user as any)?.habbo_verification_status || '')
     const storedCode = String((user as any)?.habbo_verification_code || '')
     const expiresAt = (user as any)?.habbo_verification_expires_at as string | null | undefined

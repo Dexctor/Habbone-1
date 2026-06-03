@@ -23,10 +23,12 @@ export const POST = withAuth(async (req, { nick }) => {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    const { titulo: rawTitulo, conteudo: rawConteudo, imagem: rawImagem, cat_id } = parsed.data
+    const { titulo: rawTitulo, conteudo: rawConteudo, imagem: rawImagem, cat_id: rawCatId } = parsed.data
     const titulo = sanitizePlainText(rawTitulo)
     const conteudo = sanitizeRichContentHtml(rawConteudo)
     const imagem = rawImagem?.trim() || null
+    // PocketBase relation ids are strings; coerce the validated cat_id.
+    const cat_id = rawCatId == null ? null : String(rawCatId)
 
     if (!titulo || titulo.length < 3) {
       return NextResponse.json({ error: 'Titre trop court (min. 3 caractères)' }, { status: 400 })
@@ -43,7 +45,7 @@ export const POST = withAuth(async (req, { nick }) => {
     const id = topic && typeof topic === 'object' ? (topic as any).id : null
     revalidateTag('forum')
     revalidateTag('home')
-    return NextResponse.json({ ok: true, id: id != null ? Number(id) : null })
+    return NextResponse.json({ ok: true, id: id != null ? String(id) : null })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     return NextResponse.json(

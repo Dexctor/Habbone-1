@@ -4,8 +4,8 @@ import { setTopicVote, getTopicVoteSummary } from '@/server/directus/forum'
 import { buildError } from '@/types/api'
 
 export const POST = withAuth(async (req, { nick, params }) => {
-  const topicId = Number(params?.id || 0)
-  if (!Number.isFinite(topicId) || topicId <= 0) {
+  const topicId = String(params?.id || '')
+  if (!topicId) {
     return NextResponse.json(buildError('Identifiant sujet invalide', { code: 'INVALID_ID' }), { status: 400 })
   }
   let body: any

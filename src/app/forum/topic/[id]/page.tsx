@@ -54,9 +54,9 @@ function isVisibleStatus(status: unknown): boolean {
 export default async function TopicPage(props: TopicPageProps) {
   const { id } = await props.params;
   const resolvedSearchParams = ((await props.searchParams) ?? {}) as Record<string, string | string[]>;
-  const topicId = Number(id || 0);
+  const topicId = String(id || '');
 
-  if (!Number.isFinite(topicId) || topicId <= 0) {
+  if (!topicId) {
     return (
       <main className="mx-auto max-w-[1200px] px-4 py-16 text-center text-sm text-[#BEBECE]/70">
         Sujet introuvable.
@@ -93,10 +93,10 @@ export default async function TopicPage(props: TopicPageProps) {
     isVisibleStatus(comment?.status),
   );
   const commentIds = comments
-    .map((comment) => Number(comment?.id))
-    .filter((value) => Number.isFinite(value) && value > 0);
+    .map((comment) => String(comment?.id || ''))
+    .filter((value) => value.length > 0);
   const [likesMap, roleBadgesMap] = await Promise.all([
-    getLikesMapForTopicComments(commentIds).catch(() => ({} as Record<number, number>)),
+    getLikesMapForTopicComments(commentIds).catch(() => ({} as Record<string, number>)),
     getRoleBadgesForNicks([
       ...(topic?.autor ? [stripHtml(topic.autor)] : []),
       ...comments.map((c) => stripHtml(c.autor || '')).filter(Boolean),
@@ -211,12 +211,12 @@ export default async function TopicPage(props: TopicPageProps) {
               return (
                 <CommentBubble
                   key={comment.id}
-                  id={Number(comment.id)}
+                  id={String(comment.id)}
                   author={commentAuthor}
                   date={commentDate}
                   avatarNick={commentAuthor}
                   html={comment.comentario || ""}
-                  likes={likesMap[Number(comment.id)] ?? 0}
+                  likes={likesMap[String(comment.id)] ?? 0}
                   roleBadge={roleBadgesMap[commentAuthor] ?? null}
                   canInteract={isAuthenticated}
                 />
