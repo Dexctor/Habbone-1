@@ -14,12 +14,14 @@ import { ensureRoleBadge } from '@/server/directus/badges';
 import { syncHabboName } from '@/server/directus/pseudo-changes';
 import { checkRateLimitByKey } from '@/server/rate-limit';
 
-// Fail fast on a missing/weak signing secret rather than silently degrading.
-// In production this must be set and reasonably long (NextAuth signs the JWT
-// with it; the middleware reads the same secret via getToken).
-const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
-if (process.env.NODE_ENV === 'production' && (!NEXTAUTH_SECRET || NEXTAUTH_SECRET.length < 16)) {
-  throw new Error('NEXTAUTH_SECRET manquant ou trop court (>= 16 caractères requis en production)');
+// Validate the signing secret at RUNTIME (not at module load — that would fire
+// during `next build`, which doesn't have runtime secrets). Called from
+// authorize() on the first real login attempt.
+function assertAuthSecret(): void {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (process.env.NODE_ENV === 'production' && (!secret || secret.length < 16)) {
+    throw new Error('NEXTAUTH_SECRET manquant ou trop court (>= 16 caractères requis en production)');
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -32,6 +34,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Mot de passe', type: 'password' },
       },
       authorize: async (creds) => {
+        assertAuthSecret();
         const nick = (creds?.nick as string | undefined || '').trim();
         const password = (creds?.password as string | undefined) || '';
         if (!nick || !password) return null;
