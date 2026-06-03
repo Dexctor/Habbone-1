@@ -1,41 +1,51 @@
 import 'server-only';
 
-import {
-  createDirectus,
-  rest,
-  readItems,
-  readItem,
-  createItem,
-  updateItem,
-  deleteItem,
-  staticToken,
-} from '@directus/sdk';
+import PocketBase from 'pocketbase';
 
-import type { DirectusRoleLite, DirectusUserLite } from './types';
+/**
+ * PocketBase client for server-side data access.
+ *
+ * Replaces the previous Directus SDK client. The app talks to PocketBase using a
+ * superuser (service-account) login — same trust model as the old Directus
+ * service token: server code bypasses per-collection API rules.
+ *
+ * Migration note: this file used to export Directus SDK helpers (directusService,
+ * rItems/rItem/cItem/uItem/dItem, directusUrl, serviceToken). Those are gone.
+ * Services now use the typed helpers in ./pb-helpers (pbList/pbOne/...).
+ */
 
-const DIRECTUS_URL = process.env.NEXT_PUBLIC_DIRECTUS_URL!;
-const SERVICE_TOKEN = process.env.DIRECTUS_SERVICE_TOKEN!;
-export const USERS_TABLE = process.env.USERS_TABLE || 'usuarios';
-export const STORIES_TABLE = process.env.STORIES_TABLE || 'usuarios_storie';
-export const STORIES_FOLDER_ID = (process.env.DIRECTUS_FILES_FOLDER || '').trim() || null;
+const PB_URL = process.env.POCKETBASE_URL || 'http://127.0.0.1:8090';
+const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL!;
+const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD!;
 
-if (!DIRECTUS_URL) throw new Error('NEXT_PUBLIC_DIRECTUS_URL manquant');
-if (!SERVICE_TOKEN) throw new Error('DIRECTUS_SERVICE_TOKEN manquant');
+if (!ADMIN_EMAIL) throw new Error('POCKETBASE_ADMIN_EMAIL manquant');
+if (!ADMIN_PASSWORD) throw new Error('POCKETBASE_ADMIN_PASSWORD manquant');
 
-export type DirectusCmsSchema = {
-  directus_roles: DirectusRoleLite;
-  directus_users: DirectusUserLite;
-} & Record<string, unknown>;
+/**
+ * Shared PocketBase instance. On the server we disable auto-cancellation so that
+ * concurrent requests don't cancel each other (the SDK cancels duplicate keys by
+ * default, which is a browser-oriented behaviour).
+ */
+export const pb = new PocketBase(PB_URL);
+pb.autoCancellation(false);
 
-export const directusService = createDirectus<DirectusCmsSchema>(DIRECTUS_URL)
-  .with(staticToken(SERVICE_TOKEN))
-  .with(rest());
+/**
+ * Ensure the shared instance is authenticated as superuser, refreshing if the
+ * stored token is missing/expired. Idempotent and safe to call before any op.
+ *
+ * Concurrency caveat: a single shared authStore is fine for service-account
+ * access (no per-user context here). When we add per-request user auth (Lot 4),
+ * those flows must use a *separate* PocketBase instance, not this one.
+ */
+export async function pbAdmin(): Promise<PocketBase> {
+  if (!pb.authStore.isValid) {
+    await pb.collection('_superusers').authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD);
+  }
+  return pb;
+}
 
-export const rItems = readItems as any;
-export const rItem = readItem as any;
-export const cItem = createItem as any;
-export const uItem = updateItem as any;
-export const dItem = deleteItem as any;
+export const pbUrl = PB_URL;
 
-export const directusUrl = DIRECTUS_URL;
-export const serviceToken = SERVICE_TOKEN;
+// Collection name kept for compatibility with imports still referencing it.
+// Prefer TABLES.users from ./tables.
+export const USERS_TABLE = 'users';
