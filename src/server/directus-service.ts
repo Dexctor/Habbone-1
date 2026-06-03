@@ -1,4 +1,4 @@
-export { directusService, USERS_TABLE, STORIES_TABLE } from './directus/client';
+export { pb, pbAdmin, USERS_TABLE } from './directus/client';
 
 export type {
   Dateish,

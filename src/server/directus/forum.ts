@@ -1,72 +1,52 @@
 import 'server-only';
 
-import { directusService, rItems, rItem, cItem, uItem, dItem } from './client';
-import { directusFetch } from './fetch';
-import { TABLES, USE_V2 } from './tables';
-import { resolveUserId, resolveUserNicks, unixSecondsToIso, isoToUnixSeconds, nowIso } from './user-cache';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './pb-helpers';
+import { TABLES } from './tables';
+import { resolveUserId, resolveUserNicks, unixSecondsToIso, isoToUnixSeconds } from './user-cache';
 import type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCategoryRecord } from './types';
 
 /* ------------------------------------------------------------------ */
-/*  Column sets                                                        */
+/*  Column sets (v2)                                                   */
 /* ------------------------------------------------------------------ */
 
-const TOPIC_FIELDS = USE_V2
-  ? ['id', 'title', 'body', 'cover_image', 'author', 'created_at', 'views', 'pinned', 'locked', 'status', 'category']
-  : ['id', 'titulo', 'conteudo', 'imagem', 'autor', 'data', 'views', 'fixo', 'fechado', 'status', 'cat_id'];
-
-const TOPIC_LIST_SORT = USE_V2 ? ['-created_at'] : ['-data'];
-
-const COMMENT_SELECT = USE_V2
-  ? 'id,topic,content,author,created_at,status'
-  : 'id,id_forum,comentario,autor,data,status';
-
-const COMMENT_SORT = USE_V2 ? '-created_at' : '-data';
-const COMMENT_FILTER_FK = USE_V2 ? 'filter[topic][_eq]' : 'filter[id_forum][_eq]';
-
-const CATEGORY_FIELDS = USE_V2
-  ? ['id', 'name', 'description', 'active', 'icon', 'slug', 'sort']
-  : ['id', 'nome', 'descricao', 'status', 'imagem', 'slug', 'ordem'];
-const CATEGORY_SORT = USE_V2 ? ['name'] : ['nome'];
+const TOPIC_FIELDS = 'id,title,body,cover_image,author,created,views,pinned,locked,status,category';
+const TOPIC_LIST_SORT = '-created';
+const COMMENT_SELECT = 'id,topic,content,author,created,status';
+const CATEGORY_FIELDS = 'id,name,description,active,icon,slug,sort';
+const CATEGORY_SORT = 'name';
 
 const LIKE_TABLE = TABLES.forumCommentLikes;
-const LIKE_FIELDS = USE_V2
-  ? { comment: 'comment', user: 'user' }
-  : { comment: 'id_comentario', user: 'autor' };
-
 const VOTE_TABLE = TABLES.forumTopicVotes;
-const VOTE_FIELDS = USE_V2
-  ? { topic: 'topic', user: 'user', value: 'value' }
-  : { topic: 'id_topico', user: 'autor', value: 'tipo' };
 
 /* ------------------------------------------------------------------ */
 /*  v2 row types + translators                                         */
 /* ------------------------------------------------------------------ */
 
 type V2Topic = {
-  id: number;
+  id: string;
   title: string | null;
   body: string | null;
   cover_image: string | null;
-  author: number | null;
-  created_at: string | null;
+  author: string | null;
+  created: string | null;
   views: number | null;
   pinned: boolean | null;
   locked: boolean | null;
   status: string | null;
-  category: number | null;
+  category: string | null;
 };
 
 type V2Comment = {
-  id: number;
-  topic: number;
+  id: string;
+  topic: string;
   content: string | null;
-  author: number | null;
-  created_at: string | null;
+  author: string | null;
+  created: string | null;
   status: string | null;
 };
 
 type V2Category = {
-  id: number;
+  id: string;
   name: string | null;
   description: string | null;
   active: boolean | null;
@@ -83,13 +63,13 @@ async function v2TopicsToLegacy(rows: V2Topic[]): Promise<ForumTopicRecord[]> {
     conteudo: r.body ?? null,
     imagem: r.cover_image ?? null,
     autor: r.author ? nickMap.get(r.author) ?? null : null,
-    data: isoToUnixSeconds(r.created_at)?.toString() ?? null,
+    data: isoToUnixSeconds(r.created)?.toString() ?? null,
     views: r.views ?? null,
     fixo: r.pinned ? 's' : 'n',
     fechado: r.locked ? 's' : 'n',
     status: r.status ?? null,
     cat_id: r.category ?? null,
-  }));
+  })) as unknown as ForumTopicRecord[];
 }
 
 async function v2CommentsToLegacy(rows: V2Comment[]): Promise<ForumCommentRecord[]> {
@@ -99,9 +79,9 @@ async function v2CommentsToLegacy(rows: V2Comment[]): Promise<ForumCommentRecord
     id_forum: r.topic,
     comentario: r.content ?? '',
     autor: r.author ? nickMap.get(r.author) ?? null : null,
-    data: isoToUnixSeconds(r.created_at)?.toString() ?? null,
+    data: isoToUnixSeconds(r.created)?.toString() ?? null,
     status: r.status ?? null,
-  }));
+  })) as unknown as ForumCommentRecord[];
 }
 
 function v2CategoriesToLegacy(rows: V2Category[]): ForumCategoryRecord[] {
@@ -113,7 +93,7 @@ function v2CategoriesToLegacy(rows: V2Category[]): ForumCategoryRecord[] {
     imagem: r.icon ?? null,
     slug: r.slug ?? null,
     ordem: r.sort ?? null,
-  }));
+  })) as unknown as ForumCategoryRecord[];
 }
 
 function yesNoToBool(v: unknown): boolean {
@@ -125,11 +105,12 @@ function yesNoToBool(v: unknown): boolean {
 /* ------------------------------------------------------------------ */
 
 export async function adminListForumTopics(limit = 200): Promise<ForumTopicRecord[]> {
-  const rows = (await directusService.request(
-    rItems(TABLES.forumTopics, { limit, sort: TOPIC_LIST_SORT, fields: TOPIC_FIELDS } as any),
-  )) as any[];
-  if (!USE_V2) return rows as ForumTopicRecord[];
-  return v2TopicsToLegacy(rows as V2Topic[]);
+  const rows = await pbList<V2Topic>(TABLES.forumTopics, {
+    perPage: limit,
+    sort: TOPIC_LIST_SORT,
+    fields: TOPIC_FIELDS,
+  });
+  return v2TopicsToLegacy(rows);
 }
 
 export async function listForumTopicsWithCategories(limit = 50): Promise<ForumTopicRecord[]> {
@@ -138,38 +119,25 @@ export async function listForumTopicsWithCategories(limit = 50): Promise<ForumTo
 
 export async function listForumTopicsByAuthorService(author: string, limit = 30): Promise<ForumTopicRecord[]> {
   if (!author) return [];
-
-  const filter: Record<string, unknown> = USE_V2
-    ? { author: { _eq: await resolveUserId(author) } }
-    : { autor: { _eq: author } };
-
-  if (USE_V2 && (filter as any).author._eq == null) return [];
-
-  const rows = (await directusService
-    .request(
-      rItems(TABLES.forumTopics, {
-        filter: filter as any,
-        fields: TOPIC_FIELDS as any,
-        sort: TOPIC_LIST_SORT as any,
-        limit: limit as any,
-      } as any),
-    )
-    .catch(() => [] as any[])) as any[];
-
-  if (!USE_V2) return rows as ForumTopicRecord[];
-  return v2TopicsToLegacy(rows as V2Topic[]);
+  const authorId = await resolveUserId(author);
+  if (!authorId) return [];
+  const rows = await pbList<V2Topic>(TABLES.forumTopics, {
+    filter: { author: { _eq: authorId } },
+    fields: TOPIC_FIELDS,
+    sort: TOPIC_LIST_SORT,
+    perPage: limit,
+  }).catch(() => [] as V2Topic[]);
+  return v2TopicsToLegacy(rows);
 }
 
 export function getPublicTopics(limit = 50): Promise<ForumTopicRecord[]> {
   return adminListForumTopics(limit);
 }
 
-export async function getPublicTopicById(id: number): Promise<ForumTopicRecord> {
-  const row = (await directusService.request(
-    rItem(TABLES.forumTopics, id, { fields: TOPIC_FIELDS } as any),
-  )) as any;
-  if (!USE_V2) return row as ForumTopicRecord;
-  const [legacy] = await v2TopicsToLegacy([row as V2Topic]);
+export async function getPublicTopicById(id: string): Promise<ForumTopicRecord | null> {
+  const row = await pbOne<V2Topic>(TABLES.forumTopics, id, { fields: TOPIC_FIELDS });
+  if (!row) return null;
+  const [legacy] = await v2TopicsToLegacy([row]);
   return legacy;
 }
 
@@ -182,45 +150,26 @@ export async function createForumTopic(data: {
   conteudo: string;
   autor: string;
   imagem?: string | null;
-  cat_id?: number | string | null;
+  cat_id?: string | null;
 }): Promise<ForumTopicRecord> {
-  if (USE_V2) {
-    const authorId = await resolveUserId(data.autor);
-    const payload: Record<string, unknown> = {
-      title: data.titulo,
-      body: data.conteudo,
-      author: authorId,
-      cover_image: data.imagem ?? null,
-      category: data.cat_id ? Number(data.cat_id) : 1,
-      status: 'active',
-      views: 0,
-      pinned: false,
-      locked: false,
-    };
-    const created = (await directusService.request(cItem(TABLES.forumTopics, payload as any))) as V2Topic;
-    const [legacy] = await v2TopicsToLegacy([created]);
-    return legacy;
-  }
-
-  const payload: any = {
-    titulo: data.titulo,
-    conteudo: data.conteudo,
-    autor: data.autor,
-    imagem: data.imagem ?? null,
-    cat_id: data.cat_id ?? 1,
-    data: Math.floor(Date.now() / 1000),
-    status: 'ativo',
+  const authorId = await resolveUserId(data.autor);
+  const created = await pbCreate<V2Topic>(TABLES.forumTopics, {
+    title: data.titulo,
+    body: data.conteudo,
+    author: authorId,
+    cover_image: data.imagem ?? null,
+    category: data.cat_id ?? null,
+    status: 'active',
     views: 0,
-    fixo: 'n',
-    fechado: 'n',
-    editado: 'n',
-    moderado: 'n',
-  };
-  return directusService.request(cItem(TABLES.forumTopics, payload)) as Promise<ForumTopicRecord>;
+    pinned: false,
+    locked: false,
+  });
+  const [legacy] = await v2TopicsToLegacy([created]);
+  return legacy;
 }
 
 export async function adminUpdateForumTopic(
-  id: number,
+  id: string,
   patch: Partial<{
     titulo: string;
     conteudo: string | null;
@@ -233,172 +182,121 @@ export async function adminUpdateForumTopic(
     status: string | null;
   }>,
 ): Promise<ForumTopicRecord> {
-  if (USE_V2) {
-    const mapped: Record<string, unknown> = {};
-    if ('titulo' in patch) mapped.title = patch.titulo;
-    if ('conteudo' in patch) mapped.body = patch.conteudo;
-    if ('imagem' in patch) mapped.cover_image = patch.imagem;
-    if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
-    if ('data' in patch) mapped.created_at = unixSecondsToIso(patch.data);
-    if ('views' in patch) mapped.views = patch.views;
-    if ('fixo' in patch) mapped.pinned = yesNoToBool(patch.fixo);
-    if ('fechado' in patch) mapped.locked = yesNoToBool(patch.fechado);
-    if ('status' in patch) mapped.status = patch.status === 'ativo' ? 'active' : patch.status === 'inativo' ? 'hidden' : patch.status;
-    const updated = (await directusService.request(uItem(TABLES.forumTopics, id, mapped as any))) as V2Topic;
-    const [legacy] = await v2TopicsToLegacy([updated]);
-    return legacy;
-  }
-  return directusService.request(uItem(TABLES.forumTopics, id, patch as any)) as Promise<ForumTopicRecord>;
+  const mapped: Record<string, unknown> = {};
+  if ('titulo' in patch) mapped.title = patch.titulo;
+  if ('conteudo' in patch) mapped.body = patch.conteudo;
+  if ('imagem' in patch) mapped.cover_image = patch.imagem;
+  if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
+  if ('data' in patch) mapped.created = unixSecondsToIso(patch.data);
+  if ('views' in patch) mapped.views = patch.views;
+  if ('fixo' in patch) mapped.pinned = yesNoToBool(patch.fixo);
+  if ('fechado' in patch) mapped.locked = yesNoToBool(patch.fechado);
+  if ('status' in patch)
+    mapped.status = patch.status === 'ativo' ? 'active' : patch.status === 'inativo' ? 'hidden' : patch.status;
+  const updated = await pbUpdate<V2Topic>(TABLES.forumTopics, id, mapped);
+  const [legacy] = await v2TopicsToLegacy([updated]);
+  return legacy;
 }
 
-export async function adminDeleteForumTopic(id: number) {
-  return directusService.request(dItem(TABLES.forumTopics, id));
+export async function adminDeleteForumTopic(id: string) {
+  return pbDelete(TABLES.forumTopics, id);
 }
 
 /* ------------------------------------------------------------------ */
-/*  Posts (forum_posts is a 0-row legacy table kept for API compat)    */
+/*  Posts — forum_posts does not exist in v2 (use comments instead)    */
 /* ------------------------------------------------------------------ */
 
-export async function adminListForumPosts(limit = 500): Promise<ForumPostRecord[]> {
-  if (USE_V2) return [];
-  return directusService.request(
-    rItems(TABLES.forumPosts, {
-      limit,
-      sort: ['-data'],
-      fields: ['id', 'id_topico', 'conteudo', 'autor', 'data', 'status'],
-    } as any),
-  ) as Promise<ForumPostRecord[]>;
+export async function adminListForumPosts(_limit = 500): Promise<ForumPostRecord[]> {
+  return [];
 }
 
-export async function adminCreateForumPost(data: {
-  id_topico: number;
+export async function adminCreateForumPost(_data: {
+  id_topico: string;
   conteudo: string;
   autor?: string | null;
   data?: string | null;
   status?: string | null;
 }): Promise<ForumPostRecord> {
-  if (USE_V2) {
-    throw new Error('forum_posts is deprecated in v2 — use forum comments instead');
-  }
-  const payload: any = {
-    id_topico: data.id_topico,
-    conteudo: data.conteudo,
-    autor: data.autor ?? null,
-    data: data.data ?? Math.floor(Date.now() / 1000),
-    status: data.status ?? null,
-  };
-  return directusService.request(cItem(TABLES.forumPosts, payload)) as Promise<ForumPostRecord>;
+  throw new Error('forum_posts is deprecated in v2 — use forum comments instead');
 }
 
 export async function adminUpdateForumPost(
-  id: number,
-  patch: Partial<{ conteudo: string; autor: string | null; data: string | null; status: string | null }>,
+  _id: string,
+  _patch: Partial<{ conteudo: string; autor: string | null; data: string | null; status: string | null }>,
 ): Promise<ForumPostRecord> {
-  if (USE_V2) {
-    throw new Error('forum_posts is deprecated in v2');
-  }
-  return directusService.request(uItem(TABLES.forumPosts, id, patch as any)) as Promise<ForumPostRecord>;
+  throw new Error('forum_posts is deprecated in v2');
 }
 
-export async function adminDeleteForumPost(id: number) {
-  if (USE_V2) return { id };
-  return directusService.request(dItem(TABLES.forumPosts, id));
+export async function adminDeleteForumPost(id: string) {
+  return { id };
 }
 
-export function getPublicPostById(id: number): Promise<ForumPostRecord> {
-  if (USE_V2) {
-    return Promise.reject(new Error('forum_posts deprecated in v2'));
-  }
-  return directusService.request(
-    rItem(TABLES.forumPosts, id, {
-      fields: ['id', 'id_topico', 'conteudo', 'autor', 'data', 'status'],
-    } as any),
-  ) as Promise<ForumPostRecord>;
+export function getPublicPostById(_id: string): Promise<ForumPostRecord> {
+  return Promise.reject(new Error('forum_posts deprecated in v2'));
 }
 
 /* ------------------------------------------------------------------ */
 /*  Comments                                                           */
 /* ------------------------------------------------------------------ */
 
-export async function adminListForumComments(limit = 500, topicId?: number): Promise<ForumCommentRecord[]> {
+export async function adminListForumComments(limit = 500, topicId?: string): Promise<ForumCommentRecord[]> {
   try {
-    const params: Record<string, string> = {
-      limit: String(limit),
-      sort: COMMENT_SORT,
+    const rows = await pbList<V2Comment>(TABLES.forumComments, {
+      filter: topicId ? { topic: { _eq: topicId } } : undefined,
+      sort: '-created',
+      perPage: limit,
       fields: COMMENT_SELECT,
-    };
-    if (topicId) params[COMMENT_FILTER_FK] = String(topicId);
-    const json = await directusFetch<{ data: any[] }>(`/items/${TABLES.forumComments}`, { params });
-    const rows = Array.isArray(json?.data) ? json.data : [];
-    if (!USE_V2) return rows as ForumCommentRecord[];
-    return v2CommentsToLegacy(rows as V2Comment[]);
+    });
+    return v2CommentsToLegacy(rows);
   } catch {
     return [];
   }
 }
 
 export async function adminUpdateForumComment(
-  id: number,
+  id: string,
   patch: Partial<{ comentario: string; autor: string | null; data: string | null; status: string | null }>,
 ): Promise<ForumCommentRecord> {
-  if (USE_V2) {
-    const mapped: Record<string, unknown> = {};
-    if ('comentario' in patch) mapped.content = patch.comentario;
-    if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
-    if ('data' in patch) mapped.created_at = unixSecondsToIso(patch.data);
-    if ('status' in patch) mapped.status = patch.status === 'ativo' ? 'active' : patch.status === 'inativo' ? 'hidden' : patch.status;
-    const updated = (await directusService.request(uItem(TABLES.forumComments, id, mapped as any))) as V2Comment;
-    const [legacy] = await v2CommentsToLegacy([updated]);
-    return legacy;
-  }
-  return directusService.request(uItem(TABLES.forumComments, id, patch as any)) as Promise<ForumCommentRecord>;
+  const mapped: Record<string, unknown> = {};
+  if ('comentario' in patch) mapped.content = patch.comentario;
+  if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
+  if ('status' in patch)
+    mapped.status = patch.status === 'ativo' ? 'active' : patch.status === 'inativo' ? 'hidden' : patch.status;
+  const updated = await pbUpdate<V2Comment>(TABLES.forumComments, id, mapped);
+  const [legacy] = await v2CommentsToLegacy([updated]);
+  return legacy;
 }
 
-export async function adminDeleteForumComment(id: number) {
-  return directusService.request(dItem(TABLES.forumComments, id));
+export async function adminDeleteForumComment(id: string) {
+  return pbDelete(TABLES.forumComments, id);
 }
 
 export async function createForumComment(input: {
-  topicId: number;
+  topicId: string;
   author: string;
   content: string;
   status?: string | null;
 }): Promise<ForumCommentRecord> {
-  if (USE_V2) {
-    const authorId = await resolveUserId(input.author);
-    const payload: Record<string, unknown> = {
-      topic: input.topicId,
-      content: input.content,
-      author: authorId,
-      status: input.status ?? 'active',
-    };
-    const created = (await directusService.request(cItem(TABLES.forumComments, payload as any))) as V2Comment;
-    const [legacy] = await v2CommentsToLegacy([created]);
-    return legacy;
-  }
-
-  const payload: any = {
-    id_forum: input.topicId,
-    comentario: input.content,
-    autor: input.author || 'Anonyme',
-    data: Math.floor(Date.now() / 1000),
-    status: input.status ?? 'ativo',
-  };
-  return directusService.request(cItem(TABLES.forumComments, payload)) as Promise<ForumCommentRecord>;
+  const authorId = await resolveUserId(input.author);
+  const created = await pbCreate<V2Comment>(TABLES.forumComments, {
+    topic: input.topicId,
+    content: input.content,
+    author: authorId,
+    status: input.status ?? 'active',
+  });
+  const [legacy] = await v2CommentsToLegacy([created]);
+  return legacy;
 }
 
-export async function getPublicTopicComments(topicId: number): Promise<ForumCommentRecord[]> {
+export async function getPublicTopicComments(topicId: string): Promise<ForumCommentRecord[]> {
   try {
-    const params: Record<string, string> = {
+    const rows = await pbList<V2Comment>(TABLES.forumComments, {
       fields: COMMENT_SELECT,
-      sort: USE_V2 ? 'created_at' : 'data',
-      limit: '500',
-    };
-    params[COMMENT_FILTER_FK] = String(topicId);
-    const json = await directusFetch<{ data: any[] }>(`/items/${TABLES.forumComments}`, { params });
-    const rows = Array.isArray(json?.data) ? json.data : [];
-    if (!USE_V2) return rows as ForumCommentRecord[];
-    return v2CommentsToLegacy(rows as V2Comment[]);
+      sort: 'created',
+      perPage: 500,
+      filter: { topic: { _eq: topicId } },
+    });
+    return v2CommentsToLegacy(rows);
   } catch {
     return [];
   }
@@ -408,182 +306,79 @@ export async function getPublicTopicComments(topicId: number): Promise<ForumComm
 /*  Likes on comments                                                  */
 /* ------------------------------------------------------------------ */
 
-export async function toggleForumCommentLike(commentId: number, author: string) {
+export async function toggleForumCommentLike(commentId: string, author: string) {
   const safeAuthor = String(author || '').trim();
   if (!safeAuthor) throw new Error('AUTHOR_REQUIRED');
 
-  const userValue: number | string | null = USE_V2 ? await resolveUserId(safeAuthor) : safeAuthor;
-  if (userValue == null) throw new Error('AUTHOR_NOT_FOUND');
+  const userId = await resolveUserId(safeAuthor);
+  if (userId == null) throw new Error('AUTHOR_NOT_FOUND');
 
-  const existing = (await directusService
-    .request(
-      rItems(LIKE_TABLE as any, {
-        filter: {
-          [LIKE_FIELDS.comment]: { _eq: commentId } as any,
-          [LIKE_FIELDS.user]: { _eq: userValue } as any,
-        } as any,
-        limit: 1 as any,
-        fields: ['id'] as any,
-      } as any),
-    )
-    .catch(() => [])) as any[];
+  const existing = await pbFirst<{ id: string }>(LIKE_TABLE, {
+    comment: { _eq: commentId },
+    user: { _eq: userId },
+  }).catch(() => null);
 
-  if (Array.isArray(existing) && existing.length > 0) {
-    const id = (existing[0] as any)?.id;
-    if (id != null) {
-      await directusService.request(dItem(LIKE_TABLE as any, id as any));
-      return { liked: false };
-    }
+  if (existing?.id) {
+    await pbDelete(LIKE_TABLE, existing.id);
+    return { liked: false };
   }
 
-  const payload: Record<string, unknown> = USE_V2
-    ? { [LIKE_FIELDS.comment]: commentId, [LIKE_FIELDS.user]: userValue }
-    : { [LIKE_FIELDS.comment]: commentId, [LIKE_FIELDS.user]: userValue, data: Math.floor(Date.now() / 1000), status: 'ativo' };
-  await directusService.request(cItem(LIKE_TABLE as any, payload));
+  await pbCreate(LIKE_TABLE, { comment: commentId, user: userId });
   return { liked: true };
 }
 
 /* ------------------------------------------------------------------ */
-/*  Reports (legacy-only — forum_interacoes has no v2 equivalent yet)  */
+/*  Reports — no v2 table designed yet                                 */
 /* ------------------------------------------------------------------ */
 
-export async function reportForumComment(commentId: number, author: string) {
-  if (USE_V2) return null; // no v2 report table designed yet
-  const payload: any = {
-    tipo: 'report',
-    alvo_tipo: 'comment',
-    alvo_id: commentId,
-    autor: author || null,
-    data: Math.floor(Date.now() / 1000),
-  };
-  try {
-    return await directusService.request(cItem('forum_interacoes' as any, payload));
-  } catch {
-    return null;
-  }
+export async function reportForumComment(_commentId: string, _author: string) {
+  return null;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Topic votes                                                        */
+/*  Topic votes (v2: value enum 'up' | 'down', one row per topic+user) */
 /* ------------------------------------------------------------------ */
 
-export async function setTopicVote(topicId: number, author: string, vote: 1 | -1) {
-  const nowUnix = Math.floor(Date.now() / 1000);
+function voteToValue(vote: 1 | -1): 'up' | 'down' {
+  return vote === 1 ? 'up' : 'down';
+}
 
-  if (USE_V2) {
-    const userId = await resolveUserId(author);
-    if (!userId) throw new Error('AUTHOR_NOT_FOUND');
+export async function setTopicVote(topicId: string, author: string, vote: 1 | -1) {
+  const userId = await resolveUserId(author);
+  if (!userId) throw new Error('AUTHOR_NOT_FOUND');
+  const value = voteToValue(vote);
 
-    // v2 stores `value` as integer (1 / -1), one row per (topic, user).
-    const rows = (await directusService
-      .request(
-        rItems(VOTE_TABLE as any, {
-          filter: {
-            [VOTE_FIELDS.topic]: { _eq: topicId } as any,
-            [VOTE_FIELDS.user]: { _eq: userId } as any,
-          } as any,
-          limit: 1 as any,
-          fields: ['id', VOTE_FIELDS.value] as any,
-        } as any),
-      )
-      .catch(() => [])) as any[];
+  const existing = await pbFirst<{ id: string; value: string }>(
+    VOTE_TABLE,
+    { topic: { _eq: topicId }, user: { _eq: userId } },
+    { fields: 'id,value' },
+  ).catch(() => null);
 
-    if (rows.length > 0) {
-      const existing = rows[0] as any;
-      const existingId = existing?.id;
-      const existingValue = Number(existing?.[VOTE_FIELDS.value]);
-      if (existingId != null) {
-        if (existingValue === vote) {
-          await directusService.request(dItem(VOTE_TABLE as any, existingId));
-          return { removed: true };
-        }
-        await directusService.request(
-          uItem(VOTE_TABLE as any, existingId as any, { [VOTE_FIELDS.value]: vote } as any),
-        );
-        return { updated: true };
-      }
+  if (existing?.id) {
+    if (existing.value === value) {
+      await pbDelete(VOTE_TABLE, existing.id);
+      return { removed: true };
     }
-
-    await directusService.request(
-      cItem(VOTE_TABLE as any, {
-        [VOTE_FIELDS.topic]: topicId,
-        [VOTE_FIELDS.user]: userId,
-        [VOTE_FIELDS.value]: vote,
-      } as any),
-    );
-    return { created: true };
+    await pbUpdate(VOTE_TABLE, existing.id, { value });
+    return { updated: true };
   }
 
-  // Legacy: value is a string ('pos' / 'neg') and author is the nick
-  const tipo = vote === 1 ? 'pos' : 'neg';
-  const rows = (await directusService
-    .request(
-      rItems(VOTE_TABLE as any, {
-        filter: {
-          [VOTE_FIELDS.topic]: { _eq: topicId },
-          ...(author ? ({ [VOTE_FIELDS.user]: { _eq: author } } as any) : {}),
-        } as any,
-        limit: 1 as any,
-        fields: ['id', 'tipo'] as any,
-      } as any),
-    )
-    .catch(() => [])) as any[];
-
-  if (rows.length > 0) {
-    const existing = rows[0] as any;
-    const existingId = existing?.id;
-    const existingTipo = existing?.tipo;
-    if (existingId != null) {
-      if (existingTipo === tipo) {
-        await directusService.request(dItem(VOTE_TABLE as any, existingId));
-        return { removed: true };
-      }
-      await directusService.request(
-        uItem(VOTE_TABLE as any, existingId as any, { tipo, data: nowUnix } as any),
-      );
-      return { updated: true };
-    }
-  }
-
-  const payload: any = { [VOTE_FIELDS.topic]: topicId, tipo, data: nowUnix };
-  if (author) payload[VOTE_FIELDS.user] = author;
-  await directusService.request(cItem(VOTE_TABLE as any, payload));
+  await pbCreate(VOTE_TABLE, { topic: topicId, user: userId, value });
   return { created: true };
 }
 
-export async function getTopicVoteSummary(topicId: number): Promise<{ up: number; down: number }> {
+export async function getTopicVoteSummary(topicId: string): Promise<{ up: number; down: number }> {
   try {
-    if (USE_V2) {
-      const json = await directusFetch<{ data: { id: number; value: number }[] }>(`/items/${VOTE_TABLE}`, {
-        params: {
-          limit: '1000',
-          fields: `id,${VOTE_FIELDS.value}`,
-          [`filter[${VOTE_FIELDS.topic}][_eq]`]: String(topicId),
-        },
-      });
-      const rows = Array.isArray(json?.data) ? json.data : [];
-      let up = 0;
-      let down = 0;
-      for (const r of rows) {
-        if (Number(r.value) > 0) up++;
-        else if (Number(r.value) < 0) down++;
-      }
-      return { up, down };
-    }
-
-    const json = await directusFetch<{ data: { id: number; tipo: string }[] }>(`/items/${VOTE_TABLE}`, {
-      params: {
-        limit: '1000',
-        fields: 'id,tipo',
-        [`filter[${VOTE_FIELDS.topic}][_eq]`]: String(topicId),
-      },
+    const rows = await pbList<{ value: string }>(VOTE_TABLE, {
+      perPage: 1000,
+      fields: 'id,value',
+      filter: { topic: { _eq: topicId } },
     });
-    const rows = Array.isArray(json?.data) ? json.data : [];
     let up = 0;
     let down = 0;
     for (const r of rows) {
-      if (r.tipo === 'pos') up++;
-      else if (r.tipo === 'neg') down++;
+      if (r.value === 'up') up++;
+      else if (r.value === 'down') down++;
     }
     return { up, down };
   } catch {
@@ -596,15 +391,12 @@ export async function getTopicVoteSummary(topicId: number): Promise<{ up: number
 /* ------------------------------------------------------------------ */
 
 export async function listForumCategoriesService(): Promise<ForumCategoryRecord[]> {
-  const rows = (await directusService.request(
-    rItems(TABLES.forumCategories, {
-      limit: 100 as any,
-      sort: CATEGORY_SORT as any,
-      fields: CATEGORY_FIELDS as any,
-    } as any),
-  )) as any[];
-  if (!USE_V2) return rows as ForumCategoryRecord[];
-  return v2CategoriesToLegacy(rows as V2Category[]);
+  const rows = await pbList<V2Category>(TABLES.forumCategories, {
+    perPage: 100,
+    sort: CATEGORY_SORT,
+    fields: CATEGORY_FIELDS,
+  });
+  return v2CategoriesToLegacy(rows);
 }
 
 export async function listPublicForumCategories(): Promise<ForumCategoryRecord[]> {
