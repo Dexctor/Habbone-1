@@ -1,3 +1,7 @@
 # Ignore raw SQL dumps — may contain secrets and production data
 *.sql
 *.sql.gz
+
+# Migration runtime artifacts (regenerated per run, instance-specific)
+pb-id-map.json
+_tmp_*
