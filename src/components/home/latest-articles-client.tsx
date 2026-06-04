@@ -7,7 +7,7 @@ import { mediaUrl } from "@/lib/media-url"
 import { stripHtml } from "@/lib/text-utils"
 
 type Item = {
-  id: number
+  id: string
   titulo: string
   descricao?: string | null
   imagem?: string | null

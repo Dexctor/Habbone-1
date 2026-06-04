@@ -72,7 +72,7 @@ function sortTopics(topics: ForumTopicRecord[]): ForumTopicRecord[] {
     const dateDiff = parseTimestamp(b.data, { numeric: 'ms', numericString: 'parse' }) -
       parseTimestamp(a.data, { numeric: 'ms', numericString: 'parse' })
     if (dateDiff !== 0) return dateDiff
-    return toNumberSafe(b.id) - toNumberSafe(a.id)
+    return String(b.id ?? '').localeCompare(String(a.id ?? ''))
   })
 }
 
@@ -133,8 +133,8 @@ function TopicRow({
   topic: ForumTopicRecord
   responseCount: number
 }) {
-  const topicId = toNumberSafe(topic.id)
-  const title = stripHtml(toStringSafe(topic.titulo)) || `Sujet #${topicId}`
+  const topicId = String(topic.id ?? '')
+  const title = stripHtml(toStringSafe(topic.titulo)) || `Sujet ${topicId}`
   const excerpt = buildPreviewText(buildExcerptFromHtml(toStringSafe(topic.conteudo), { maxLength: 160 }), {
     maxLength: 140,
     suffix: '',
@@ -176,7 +176,7 @@ function SectionBlock({
   label: string
   icon: string
   topics: ForumTopicRecord[]
-  responsesByTopicId: Map<number, number>
+  responsesByTopicId: Map<string, number>
 }) {
   return (
     <section className="space-y-2">
@@ -196,7 +196,7 @@ function SectionBlock({
             <TopicRow
               key={topic.id}
               topic={topic}
-              responseCount={responsesByTopicId.get(toNumberSafe(topic.id)) || 0}
+              responseCount={responsesByTopicId.get(String(topic.id ?? '')) || 0}
             />
           ))
         )}
@@ -231,11 +231,11 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
     categoryById.set(toStringSafe(category.id), category)
   }
 
-  const responsesByTopicId = new Map<number, number>()
+  const responsesByTopicId = new Map<string, number>()
   for (const comment of comments) {
     if (!isActiveStatus(comment?.status)) continue
-    const topicId = toNumberSafe(comment?.id_forum)
-    if (topicId <= 0) continue
+    const topicId = String(comment?.id_forum ?? '')
+    if (!topicId) continue
     responsesByTopicId.set(topicId, (responsesByTopicId.get(topicId) || 0) + 1)
   }
 

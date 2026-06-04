@@ -5,7 +5,7 @@ import { mediaUrl } from '@/lib/media-url'
 import { stripHtml } from '@/lib/text-utils'
 
 type Topic = {
-  id: number
+  id: string
   titulo: string
   autor: string
   views: number

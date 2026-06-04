@@ -12,7 +12,7 @@ export default async function ForumTopics() {
     const topics = await getCachedTopics()
     const data = Array.isArray(topics)
         ? topics.map((t) => ({
-            id: Number(t.id),
+            id: String(t.id ?? ''),
             titulo: t.titulo || '',
             autor: t.autor || '',
             views: t.views ?? 0,
