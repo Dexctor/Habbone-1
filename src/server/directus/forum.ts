@@ -9,13 +9,12 @@ import type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCatego
 /*  Column sets (v2)                                                   */
 /* ------------------------------------------------------------------ */
 
-// NB: forum_topics / forum_comments have NO system `created` field (not enabled
-// at creation). Sort/read use `id` (newest ids sort last lexicographically is
-// unreliable, so we sort by id desc as a best-effort recency proxy) and dates
-// are not available for these (legacy `data` was lost — see migration notes).
-const TOPIC_FIELDS = 'id,title,body,cover_image,author,views,pinned,locked,status,category';
-const TOPIC_LIST_SORT = '-id';
-const COMMENT_SELECT = 'id,topic,content,author,status';
+// `created` (autodate) added to all collections in migration step 11. New
+// content gets a real timestamp; legacy rows share the field-add date (their
+// original legacy `data` wasn't preserved at migration time).
+const TOPIC_FIELDS = 'id,title,body,cover_image,author,created,views,pinned,locked,status,category';
+const TOPIC_LIST_SORT = '-created';
+const COMMENT_SELECT = 'id,topic,content,author,created,status';
 const CATEGORY_FIELDS = 'id,name,description,active,icon,slug,sort';
 const CATEGORY_SORT = 'name';
 
@@ -32,6 +31,7 @@ type V2Topic = {
   body: string | null;
   cover_image: string | null;
   author: string | null;
+  created: string | null;
   views: number | null;
   pinned: boolean | null;
   locked: boolean | null;
@@ -44,6 +44,7 @@ type V2Comment = {
   topic: string;
   content: string | null;
   author: string | null;
+  created: string | null;
   status: string | null;
 };
 
@@ -65,7 +66,7 @@ async function v2TopicsToLegacy(rows: V2Topic[]): Promise<ForumTopicRecord[]> {
     conteudo: r.body ?? null,
     imagem: r.cover_image ?? null,
     autor: r.author ? nickMap.get(r.author) ?? null : null,
-    data: null,
+    data: isoToUnixSeconds(r.created)?.toString() ?? null,
     views: r.views ?? null,
     fixo: r.pinned ? 's' : 'n',
     fechado: r.locked ? 's' : 'n',
@@ -81,7 +82,7 @@ async function v2CommentsToLegacy(rows: V2Comment[]): Promise<ForumCommentRecord
     id_forum: r.topic,
     comentario: r.content ?? '',
     autor: r.author ? nickMap.get(r.author) ?? null : null,
-    data: null,
+    data: isoToUnixSeconds(r.created)?.toString() ?? null,
     status: r.status ?? null,
   })) as unknown as ForumCommentRecord[];
 }
@@ -252,7 +253,7 @@ export async function adminListForumComments(limit = 500, topicId?: string): Pro
   try {
     const rows = await pbList<V2Comment>(TABLES.forumComments, {
       filter: topicId ? { topic: { _eq: topicId } } : undefined,
-      sort: '-id',
+      sort: '-created',
       perPage: limit,
       fields: COMMENT_SELECT,
     });
@@ -301,7 +302,7 @@ export async function getPublicTopicComments(topicId: string): Promise<ForumComm
   try {
     const rows = await pbList<V2Comment>(TABLES.forumComments, {
       fields: COMMENT_SELECT,
-      sort: 'id',
+      sort: 'created',
       perPage: 500,
       filter: { topic: { _eq: topicId } },
     });
