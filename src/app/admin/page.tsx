@@ -88,7 +88,7 @@ export default async function AdminPage() {
     adminCount(TABLES.forumTopics).catch(() => 0),
     adminCount(TABLES.articles).catch(() => 0),
     adminCountUsers().catch(() => 0),
-    adminCount('directus_users').catch(() => 0),
+    adminCount(TABLES.users).catch(() => 0),
     adminCount(TABLES.forumComments).catch(() => 0),
     adminCount(TABLES.articleComments).catch(() => 0),
     adminListForumComments(100).catch(() => []),
@@ -100,8 +100,7 @@ export default async function AdminPage() {
     { label: 'Articles', value: newsCount },
     { label: 'Sujets forum', value: topicsCount },
     { label: 'Commentaires', value: commentsTotal },
-    { label: 'Utilisateurs (legacy)', value: legacyUsersCount },
-    { label: 'Utilisateurs (Directus)', value: directusUsersCount },
+    { label: 'Utilisateurs', value: legacyUsersCount || directusUsersCount },
   ];
 
   const topicsArray = Array.isArray(topics) ? topics : [];
