@@ -14,6 +14,10 @@ const CSP_CONFIG: CSPDirectives = {
   'object-src': ["'none'"],
   'frame-ancestors': ["'none'"],
   'img-src': ["'self'", 'data:', 'https:'],
+  // media-src couvre <video>/<audio> (ex: animations GIF rapatriées en .webm
+  // servies depuis pb.habbone.fr). Sans cette directive, <video> retombe sur
+  // default-src 'self' et les vidéos cross-origin seraient bloquées.
+  'media-src': ["'self'", 'data:', 'blob:', 'https:'],
   'font-src': ["'self'", 'https:', 'data:'],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'script-src': (isProd) => (isProd ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),

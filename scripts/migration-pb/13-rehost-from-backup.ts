@@ -21,7 +21,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import PocketBase from 'pocketbase';
 import { pbAuth, PB_URL } from './_pb';
 
@@ -29,6 +29,16 @@ const DRY_RUN = process.argv.includes('--dry-run');
 const UPLOADS_DIR =
   process.env.UPLOADS_DIR ||
   'C:/Users/Dexct/AppData/Local/Temp/claude/D--Coding-project-Keystone-habbonne-habbone-admin-habbonedirectus--claude-worktrees-unruffled-mayer-5456e8/af9215c2-570b-4d0e-b3a9-1609d8a08697/scratchpad/uploads';
+const FILE_OVERRIDES = new Map(
+  (process.env.UPLOAD_FILE_OVERRIDES || '')
+    .split(';')
+    .map((pair) => pair.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [from, to] = pair.split('=');
+      return [filenameKey(from || ''), to || from || ''];
+    }),
+);
 
 const MIME: Record<string, string> = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
@@ -46,16 +56,48 @@ async function getPb(): Promise<PocketBase> {
 }
 
 // Build a filename -> absolute path index of the extracted uploads dir.
+function filenameKey(name: string): string {
+  try {
+    return decodeURIComponent(name).toLowerCase();
+  } catch {
+    return name.toLowerCase();
+  }
+}
+
 function indexUploads(dir: string): Map<string, string> {
   const idx = new Map<string, string>();
   if (!existsSync(dir)) { console.error(`  UPLOADS_DIR introuvable: ${dir}`); return idx; }
-  for (const name of readdirSync(dir)) {
-    try {
-      const full = join(dir, name);
-      if (statSync(full).isFile()) idx.set(name.toLowerCase(), full);
-    } catch {}
+  function walk(current: string): void {
+    for (const name of readdirSync(current)) {
+      const full = join(current, name);
+      let stat;
+      try {
+        stat = statSync(full);
+      } catch {
+        continue;
+      }
+      if (stat.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (stat.isFile()) idx.set(filenameKey(name), full);
+    }
   }
+  walk(dir);
   return idx;
+}
+
+function filenameFromUploadUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return decodeURIComponent(basename(parsed.pathname));
+  } catch {
+    try {
+      return decodeURIComponent((url.split('/').pop() || '').split('?')[0].split('#')[0]);
+    } catch {
+      return (url.split('/').pop() || '').split('?')[0].split('#')[0] || null;
+    }
+  }
 }
 
 async function main() {
@@ -81,16 +123,17 @@ async function main() {
   let uploaded = 0, missingFile = 0, rewritten = 0, fieldUpdates = 0;
 
   async function ensureUploaded(filename: string): Promise<string | null> {
-    const key = filename.toLowerCase();
+    const key = filenameKey(filename);
     if (uploadedUrl.has(key)) return uploadedUrl.get(key)!;
-    const path = uploads.get(key);
+    const uploadName = FILE_OVERRIDES.get(key) || filename;
+    const path = uploads.get(filenameKey(uploadName));
     if (!path) { missingFile++; return null; }
-    if (DRY_RUN) { uploaded++; uploadedUrl.set(key, `dry://${filename}`); return uploadedUrl.get(key)!; }
+    if (DRY_RUN) { uploaded++; uploadedUrl.set(key, `dry://${uploadName}`); return uploadedUrl.get(key)!; }
     try {
       const buf = readFileSync(path);
-      const ext = (filename.split('.').pop() || 'png').toLowerCase();
+      const ext = (uploadName.split('.').pop() || 'png').toLowerCase();
       const form = new FormData();
-      form.append('file', new Blob([buf], { type: MIME[ext] || 'application/octet-stream' }), filename.replace(/[^a-zA-Z0-9._-]/g, '_'));
+      form.append('file', new Blob([buf], { type: MIME[ext] || 'application/octet-stream' }), uploadName.replace(/[^a-zA-Z0-9._-]/g, '_'));
       form.append('context', 'backup-restore');
       const rec: any = await pb.collection('uploads').create(form);
       const fname = Array.isArray(rec.file) ? rec.file[0] : rec.file;
@@ -104,7 +147,7 @@ async function main() {
     }
   }
 
-  const urlRe = /https?:\/\/habbone\.fr\/uploads\/([a-zA-Z0-9._-]+\.(?:png|jpe?g|gif|webp))/gi;
+  const urlRe = /(?:https?:\/\/(?:www\.)?(?:habbone\.fr|habbone\.xyz))?\/uploads\/[^"' <>)]+(?:\([^"' <>)]*\)[^"' <>)]*)*\.(?:png|jpe?g|gif|webp)(?:\?[^"' <>]*)?/gi;
 
   for (const t of targets) {
     const rows = await pb.collection(t.collection).getFullList({ fields: `id,${t.field}`, batch: 500 });
@@ -116,19 +159,22 @@ async function main() {
         // body: replace every broken url
         let body = val;
         let changed = false;
-        const matches = [...val.matchAll(urlRe)];
+        const matches = val.match(urlRe) || [];
         for (const m of matches) {
-          const filename = m[1];
+          const filename = filenameFromUploadUrl(m);
+          if (!filename) continue;
           const newUrl = await ensureUploaded(filename);
-          if (newUrl && !DRY_RUN) { body = body.split(m[0]).join(newUrl); changed = true; rewritten++; }
+          if (newUrl && !DRY_RUN) { body = body.split(m).join(newUrl); changed = true; rewritten++; }
           else if (newUrl) rewritten++;
         }
         if (changed) { await pb.collection(t.collection).update(r.id, { [t.field]: body }); fieldUpdates++; }
       } else {
         // single url field
-        const m = urlRe.exec(val); urlRe.lastIndex = 0;
+        const m = val.match(urlRe)?.[0];
         if (!m) continue;
-        const newUrl = await ensureUploaded(m[1]);
+        const filename = filenameFromUploadUrl(m);
+        if (!filename) continue;
+        const newUrl = await ensureUploaded(filename);
         if (newUrl) { rewritten++; if (!DRY_RUN) { await pb.collection(t.collection).update(r.id, { [t.field]: newUrl }); fieldUpdates++; } }
       }
     }
