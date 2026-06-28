@@ -184,7 +184,7 @@ async function main() {
     dryRun: DRY_RUN,
     map: (r: any) => ({
       name: String(r.nome || 'Sans nom'),
-      image: typeof r.imagem === 'string' && /^https?:\/\//.test(r.imagem) ? r.imagem : null,
+      image: typeof r.imagem === 'string' && r.imagem.trim() ? r.imagem.trim() : null,
       price_coins: Number(r.preco_moedas) || 0,
       stock: Number(r.qtd_disponivel) || 0,
       sold_count: Number(r.qtd_comprado) || 0,
