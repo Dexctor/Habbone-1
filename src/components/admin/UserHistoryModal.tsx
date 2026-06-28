@@ -62,8 +62,10 @@ export default function UserHistoryModal({ userId, userName, trigger }: UserHist
     const getActionLabel = (action: string) => {
         const labels: Record<string, { text: string; color: string }> = {
             "user.ban": { text: "Banni", color: "bg-red-500/20 text-red-400" },
-            "user.unban": { text: "Reactive", color: "bg-green-500/20 text-green-400" },
-            "user.role_change": { text: "Role modifie", color: "bg-[#2596FF]/20 text-admin-brand-blue" },
+            "user.unban": { text: "Réactivé", color: "bg-green-500/20 text-green-400" },
+            "user.role_change": { text: "Rôle modifié", color: "bg-[#2596FF]/20 text-admin-brand-blue" },
+            "user.coins_grant": { text: "Coins crédités", color: "bg-[#FFC800]/20 text-[#FFC800]" },
+            "user.delete": { text: "Supprimé", color: "bg-red-500/20 text-red-400" },
         };
         return labels[action] || { text: action, color: "bg-[#25254D] text-admin-text-tertiary" };
     };

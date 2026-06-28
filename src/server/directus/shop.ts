@@ -14,7 +14,7 @@ const USERS_TABLE = TABLES.users;
 
 const ITEMS_FIELDS = 'id,name,description,image,price_coins,stock,active';
 const ORDERS_FIELDS = 'id,item,buyer,price_paid,status';
-const NOTIF_FIELDS = 'id,message,severity,read';
+const NOTIF_FIELDS = 'id,message,severity,read,created';
 
 /* ------------------------------------------------------------------ */
 /*  Encoding helper (legacy data may carry mojibake)                   */
@@ -102,6 +102,7 @@ function mapDbToNotification(row: any): AdminNotification {
     message: undefined,
     link: undefined,
     read: !!row.read,
+    created: row.created ? String(row.created) : undefined,
   };
 }
 

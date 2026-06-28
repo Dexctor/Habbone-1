@@ -32,4 +32,6 @@ export interface AdminNotification {
   message?: string;
   link?: string;
   read: boolean;
+  /** ISO date string (PocketBase `created` autodate field). */
+  created?: string;
 }

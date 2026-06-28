@@ -441,12 +441,12 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
       if (data?.ok && data?.id) {
         onChange(data.id);
         setShowUrl(false);
-        toast.success("Image uploadee");
+        toast.success("Image téléversée");
       } else {
-        toast.error(data?.error || "Erreur upload");
+        toast.error(data?.error || "Erreur lors du téléversement");
       }
     } catch {
-      toast.error("Erreur reseau");
+      toast.error("Erreur réseau");
     } finally {
       setUploading(false);
     }
@@ -488,7 +488,7 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
           className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#303060] disabled:opacity-50"
         >
           <Upload className="h-3.5 w-3.5" />
-          {uploading ? "Upload..." : "Uploader"}
+          {uploading ? "Téléversement…" : "Téléverser"}
         </button>
         <button
           type="button"

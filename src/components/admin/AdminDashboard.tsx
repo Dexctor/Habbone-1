@@ -1,6 +1,7 @@
 'use client';
 
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
 import {
   FileText,
   LayoutGrid,
@@ -16,6 +17,7 @@ import {
   Clock,
   Coins,
 } from 'lucide-react';
+import { easings, dur } from '@/lib/motion-tokens';
 import { useAdminView } from '@/components/admin/AdminContext';
 import AdminContentManager from '@/components/admin/AdminContentManager';
 import AdminRolesPanel from '@/components/admin/AdminRolesPanel';
@@ -80,18 +82,23 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 
   const legacyUsers = getStatValue(props.stats, 'Utilisateurs (legacy)');
   const directusUsers = getStatValue(props.stats, 'Utilisateurs (Directus)');
+  const usersCount = getStatValue(props.stats, 'Utilisateurs') || legacyUsers + directusUsers;
   const articleCount = getStatValue(props.stats, 'Articles');
   const topicCount = getStatValue(props.stats, 'Sujets forum');
   const commentCount = getStatValue(props.stats, 'Commentaires');
-  const totalUsers = legacyUsers + directusUsers;
 
   return (
     <div className="space-y-6">
       {/* ── Overview ── */}
       {view === 'overview' && (
-        <div className="space-y-6">
+        <motion.div
+          className="space-y-6"
+          variants={STAGGER_CONTAINER}
+          initial="hidden"
+          animate="show"
+        >
           {/* Header */}
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <motion.div variants={STAGGER_ITEM} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-[20px] font-bold text-white">
                 Tableau de bord
@@ -104,13 +111,13 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               <Clock className="h-3.5 w-3.5" />
               Dernière mise à jour : maintenant
             </div>
-          </div>
+          </motion.div>
 
           {/* Stats grid — 4 clickable cards */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Utilisateurs inscrits"
-              value={formatNumber(totalUsers)}
+              value={usersCount}
               icon={<Users className="h-5 w-5" />}
               iconBg="bg-[#2596FF]/15"
               iconColor="text-admin-brand-blue"
@@ -118,7 +125,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             />
             <StatCard
               label="Actualités publiées"
-              value={formatNumber(articleCount)}
+              value={articleCount}
               icon={<Newspaper className="h-5 w-5" />}
               iconBg="bg-[#0FD52F]/15"
               iconColor="text-[#0FD52F]"
@@ -126,7 +133,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             />
             <StatCard
               label="Sujets sur le forum"
-              value={formatNumber(topicCount)}
+              value={topicCount}
               icon={<MessageSquare className="h-5 w-5" />}
               iconBg="bg-[#FFC800]/15"
               iconColor="text-[#FFC800]"
@@ -134,7 +141,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             />
             <StatCard
               label="Commentaires"
-              value={formatNumber(commentCount)}
+              value={commentCount}
               icon={<FileText className="h-5 w-5" />}
               iconBg="bg-[#FF4B6C]/15"
               iconColor="text-[#FF4B6C]"
@@ -143,7 +150,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           </div>
 
           {/* Activity feed */}
-          <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+          <motion.div variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[15px] font-bold text-white">Activité récente</h3>
               {(props.recentActivity?.length ?? 0) > 0 && (
@@ -160,12 +167,12 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               </div>
             ) : (
               <div className="space-y-0">
-                {props.recentActivity.map((item) => (
-                  <ActivityRow key={item.id} item={item} />
+                {props.recentActivity.map((item, i) => (
+                  <ActivityRow key={item.id} item={item} index={i} />
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
 
           {/* Quick access cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -188,22 +195,22 @@ export default function AdminDashboard(props: AdminDashboardProps) {
               onClick={() => setView('theme')}
             />
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* ── Users ── */}
       {view === 'users' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Gestion des utilisateurs
           </h2>
           <AdminUsersPanel />
-        </div>
+        </ViewWrapper>
       )}
 
       {/* ── Content ── */}
       {view === 'content' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Gestion des contenus
           </h2>
@@ -228,56 +235,116 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             updateStory={props.updateStory}
             deleteStory={props.deleteStory}
           />
-        </div>
+        </ViewWrapper>
       )}
 
       {/* ── Theme ── */}
       {view === 'theme' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Personnalisation du thème
           </h2>
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminThemePanel />
           </div>
-        </div>
+        </ViewWrapper>
       )}
 
       {/* ── Roles ── */}
       {view === 'roles' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Gestion des rôles
           </h2>
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminRolesPanel />
           </div>
-        </div>
+        </ViewWrapper>
       )}
 
       {/* ── Publicité ── */}
       {view === 'pub' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Gestion des partenaires
           </h2>
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminPubPanel />
           </div>
-        </div>
+        </ViewWrapper>
       )}
 
       {/* ── Boutique ── */}
       {view === 'shop' && (
-        <div className="space-y-4">
+        <ViewWrapper>
           <h2 className="text-[20px] font-bold text-white">
             Gestion de la boutique
           </h2>
           <AdminShopPanel />
-        </div>
+        </ViewWrapper>
       )}
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Animation primitives                                              */
+/* ------------------------------------------------------------------ */
+
+const STAGGER_CONTAINER = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
+};
+
+const STAGGER_ITEM = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: dur.md, ease: easings.emph } },
+};
+
+/** Fade/slide wrapper used when switching between admin views. */
+function ViewWrapper({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      className="space-y-4"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: dur.sm, ease: easings.emph }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/**
+ * Animated count-up for the stat cards. Returns a ref to attach to the element
+ * (animation starts when it enters the viewport) and the current display value.
+ * Respects prefers-reduced-motion.
+ */
+function useAnimatedNumber(target: number, durationMs = 900) {
+  const [value, setValue] = useState(0);
+  const ref = useRef<HTMLParagraphElement | null>(null);
+  const inView = useInView(ref, { once: true, margin: '-40px' });
+
+  useEffect(() => {
+    if (!inView) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setValue(target);
+      return;
+    }
+    let raf = 0;
+    let start = 0;
+    const step = (t: number) => {
+      if (!start) start = t;
+      const p = Math.min(1, (t - start) / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      setValue(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, target, durationMs]);
+
+  return { ref, value };
 }
 
 /* ------------------------------------------------------------------ */
@@ -293,26 +360,34 @@ function StatCard({
   onClick,
 }: {
   label: string;
-  value: string;
+  value: number;
   icon: ReactNode;
   iconBg: string;
   iconColor: string;
   onClick?: () => void;
 }) {
+  const { ref, value: animated } = useAnimatedNumber(value);
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/20 hover:bg-[#141433]/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
+      variants={STAGGER_ITEM}
+      whileHover={{ y: -4, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
+      whileTap={{ scale: 0.98 }}
+      className="group relative overflow-hidden rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/25 hover:bg-[#141433]/70 hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
     >
+      {/* subtle hover sheen */}
+      <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#2596FF]/0 blur-2xl transition-colors duration-300 group-hover:bg-[#2596FF]/10" />
       <div className="flex items-start justify-between">
-        <div className={`grid h-10 w-10 place-items-center rounded-[8px] ${iconBg} ${iconColor}`}>
+        <div className={`grid h-10 w-10 place-items-center rounded-[8px] ${iconBg} ${iconColor} transition-transform duration-300 group-hover:scale-110`}>
           {icon}
         </div>
       </div>
-      <p className="mt-4 text-[28px] font-bold leading-none text-white">{value}</p>
+      <p ref={ref} className="mt-4 text-[28px] font-bold leading-none text-white">
+        {formatNumber(animated)}
+      </p>
       <p className="mt-1.5 text-[12px] font-medium text-admin-text-secondary">{label}</p>
-    </button>
+    </motion.button>
   );
 }
 
@@ -328,13 +403,16 @@ function QuickCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="group rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/30 hover:bg-[#141433]/80"
+      variants={STAGGER_ITEM}
+      whileHover={{ y: -4, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
+      whileTap={{ scale: 0.98 }}
+      className="group rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/30 hover:bg-[#141433]/80 hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)]"
     >
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#2596FF]/10 text-admin-brand-blue transition-colors group-hover:bg-[#2596FF]/20">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#2596FF]/10 text-admin-brand-blue transition-all duration-300 group-hover:scale-110 group-hover:bg-[#2596FF]/20">
           {icon}
         </span>
         <div>
@@ -342,7 +420,7 @@ function QuickCard({
           <p className="mt-0.5 text-[12px] text-admin-text-tertiary">{description}</p>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -403,7 +481,7 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string; icon: Reac
   },
 };
 
-function ActivityRow({ item }: { item: RecentActivityItem }) {
+function ActivityRow({ item, index = 0 }: { item: RecentActivityItem; index?: number }) {
   const config = ACTIVITY_CONFIG[item.type] ?? {
     // Fallback volontairement neutre pour ne plus afficher 'user.coins_grant'
     // ou autre clé technique brute dans le badge.
@@ -413,7 +491,12 @@ function ActivityRow({ item }: { item: RecentActivityItem }) {
   };
 
   return (
-    <div className="flex items-center gap-3 border-b border-white/[0.03] py-3 last:border-0">
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.15 + index * 0.05, duration: dur.sm, ease: easings.std }}
+      className="flex items-center gap-3 border-b border-white/[0.03] py-3 transition-colors last:border-0 hover:bg-white/[0.02]"
+    >
       <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-[6px] ${config.color}`}>
         {config.icon}
       </div>
@@ -424,7 +507,7 @@ function ActivityRow({ item }: { item: RecentActivityItem }) {
       <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${config.color}`}>
         {config.label}
       </span>
-    </div>
+    </motion.div>
   );
 }
 

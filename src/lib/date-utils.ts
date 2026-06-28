@@ -107,6 +107,34 @@ export function formatDateFr(value: unknown): string | null {
   }
 }
 
+/**
+ * Format a value as a French relative time ("il y a 5 min", "il y a 2 j").
+ * Falls back to an absolute short date for anything older than ~30 days, and to
+ * an empty string for unparseable values.
+ */
+export function formatRelativeFr(value: unknown): string {
+  const ts = parseTimestamp(value, { numeric: 'auto', numericString: 'number', mysqlLike: true });
+  if (!ts) return '';
+  const diffMs = Date.now() - ts;
+  const sec = Math.round(diffMs / 1000);
+
+  if (sec < 0) return "à l'instant";
+  if (sec < 45) return "à l'instant";
+
+  try {
+    const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto', style: 'short' });
+    const min = Math.round(sec / 60);
+    if (min < 60) return rtf.format(-min, 'minute');
+    const hr = Math.round(min / 60);
+    if (hr < 24) return rtf.format(-hr, 'hour');
+    const day = Math.round(hr / 24);
+    if (day <= 30) return rtf.format(-day, 'day');
+  } catch {
+    /* fall through to absolute */
+  }
+  return formatDateTime(ts, { style: 'short' });
+}
+
 // ============================================================================
 // Legacy Aliases (for backward compatibility)
 // These delegate to the unified function to avoid breaking existing code
