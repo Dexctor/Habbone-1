@@ -47,6 +47,7 @@ export function ContentListItem({
       (item as { image?: string | null }).image ||
       null,
   );
+  const showThumbnail = !!thumbnail || contentType === "articles" || contentType === "topics" || contentType === "stories";
 
   // Excerpt: for articles we have `descricao`, for topics the `conteudo`,
   // for comments the `comentario` body. Others (posts / stories) fall back
@@ -70,24 +71,25 @@ export function ContentListItem({
           : "hover:bg-[#25254D]/70",
       )}
     >
-      {/* Thumbnail */}
-      <div className="relative h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[6px] border border-[#141433] bg-[#25254D]">
-        {thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={thumbnail}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <div className="grid h-full w-full place-items-center text-admin-text-tertiary/50">
-            <ImageIcon className="h-5 w-5" />
-          </div>
-        )}
-      </div>
+      {showThumbnail && (
+        <div className="relative h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[6px] border border-[#141433] bg-[#25254D]">
+          {thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbnail}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-admin-text-tertiary/50">
+              <ImageIcon className="h-5 w-5" />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main column */}
       <div className="min-w-0 flex-1">

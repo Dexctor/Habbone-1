@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ImagePlus, Link2, Loader2, Pencil, Save, Trash2, Upload, X } from "lucide-react";
+import { Eye, ImagePlus, Info, Link2, Loader2, Pencil, Save, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDateTime } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 import type {
   ForumCommentRecord as AdminForumComment,
   ForumPostRecord as AdminPost,
@@ -65,6 +66,7 @@ export function ContentDetailPanel({
   onDelete: () => void;
 }) {
   const [formState, setFormState] = useState<Record<string, string | boolean>>({});
+  const [detailTab, setDetailTab] = useState<"preview" | "metadata">("preview");
   const itemId = (item as { id: number }).id;
   const title = getItemTitle(item, contentType, topicTitleById) || "(sans titre)";
   const author = (item as { autor?: string | null }).autor || "Inconnu";
@@ -103,6 +105,7 @@ export function ContentDetailPanel({
     }
 
     setFormState(initial);
+    setDetailTab("preview");
     onEdit();
   };
 
@@ -189,13 +192,63 @@ export function ContentDetailPanel({
       <ScrollArea className="flex-1">
         <div className="p-5">
           {!isEditing ? (
-            <ViewContent item={item} contentType={contentType} topicTitleById={topicTitleById} />
+            <div className="space-y-4">
+              <div className="inline-flex rounded-[5px] border border-[#141433] bg-[#25254D] p-1">
+                <TabButton
+                  active={detailTab === "preview"}
+                  icon={<Eye className="h-3.5 w-3.5" />}
+                  onClick={() => setDetailTab("preview")}
+                >
+                  Aperçu
+                </TabButton>
+                <TabButton
+                  active={detailTab === "metadata"}
+                  icon={<Info className="h-3.5 w-3.5" />}
+                  onClick={() => setDetailTab("metadata")}
+                >
+                  Métadonnées
+                </TabButton>
+              </div>
+              <ViewContent
+                item={item}
+                contentType={contentType}
+                topicTitleById={topicTitleById}
+                activeTab={detailTab}
+              />
+            </div>
           ) : (
             <EditForm contentType={contentType} formState={formState} setFormState={setFormState} />
           )}
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  icon,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-8 items-center gap-2 rounded-[4px] px-3 text-[11px] font-bold transition-colors",
+        active ? "bg-[#2596FF] text-white" : "text-admin-text-tertiary hover:bg-white/[0.04] hover:text-white",
+      )}
+      aria-pressed={active}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 
@@ -207,11 +260,16 @@ function ViewContent({
   item,
   contentType,
   topicTitleById,
+  activeTab,
 }: {
   item: ContentItem;
   contentType: ContentType;
   topicTitleById: Record<number, string>;
+  activeTab: "preview" | "metadata";
 }) {
+  const itemId = (item as { id: number }).id;
+  const author = (item as { autor?: string | null }).autor || "Inconnu";
+  const date = resolveItemDate(item);
   const imageId =
     contentType === "stories"
       ? (item as AdminStory).image || (item as AdminStory).imagem
@@ -236,10 +294,14 @@ function ViewContent({
               : null;
 
   const metaCards: Array<{ label: string; value: string }> = [];
+  metaCards.push({ label: "ID", value: `#${itemId}` });
+  metaCards.push({ label: "Type", value: CONTENT_SECTIONS[contentType].label });
+  metaCards.push({ label: "Auteur", value: author });
+  if (date) metaCards.push({ label: "Date", value: formatDateTime(date) });
 
   if (contentType === "posts") {
     metaCards.push({
-      label: "Sujet lie",
+      label: "Sujet lié",
       value: topicTitleById[(item as AdminPost).id_topico ?? 0] || `Sujet #${(item as AdminPost).id_topico}`,
     });
   }
@@ -260,41 +322,53 @@ function ViewContent({
     metaCards.push({ label: "Fermé", value: (item as AdminTopic).fechado ? "Oui" : "Non" });
   }
 
+  if (activeTab === "metadata") {
+    return (
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {metaCards.map((entry) => (
+          <div
+            key={`${entry.label}-${entry.value}`}
+            className="rounded-[5px] border border-[#141433] bg-[#25254D] px-3 py-2.5"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">{entry.label}</p>
+            <p className="mt-1 break-words text-sm text-[color:var(--foreground)]/80">{entry.value}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {metaCards.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {metaCards.map((entry) => (
-            <div
-              key={`${entry.label}-${entry.value}`}
-              className="rounded-[4px] border border-[#141433] bg-[#25254D] px-3 py-2.5"
-            >
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-admin-text-tertiary">{entry.label}</p>
-              <p className="mt-1 text-sm text-[color:var(--foreground)]/75">{entry.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {imageUrl && (
-        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-3">
-          <p className="text-xs font-bold uppercase text-white">Media</p>
+        <div className="overflow-hidden rounded-[5px] border border-[#141433] bg-[#25254D]">
+          <div className="border-b border-[#141433] px-4 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Média</p>
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
-            alt="Apercu"
-            className="mt-2 max-h-[300px] w-full rounded-[4px] bg-black/20 object-contain"
+            alt="Aperçu"
+            className="max-h-[320px] w-full bg-black/20 object-contain p-3"
           />
         </div>
       )}
 
       {bodyHtml && (
-        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-3">
-          <p className="text-xs font-bold uppercase text-white">Contenu</p>
+        <div className="overflow-hidden rounded-[5px] border border-[#141433] bg-[#25254D]">
+          <div className="border-b border-[#141433] px-4 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Contenu</p>
+          </div>
           <div
-            className="prose prose-sm prose-invert mt-2 max-w-none rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-4"
+            className="prose prose-sm prose-invert max-w-none bg-[#1F1F3E] p-4"
             dangerouslySetInnerHTML={{ __html: bodyHtml || "<em>Aucun contenu</em>" }}
           />
+        </div>
+      )}
+
+      {!imageUrl && !bodyHtml && (
+        <div className="flex min-h-[220px] items-center justify-center rounded-[5px] border border-[#141433] bg-[#25254D] px-6 py-10 text-center">
+          <p className="text-sm text-admin-text-tertiary">Aucun aperçu disponible pour ce contenu.</p>
         </div>
       )}
     </div>
@@ -324,13 +398,16 @@ function EditForm({
   const hasEditor = ct !== "stories";
 
   return (
-    <div className="space-y-4">
-      {/* Section: Informations */}
-      {hasTitle && (
-        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-admin-brand-blue">Informations</p>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {hasTitle && (
+    <div className="overflow-hidden rounded-[6px] border border-[#141433] bg-[#25254D]">
+      <div className="border-b border-[#141433] px-4 py-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-admin-brand-blue">Édition</p>
+      </div>
+
+      <div className="space-y-5 p-4">
+        {hasTitle && (
+          <section className="space-y-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Informations</p>
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Titre">
                 <Input
                   value={(formState.titulo as string) || ""}
@@ -339,84 +416,79 @@ function EditForm({
                   className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
                 />
               </Field>
-            )}
 
-            {contentType === "articles" && (
-              <Field label="Résumé">
-                <Input
-                  value={(formState.descricao as string) || ""}
-                  onChange={(event) => updateField("descricao", event.target.value)}
-                  placeholder="Bref resume..."
-                  className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
-                />
-              </Field>
-            )}
+              {contentType === "articles" && (
+                <Field label="Résumé">
+                  <Input
+                    value={(formState.descricao as string) || ""}
+                    onChange={(event) => updateField("descricao", event.target.value)}
+                    placeholder="Bref résumé..."
+                    className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
+                  />
+                </Field>
+              )}
 
-            {contentType === "stories" && (
-              <Field label="Statut">
-                <select
-                  className="flex h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 text-sm text-white outline-none"
-                  value={(formState.status as string) || "public"}
-                  onChange={(event) => updateField("status", event.target.value)}
-                >
-                  <option value="public" className="bg-[#141433]">Public</option>
-                  <option value="hidden" className="bg-[#141433]">Cache</option>
-                  <option value="draft" className="bg-[#141433]">Brouillon</option>
-                </select>
-              </Field>
-            )}
-          </div>
-
-          {contentType === "topics" && (
-            <div className="mt-4 flex flex-wrap gap-6">
-              <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
-                <Checkbox checked={!!formState.fixo} onCheckedChange={(value) => updateField("fixo", !!value)} />
-                Épinglé
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
-                <Checkbox checked={!!formState.fechado} onCheckedChange={(value) => updateField("fechado", !!value)} />
-                Fermé
-              </label>
+              {contentType === "stories" && (
+                <Field label="Statut">
+                  <select
+                    className="flex h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 text-sm text-white outline-none"
+                    value={(formState.status as string) || "public"}
+                    onChange={(event) => updateField("status", event.target.value)}
+                  >
+                    <option value="public" className="bg-[#141433]">Public</option>
+                    <option value="hidden" className="bg-[#141433]">Caché</option>
+                    <option value="draft" className="bg-[#141433]">Brouillon</option>
+                  </select>
+                </Field>
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Section: Media */}
-      {hasImage && (
-        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-admin-brand-blue">Media</p>
-          <ImageField
-            value={(formState.imagem as string) || ""}
-            onChange={(v) => updateField("imagem", v)}
-          />
-        </div>
-      )}
+            {contentType === "topics" && (
+              <div className="flex flex-wrap gap-6 border-t border-[#141433] pt-3">
+                <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
+                  <Checkbox checked={!!formState.fixo} onCheckedChange={(value) => updateField("fixo", !!value)} />
+                  Épinglé
+                </label>
+                <label className="flex items-center gap-2 text-sm text-[color:var(--foreground)]/75">
+                  <Checkbox checked={!!formState.fechado} onCheckedChange={(value) => updateField("fechado", !!value)} />
+                  Fermé
+                </label>
+              </div>
+            )}
+          </section>
+        )}
 
-      {/* Section: Contenu */}
-      {hasEditor && (
-        <div className="rounded-[4px] border border-[#141433] bg-[#25254D] p-4">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-admin-brand-blue">Contenu</p>
-          <AdminRichEditor
-            value={
-              contentType === "articles"
-                ? ((formState.noticia as string) || "")
-                : contentType === "forumComments" || contentType === "newsComments"
-                  ? ((formState.comentario as string) || "")
-                  : ((formState.conteudo as string) || "")
-            }
-            onChange={(html) => {
-              const fieldName =
+        {hasImage && (
+          <section className="space-y-3 border-t border-[#141433] pt-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Média</p>
+            <ImageField value={(formState.imagem as string) || ""} onChange={(v) => updateField("imagem", v)} />
+          </section>
+        )}
+
+        {hasEditor && (
+          <section className={cn("space-y-3", (hasTitle || hasImage) && "border-t border-[#141433] pt-5")}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Contenu</p>
+            <AdminRichEditor
+              value={
                 contentType === "articles"
-                  ? "noticia"
+                  ? ((formState.noticia as string) || "")
                   : contentType === "forumComments" || contentType === "newsComments"
-                    ? "comentario"
-                    : "conteudo";
-              updateField(fieldName, html);
-            }}
-          />
-        </div>
-      )}
+                    ? ((formState.comentario as string) || "")
+                    : ((formState.conteudo as string) || "")
+              }
+              onChange={(html) => {
+                const fieldName =
+                  contentType === "articles"
+                    ? "noticia"
+                    : contentType === "forumComments" || contentType === "newsComments"
+                      ? "comentario"
+                      : "conteudo";
+                updateField(fieldName, html);
+              }}
+            />
+          </section>
+        )}
+      </div>
     </div>
   );
 }
@@ -460,7 +532,7 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={previewUrl}
-            alt="Preview"
+            alt="Aperçu"
             className="max-h-[200px] w-full object-contain p-2"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />

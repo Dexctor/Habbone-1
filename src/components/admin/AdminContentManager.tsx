@@ -11,6 +11,7 @@ import {
   MessagesSquare,
   Newspaper,
   Search,
+  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -31,7 +32,6 @@ import { ContentListItem } from "@/components/admin/content/ContentList";
 import { ContentDetailPanel } from "@/components/admin/content/ContentDetail";
 import {
   CONTENT_META,
-  CONTENT_ORDER,
   PAGE_SIZE,
   type ContentType,
   type ServerActionFn,
@@ -73,9 +73,28 @@ const CONTENT_ICONS: Record<ContentType, React.ComponentType<{ className?: strin
   stories: Images,
 };
 
+type ContentGroup = "articles" | "forum" | "comments" | "stories";
+
+const CONTENT_GROUPS: Array<{
+  id: ContentGroup;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  types: ContentType[];
+}> = [
+  { id: "articles", label: "Articles", icon: Newspaper, types: ["articles"] },
+  { id: "forum", label: "Forum", icon: MessagesSquare, types: ["topics", "posts"] },
+  { id: "comments", label: "Commentaires", icon: MessageCircle, types: ["forumComments", "newsComments"] },
+  { id: "stories", label: "Stories", icon: Images, types: ["stories"] },
+];
+
+function groupForType(type: ContentType): ContentGroup {
+  return CONTENT_GROUPS.find((group) => group.types.includes(type))?.id ?? "articles";
+}
+
 export default function AdminContentManager(props: AdminContentManagerProps) {
   const { topics, posts, news, forumComments, newsComments, stories, topicTitleById } = props;
   const [contentType, setContentType] = useState<ContentType>("articles");
+  const [contentGroup, setContentGroup] = useState<ContentGroup>("articles");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -102,6 +121,18 @@ export default function AdminContentManager(props: AdminContentManagerProps) {
 
   const handleTypeChange = useCallback((type: ContentType) => {
     setContentType(type);
+    setContentGroup(groupForType(type));
+    setSearch("");
+    setPage(1);
+    setSelectedId(null);
+    setIsEditing(false);
+    setMobileShowDetail(false);
+  }, []);
+
+  const handleGroupChange = useCallback((group: ContentGroup) => {
+    setContentGroup(group);
+    const nextType = CONTENT_GROUPS.find((item) => item.id === group)?.types[0] ?? "articles";
+    setContentType(nextType);
     setSearch("");
     setPage(1);
     setSelectedId(null);
@@ -174,6 +205,8 @@ export default function AdminContentManager(props: AdminContentManagerProps) {
 
   const activeMeta = CONTENT_META[contentType];
   const ActiveIcon = CONTENT_ICONS[contentType];
+  const activeGroup = CONTENT_GROUPS.find((group) => group.id === contentGroup) ?? CONTENT_GROUPS[0];
+  const groupedTotal = activeGroup.types.reduce((sum, type) => sum + countsByType[type], 0);
 
   const executeDelete = async () => {
     if (!deleteConfirmId) return;
@@ -206,111 +239,117 @@ export default function AdminContentManager(props: AdminContentManagerProps) {
       />
 
       <div className="space-y-4">
-        {/* ── Type selector: icon cards ─────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {CONTENT_ORDER.map((type) => {
-            const TypeIcon = CONTENT_ICONS[type];
-            const active = contentType === type;
-            const count = countsByType[type];
-            return (
-              <button
-                key={type}
-                type="button"
-                onClick={() => handleTypeChange(type)}
-                className={cn(
-                  "group flex items-center gap-2.5 rounded-[6px] border px-3 py-2.5 text-left transition-all",
-                  active
-                    ? "border-[#2596FF] bg-[#2596FF]/10 shadow-[0_0_0_1px_rgba(37,150,255,0.4)]"
-                    : "border-[#141433] bg-[#1F1F3E] hover:border-[#2596FF]/40 hover:bg-[#25254D]",
-                )}
-                aria-pressed={active}
-              >
-                <div
+        {/* ── Primary content groups ───────────────────────────────── */}
+        <div className="rounded-[8px] border border-[#141433] bg-[#1F1F3E] p-2">
+          <div className="grid grid-cols-2 gap-1 lg:grid-cols-4">
+            {CONTENT_GROUPS.map((group) => {
+              const GroupIcon = group.icon;
+              const active = contentGroup === group.id;
+              const count = group.types.reduce((sum, type) => sum + countsByType[type], 0);
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  onClick={() => handleGroupChange(group.id)}
                   className={cn(
-                    "grid h-8 w-8 shrink-0 place-items-center rounded-[4px]",
-                    active ? "bg-[#2596FF] text-white" : "bg-[#25254D] text-admin-text-tertiary group-hover:text-white",
+                    "flex items-center justify-between gap-3 rounded-[6px] px-3 py-2.5 text-left transition-colors",
+                    active
+                      ? "bg-[#2596FF] text-white shadow-[0_10px_22px_-14px_rgba(37,150,255,0.9)]"
+                      : "text-admin-text-secondary hover:bg-white/[0.04] hover:text-white",
                   )}
+                  aria-pressed={active}
                 >
-                  <TypeIcon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      "truncate text-[12px] font-semibold",
-                      active ? "text-white" : "text-[#DDD]",
-                    )}
-                  >
-                    {CONTENT_META[type].label}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-[10px] font-mono",
-                      active ? "text-white/70" : "text-admin-text-tertiary",
-                    )}
-                  >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <GroupIcon className="h-4 w-4 shrink-0" />
+                    <span className="truncate text-[13px] font-bold">{group.label}</span>
+                  </span>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", active ? "bg-white/20" : "bg-white/5")}>
                     {count.toLocaleString("fr-FR")}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* ── Toolbar: search + counter ─────────────────────────────── */}
-        <div className="flex flex-col gap-3 rounded-[6px] border border-[#141433] bg-[#1F1F3E] p-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2.5 sm:min-w-[200px]">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[4px] bg-[#25254D] text-[#2596FF]">
-              <ActiveIcon className="h-4 w-4" />
+        {/* ── Toolbar: subtype + search + counter ──────────────────── */}
+        <div className="rounded-[8px] border border-[#141433] bg-[#1F1F3E] p-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {activeGroup.types.length > 1 && (
+                <span className="mr-1 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-admin-text-tertiary">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Type
+                </span>
+              )}
+              {activeGroup.types.map((type) => {
+                const TypeIcon = CONTENT_ICONS[type];
+                const active = contentType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => handleTypeChange(type)}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-2 rounded-[5px] px-3 text-[12px] font-bold transition-colors",
+                      active
+                        ? "bg-[#2596FF]/15 text-admin-brand-blue ring-1 ring-[#2596FF]/30"
+                        : "bg-white/[0.04] text-admin-text-tertiary hover:bg-white/[0.07] hover:text-white",
+                    )}
+                    aria-pressed={active}
+                  >
+                    <TypeIcon className="h-3.5 w-3.5" />
+                    {CONTENT_META[type].label}
+                    <span className="text-[10px] opacity-70">{countsByType[type].toLocaleString("fr-FR")}</span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-white">{activeMeta.label}</p>
-              <p className="truncate text-[11px] text-admin-text-tertiary">
-                {activeMeta.description}
-              </p>
-            </div>
-          </div>
 
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-tertiary" />
-            <Input
-              placeholder="Rechercher par titre, auteur, contenu…"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-                setSelectedId(null);
-                setIsEditing(false);
-              }}
-              className="h-[42px] rounded-[4px] border-[#141433] bg-[#25254D] pl-10 pr-10 text-white placeholder:text-admin-text-tertiary"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-tertiary" />
+              <Input
+                placeholder={`Rechercher dans ${activeMeta.label.toLowerCase()}...`}
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
                   setPage(1);
+                  setSelectedId(null);
+                  setIsEditing(false);
                 }}
-                className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-[3px] text-admin-text-tertiary hover:bg-white/10 hover:text-white"
-                aria-label="Effacer la recherche"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+                className="h-[42px] rounded-[5px] border-[#141433] bg-[#25254D] pl-10 pr-10 text-white placeholder:text-admin-text-tertiary"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-[3px] text-admin-text-tertiary hover:bg-white/10 hover:text-white"
+                  aria-label="Effacer la recherche"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-admin-text-tertiary sm:min-w-[120px] sm:justify-end">
-            {searchLower ? (
-              <span>
-                <span className="font-bold text-white">{filteredData.length}</span>
-                {" / "}
-                <span>{countsByType[contentType]} résultats</span>
-              </span>
-            ) : (
-              <span>
-                <span className="font-bold text-white">{countsByType[contentType]}</span> élément
-                {countsByType[contentType] > 1 ? "s" : ""}
-              </span>
-            )}
+            <div className="flex items-center gap-2 rounded-[5px] bg-white/[0.04] px-3 py-2 text-[11px] text-admin-text-tertiary xl:min-w-[150px] xl:justify-end">
+              <ActiveIcon className="h-3.5 w-3.5 text-admin-brand-blue" />
+              {searchLower ? (
+                <span>
+                  <span className="font-bold text-white">{filteredData.length}</span>
+                  {" / "}
+                  <span>{countsByType[contentType]} résultats</span>
+                </span>
+              ) : (
+                <span>
+                  <span className="font-bold text-white">{countsByType[contentType]}</span>
+                  {" / "}
+                  <span>{groupedTotal} dans {activeGroup.label.toLowerCase()}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
