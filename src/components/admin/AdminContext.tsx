@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export type AdminView = 'overview' | 'users' | 'content' | 'theme' | 'roles' | 'pub' | 'shop';
@@ -32,6 +32,7 @@ export function AdminViewProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const pendingViewRef = useRef<AdminView | null>(null);
 
   const urlView = searchParams.get('view');
   const initialView: AdminView = isAdminView(urlView) ? urlView : 'overview';
@@ -39,10 +40,16 @@ export function AdminViewProvider({ children }: { children: ReactNode }) {
 
   // Sync state ← URL (browser back/forward, external link, etc.)
   useEffect(() => {
-    const current = searchParams.get('view');
-    const next: AdminView = isAdminView(current) ? current : 'overview';
+    const next: AdminView = isAdminView(urlView) ? urlView : 'overview';
+    const pending = pendingViewRef.current;
+
+    if (pending) {
+      if (pending === next) pendingViewRef.current = null;
+      else return;
+    }
+
     setViewState((prev) => (prev === next ? prev : next));
-  }, [searchParams]);
+  }, [urlView]);
 
   // Sync document.title
   useEffect(() => {
@@ -54,6 +61,7 @@ export function AdminViewProvider({ children }: { children: ReactNode }) {
 
   const setView = useCallback(
     (next: AdminView) => {
+      pendingViewRef.current = next;
       setViewState(next);
       const params = new URLSearchParams(Array.from(searchParams.entries()));
       if (next === 'overview') params.delete('view');
