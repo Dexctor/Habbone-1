@@ -1,12 +1,16 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
+  AlertTriangle,
+  CheckCircle2,
   FileText,
   LayoutGrid,
   MessageSquare,
   Newspaper,
+  Package,
+  ShoppingBag,
   Users,
   Ban,
   UserCheck,
@@ -25,6 +29,7 @@ import AdminThemePanel from '@/components/admin/AdminThemePanel';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminPubPanel from '@/components/admin/AdminPubPanel';
 import AdminShopPanel from '@/components/admin/AdminShopPanel';
+import type { ShopItem, ShopOrder } from '@/types/shop';
 import type {
   ForumCommentRecord as AdminForumComment,
   ForumPostRecord as AdminPost,
@@ -79,6 +84,7 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard(props: AdminDashboardProps) {
   const { view, setView } = useAdminView();
+  const shopSummary = useShopSummary();
 
   const legacyUsers = getStatValue(props.stats, 'Utilisateurs (legacy)');
   const directusUsers = getStatValue(props.stats, 'Utilisateurs (Directus)');
@@ -86,6 +92,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   const articleCount = getStatValue(props.stats, 'Articles');
   const topicCount = getStatValue(props.stats, 'Sujets forum');
   const commentCount = getStatValue(props.stats, 'Commentaires');
+  const cockpit = useMemo(() => buildCockpitData(props, shopSummary), [props, shopSummary]);
 
   return (
     <div className="space-y-6">
@@ -149,49 +156,52 @@ export default function AdminDashboard(props: AdminDashboardProps) {
             />
           </div>
 
-          {/* Activity feed */}
-          <motion.div variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[15px] font-bold text-white">Activité récente</h3>
-              {(props.recentActivity?.length ?? 0) > 0 && (
-                <span className="text-[12px] text-admin-text-tertiary">
-                  {props.recentActivity?.length} événement{(props.recentActivity?.length ?? 0) > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-
-            {(!props.recentActivity || props.recentActivity.length === 0) ? (
-              <div className="py-8 text-center">
-                <Clock className="mx-auto mb-2 h-8 w-8 text-[#BEBECE]/20" />
-                <p className="text-[13px] text-admin-text-tertiary">Aucune activité récente</p>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                {props.recentActivity.map((item, i) => (
-                  <ActivityRow key={item.id} item={item} index={i} />
-                ))}
-              </div>
-            )}
-          </motion.div>
-
-          {/* Quick access cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <QuickCard
-              title="Utilisateurs"
-              description="Recherche, modération et rôles"
-              icon={<Users className="h-5 w-5" />}
-              onClick={() => setView('users')}
+          <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <ActionPanel
+              title="À traiter maintenant"
+              subtitle={cockpit.priorityTotal > 0 ? `${cockpit.priorityTotal} point${cockpit.priorityTotal > 1 ? 's' : ''} à surveiller` : 'Aucune urgence détectée'}
+              items={cockpit.priorityItems}
+              emptyIcon={<CheckCircle2 className="h-8 w-8" />}
+              emptyText="Tout est à jour"
             />
+            <ShopPanel
+              summary={shopSummary}
+              onOpenShop={() => setView('shop')}
+            />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+            <HealthPanel items={cockpit.healthItems} />
+            <ActivityPanel items={props.recentActivity ?? []} />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <QuickCard
-              title="Actualités"
-              description="Articles, forum et stories"
-              icon={<FileText className="h-5 w-5" />}
+              title="Modérer"
+              description={`${cockpit.moderationTotal} élément${cockpit.moderationTotal > 1 ? 's' : ''} à vérifier`}
+              icon={<Shield className="h-5 w-5" />}
+              tone="red"
               onClick={() => setView('content')}
             />
             <QuickCard
-              title="Paramètres"
-              description="Thème, rôles et partenaires"
+              title="Boutique"
+              description={`${shopSummary.pendingOrders} commande${shopSummary.pendingOrders > 1 ? 's' : ''} en attente`}
+              icon={<ShoppingBag className="h-5 w-5" />}
+              tone="yellow"
+              onClick={() => setView('shop')}
+            />
+            <QuickCard
+              title="Utilisateurs"
+              description="Recherche, sanctions et rôles"
+              icon={<Users className="h-5 w-5" />}
+              tone="blue"
+              onClick={() => setView('users')}
+            />
+            <QuickCard
+              title="Apparence"
+              description="Thème, partenaires et habillage"
               icon={<LayoutGrid className="h-5 w-5" />}
+              tone="green"
               onClick={() => setView('theme')}
             />
           </div>
@@ -288,6 +298,184 @@ export default function AdminDashboard(props: AdminDashboardProps) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Cockpit data                                                       */
+/* ------------------------------------------------------------------ */
+
+type ShopSummary = {
+  loading: boolean;
+  error: boolean;
+  totalItems: number;
+  activeItems: number;
+  inactiveItems: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  pendingOrders: number;
+  recentOrders: ShopOrder[];
+};
+
+type ActionItem = {
+  id: string;
+  label: string;
+  value: number;
+  detail: string;
+  tone: 'blue' | 'green' | 'yellow' | 'red' | 'neutral';
+  icon: ReactNode;
+};
+
+type HealthItem = {
+  id: string;
+  label: string;
+  detail: string;
+  state: 'ok' | 'watch' | 'alert';
+};
+
+function useShopSummary(): ShopSummary {
+  const [summary, setSummary] = useState<ShopSummary>({
+    loading: true,
+    error: false,
+    totalItems: 0,
+    activeItems: 0,
+    inactiveItems: 0,
+    lowStockItems: 0,
+    outOfStockItems: 0,
+    pendingOrders: 0,
+    recentOrders: [],
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [itemsRes, ordersRes] = await Promise.all([
+          fetch('/api/admin/shop?view=items', { cache: 'no-store' }),
+          fetch('/api/admin/shop?view=orders&status=pendente&page=1', { cache: 'no-store' }),
+        ]);
+        if (!itemsRes.ok || !ordersRes.ok) throw new Error('ADMIN_SHOP_SUMMARY_FAILED');
+
+        const [itemsJson, ordersJson] = await Promise.all([itemsRes.json(), ordersRes.json()]);
+        const items = Array.isArray(itemsJson?.data) ? itemsJson.data as ShopItem[] : [];
+        const orders = Array.isArray(ordersJson?.data) ? ordersJson.data as ShopOrder[] : [];
+
+        if (cancelled) return;
+        setSummary({
+          loading: false,
+          error: false,
+          totalItems: items.length,
+          activeItems: items.filter((item) => item.status === 'ativo').length,
+          inactiveItems: items.filter((item) => item.status !== 'ativo').length,
+          lowStockItems: items.filter((item) => item.status === 'ativo' && item.estoque > 0 && item.estoque <= 3).length,
+          outOfStockItems: items.filter((item) => item.status === 'ativo' && item.estoque <= 0).length,
+          pendingOrders: Number(ordersJson?.total ?? orders.length) || 0,
+          recentOrders: orders.slice(0, 3),
+        });
+      } catch {
+        if (cancelled) return;
+        setSummary((prev) => ({ ...prev, loading: false, error: true }));
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return summary;
+}
+
+function buildCockpitData(props: AdminDashboardProps, shop: ShopSummary) {
+  const pendingArticles = props.news.filter((item) => isReviewStatus(item.status)).length;
+  const pendingTopics = props.topics.filter((item) => isReviewStatus(item.status)).length;
+  const pendingForumComments = props.forumComments.filter((item) => isReviewStatus(item.status)).length;
+  const pendingNewsComments = props.newsComments.filter((item) => isReviewStatus(item.status)).length;
+  const privateStories = props.stories.filter((item) => {
+    const status = normalizeStatus(item.status);
+    return status && status !== 'public' && status !== 'published';
+  }).length;
+  const moderationTotal = pendingArticles + pendingTopics + pendingForumComments + pendingNewsComments;
+
+  const priorityItems: ActionItem[] = [
+    {
+      id: 'orders',
+      label: 'Commandes boutique',
+      value: shop.pendingOrders,
+      detail: shop.loading ? 'Chargement...' : 'Livraisons à traiter',
+      tone: shop.pendingOrders > 0 ? 'yellow' : 'green',
+      icon: <ShoppingBag className="h-4 w-4" />,
+    },
+    {
+      id: 'moderation',
+      label: 'Modération contenu',
+      value: moderationTotal,
+      detail: 'Articles, sujets et commentaires non publiés',
+      tone: moderationTotal > 0 ? 'red' : 'green',
+      icon: <Shield className="h-4 w-4" />,
+    },
+    {
+      id: 'stock',
+      label: 'Stock boutique',
+      value: shop.outOfStockItems + shop.lowStockItems,
+      detail: `${shop.outOfStockItems} rupture, ${shop.lowStockItems} stock faible`,
+      tone: shop.outOfStockItems > 0 ? 'red' : shop.lowStockItems > 0 ? 'yellow' : 'green',
+      icon: <Package className="h-4 w-4" />,
+    },
+    {
+      id: 'stories',
+      label: 'Stories privées',
+      value: privateStories,
+      detail: 'Stories hors statut public',
+      tone: privateStories > 0 ? 'yellow' : 'green',
+      icon: <Newspaper className="h-4 w-4" />,
+    },
+  ];
+
+  const healthItems: HealthItem[] = [
+    {
+      id: 'content',
+      label: 'Contenus',
+      detail: `${props.news.length} articles chargés, ${props.topics.length} sujets chargés`,
+      state: props.news.length > 0 || props.topics.length > 0 ? 'ok' : 'watch',
+    },
+    {
+      id: 'comments',
+      label: 'Commentaires',
+      detail: `${props.forumComments.length + props.newsComments.length} commentaires récents`,
+      state: props.forumComments.length + props.newsComments.length > 0 ? 'ok' : 'watch',
+    },
+    {
+      id: 'shop',
+      label: 'Boutique',
+      detail: shop.error ? 'Résumé indisponible' : `${shop.activeItems}/${shop.totalItems} articles actifs`,
+      state: shop.error ? 'alert' : shop.outOfStockItems > 0 ? 'watch' : 'ok',
+    },
+    {
+      id: 'activity',
+      label: 'Journal admin',
+      detail: `${props.recentActivity?.length ?? 0} événements récents`,
+      state: (props.recentActivity?.length ?? 0) > 0 ? 'ok' : 'watch',
+    },
+  ];
+
+  return {
+    priorityItems,
+    healthItems,
+    priorityTotal: priorityItems.reduce((sum, item) => sum + item.value, 0),
+    moderationTotal,
+  };
+}
+
+function isReviewStatus(status: string | null | undefined): boolean {
+  const normalized = normalizeStatus(status);
+  if (!normalized) return false;
+  return !['published', 'publicado', 'public', 'active', 'ativo', 'ok'].includes(normalized);
+}
+
+function normalizeStatus(status: string | null | undefined): string {
+  return String(status || '').trim().toLowerCase();
+}
+
+/* ------------------------------------------------------------------ */
 /*  Animation primitives                                              */
 /* ------------------------------------------------------------------ */
 
@@ -351,6 +539,177 @@ function useAnimatedNumber(target: number, durationMs = 900) {
 /*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
+function ActionPanel({
+  title,
+  subtitle,
+  items,
+  emptyIcon,
+  emptyText,
+}: {
+  title: string;
+  subtitle: string;
+  items: ActionItem[];
+  emptyIcon: ReactNode;
+  emptyText: string;
+}) {
+  const hasWork = items.some((item) => item.value > 0);
+
+  return (
+    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+      <PanelHeader title={title} subtitle={subtitle} />
+      {!hasWork ? (
+        <div className="flex items-center gap-3 rounded-[6px] bg-[#0FD52F]/[0.06] px-3 py-3">
+          <span className="grid h-10 w-10 place-items-center rounded-[6px] bg-[#0FD52F]/15 text-[#0FD52F]">
+            {emptyIcon}
+          </span>
+          <div>
+            <p className="text-[13px] font-bold text-white">{emptyText}</p>
+            <p className="text-[12px] text-admin-text-tertiary">Aucune intervention prioritaire pour le moment</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <MetricRow key={item.id} item={item} />
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+function ShopPanel({
+  summary,
+  onOpenShop,
+}: {
+  summary: ShopSummary;
+  onOpenShop: () => void;
+}) {
+  return (
+    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <PanelHeader
+          title="Boutique"
+          subtitle={summary.loading ? 'Synchronisation...' : `${summary.activeItems} article${summary.activeItems > 1 ? 's' : ''} actif${summary.activeItems > 1 ? 's' : ''}`}
+        />
+        <button
+          type="button"
+          onClick={onOpenShop}
+          className="rounded-[5px] bg-[#2596FF]/15 px-3 py-1.5 text-[11px] font-bold text-admin-brand-blue transition-colors hover:bg-[#2596FF]/25"
+        >
+          Ouvrir
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <MiniStat label="En attente" value={summary.pendingOrders} tone={summary.pendingOrders > 0 ? 'yellow' : 'green'} />
+        <MiniStat label="Rupture" value={summary.outOfStockItems} tone={summary.outOfStockItems > 0 ? 'red' : 'green'} />
+        <MiniStat label="Inactifs" value={summary.inactiveItems} tone={summary.inactiveItems > 0 ? 'neutral' : 'green'} />
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {summary.loading ? (
+          <div className="rounded-[6px] bg-white/[0.03] px-3 py-3 text-[12px] text-admin-text-tertiary">Chargement des commandes...</div>
+        ) : summary.error ? (
+          <div className="rounded-[6px] bg-[#F92330]/10 px-3 py-3 text-[12px] font-semibold text-[#FF4B6C]">Résumé boutique indisponible</div>
+        ) : summary.recentOrders.length === 0 ? (
+          <div className="rounded-[6px] bg-white/[0.03] px-3 py-3 text-[12px] text-admin-text-tertiary">Aucune commande en attente</div>
+        ) : (
+          summary.recentOrders.map((order) => (
+            <div key={order.id} className="flex items-center justify-between gap-3 rounded-[6px] bg-white/[0.03] px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-[12px] font-bold text-white">{order.user_nick || `Utilisateur #${order.user_id}`}</p>
+                <p className="truncate text-[11px] text-admin-text-tertiary">{order.item_nome || `Article #${order.item_id}`}</p>
+              </div>
+              <span className="shrink-0 text-[12px] font-bold text-[#FFC800]">{order.preco} coins</span>
+            </div>
+          ))
+        )}
+      </div>
+    </motion.section>
+  );
+}
+
+function HealthPanel({ items }: { items: HealthItem[] }) {
+  return (
+    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+      <PanelHeader title="Santé du site" subtitle="Signaux rapides du back-office" />
+      <div className="space-y-2">
+        {items.map((item) => {
+          const cls = healthClass(item.state);
+          return (
+            <div key={item.id} className="flex items-center gap-3 rounded-[6px] bg-white/[0.03] px-3 py-2.5">
+              <span className={`grid h-8 w-8 place-items-center rounded-[6px] ${cls.icon}`}>
+                {item.state === 'ok' ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[12px] font-bold text-white">{item.label}</p>
+                <p className="truncate text-[11px] text-admin-text-tertiary">{item.detail}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </motion.section>
+  );
+}
+
+function ActivityPanel({ items }: { items: RecentActivityItem[] }) {
+  return (
+    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <PanelHeader title="Activité récente" subtitle={`${items.length} événement${items.length > 1 ? 's' : ''}`} />
+      </div>
+
+      {items.length === 0 ? (
+        <div className="py-8 text-center">
+          <Clock className="mx-auto mb-2 h-8 w-8 text-[#BEBECE]/20" />
+          <p className="text-[13px] text-admin-text-tertiary">Aucune activité récente</p>
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {items.slice(0, 6).map((item, i) => (
+            <ActivityRow key={item.id} item={item} index={i} />
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+function PanelHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="mb-4">
+      <h3 className="text-[15px] font-bold text-white">{title}</h3>
+      <p className="mt-0.5 text-[12px] text-admin-text-tertiary">{subtitle}</p>
+    </div>
+  );
+}
+
+function MetricRow({ item }: { item: ActionItem }) {
+  const cls = toneClass(item.tone);
+  return (
+    <div className="flex items-center gap-3 rounded-[6px] bg-white/[0.03] px-3 py-2.5 transition-colors hover:bg-white/[0.05]">
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[6px] ${cls.icon}`}>{item.icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] font-bold text-white">{item.label}</p>
+        <p className="truncate text-[11px] text-admin-text-tertiary">{item.detail}</p>
+      </div>
+      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${cls.badge}`}>{item.value}</span>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: number; tone: ActionItem['tone'] }) {
+  const cls = toneClass(tone);
+  return (
+    <div className="rounded-[6px] bg-white/[0.03] px-3 py-3">
+      <p className={`text-[18px] font-bold leading-none ${cls.text}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.06em] text-admin-text-tertiary">{label}</p>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -395,13 +754,17 @@ function QuickCard({
   title,
   description,
   icon,
+  tone = 'blue',
   onClick,
 }: {
   title: string;
   description: string;
   icon: ReactNode;
+  tone?: ActionItem['tone'];
   onClick: () => void;
 }) {
+  const cls = toneClass(tone);
+
   return (
     <motion.button
       type="button"
@@ -412,7 +775,7 @@ function QuickCard({
       className="group rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/30 hover:bg-[#141433]/80 hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)]"
     >
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-[#2596FF]/10 text-admin-brand-blue transition-all duration-300 group-hover:scale-110 group-hover:bg-[#2596FF]/20">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] transition-all duration-300 group-hover:scale-110 ${cls.icon}`}>
           {icon}
         </span>
         <div>
@@ -517,6 +880,46 @@ function ActivityRow({ item, index = 0 }: { item: RecentActivityItem; index?: nu
 
 function getStatValue(stats: SummaryStat[], label: string) {
   return stats.find((item) => item.label === label)?.value || 0;
+}
+
+function toneClass(tone: ActionItem['tone']) {
+  const classes = {
+    blue: {
+      icon: 'bg-[#2596FF]/15 text-admin-brand-blue',
+      badge: 'bg-[#2596FF]/15 text-admin-brand-blue',
+      text: 'text-admin-brand-blue',
+    },
+    green: {
+      icon: 'bg-[#0FD52F]/15 text-[#0FD52F]',
+      badge: 'bg-[#0FD52F]/15 text-[#0FD52F]',
+      text: 'text-[#0FD52F]',
+    },
+    yellow: {
+      icon: 'bg-[#FFC800]/15 text-[#FFC800]',
+      badge: 'bg-[#FFC800]/15 text-[#FFC800]',
+      text: 'text-[#FFC800]',
+    },
+    red: {
+      icon: 'bg-[#F92330]/15 text-[#FF4B6C]',
+      badge: 'bg-[#F92330]/15 text-[#FF4B6C]',
+      text: 'text-[#FF4B6C]',
+    },
+    neutral: {
+      icon: 'bg-white/5 text-admin-text-tertiary',
+      badge: 'bg-white/5 text-admin-text-tertiary',
+      text: 'text-admin-text-tertiary',
+    },
+  } satisfies Record<ActionItem['tone'], { icon: string; badge: string; text: string }>;
+  return classes[tone];
+}
+
+function healthClass(state: HealthItem['state']) {
+  const classes = {
+    ok: { icon: 'bg-[#0FD52F]/15 text-[#0FD52F]' },
+    watch: { icon: 'bg-[#FFC800]/15 text-[#FFC800]' },
+    alert: { icon: 'bg-[#F92330]/15 text-[#FF4B6C]' },
+  } satisfies Record<HealthItem['state'], { icon: string }>;
+  return classes[state];
 }
 
 function formatNumber(n: number): string {

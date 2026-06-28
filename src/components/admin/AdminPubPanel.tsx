@@ -51,13 +51,13 @@ export default function AdminPubPanel() {
       const res = await fetch("/api/upload/image", { method: "POST", body: formData });
       const json = await res.json();
       if (!res.ok || !json?.id) {
-        toast.error(json?.error || "Échec de l'upload");
+        toast.error(json?.error || "Échec du téléversement");
         return;
       }
       setEdit((prev) => (prev ? { ...prev, imagem: json.id } : prev));
       toast.success("Image téléversée");
     } catch {
-      toast.error("Erreur réseau pendant l'upload");
+      toast.error("Erreur réseau pendant le téléversement");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -145,7 +145,7 @@ export default function AdminPubPanel() {
         body: JSON.stringify({ action: "update", id: item.id, status: newStatus }),
       });
       if (!res.ok) throw new Error("Echec");
-      toast.success(newStatus === "ativo" ? "Activee" : "Desactivee");
+      toast.success(newStatus === "ativo" ? "Activée" : "Désactivée");
       fetchItems();
     } catch {
       toast.error("Erreur");
@@ -325,9 +325,9 @@ export default function AdminPubPanel() {
                   type="button"
                   onClick={() => handleToggleStatus(item)}
                   className="rounded-[3px] px-2 py-1.5 text-[11px] font-bold text-[#BEBECE] hover:bg-[rgba(255,255,255,0.08)]"
-                  title={item.status === "ativo" ? "Desactiver" : "Activer"}
+                  title={item.status === "ativo" ? "Désactiver" : "Activer"}
                 >
-                  {item.status === "ativo" ? "Desactiver" : "Activer"}
+                  {item.status === "ativo" ? "Désactiver" : "Activer"}
                 </button>
                 <button
                   type="button"

@@ -73,12 +73,12 @@ function ImageUpload({
         body: formData,
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Erreur d'upload");
+      if (!res.ok) throw new Error(json?.error || "Erreur de téléversement");
 
       onChange(json.url);
-      toast.success("Image uploadée");
+      toast.success("Image téléversée");
     } catch (e: any) {
-      toast.error(e?.message || "Erreur lors de l'upload");
+      toast.error(e?.message || "Erreur lors du téléversement");
     } finally {
       setUploading(false);
     }
@@ -165,7 +165,7 @@ function ImageUpload({
             <>
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2596FF]/30 border-t-[#2596FF]" />
               <span className="text-[12px] font-medium text-admin-text-tertiary">
-                Upload en cours...
+                Téléversement en cours...
               </span>
             </>
           ) : (

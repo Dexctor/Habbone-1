@@ -144,7 +144,7 @@ export default function AdminThemePanel() {
       } catch {}
       toast.success(target === "logo" ? "Logo mis à jour" : "Fond mis à jour");
     } catch {
-      toast.error("Erreur réseau pendant l'upload");
+      toast.error("Erreur réseau pendant le téléversement");
     } finally {
       if (target === "logo" && logoInputRef.current) logoInputRef.current.value = "";
       if (target === "background" && backgroundInputRef.current) backgroundInputRef.current.value = "";
