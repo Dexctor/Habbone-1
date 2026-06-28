@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -11,9 +11,21 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { mediaUrl } from '@/lib/media-url'
 import type { ShopItem } from '@/types/shop'
 
 const PAGE_SIZE = 12
+const SHOP_IMAGE_FALLBACK = '/img/box.png'
+
+function shopImageSrc(value?: string | null) {
+  const raw = value?.trim() || ''
+  return mediaUrl(raw) || raw || SHOP_IMAGE_FALLBACK
+}
+
+function setShopImageFallback(event: SyntheticEvent<HTMLImageElement>) {
+  if (event.currentTarget.src.endsWith(SHOP_IMAGE_FALLBACK)) return
+  event.currentTarget.src = SHOP_IMAGE_FALLBACK
+}
 
 /* ------------------------------------------------------------------ */
 /*  Composants                                                         */
@@ -36,6 +48,7 @@ function ShopCard({
   const cantAfford = coins < item.preco
   const isBuying = buying === item.id
   const disabled = soldOut || !loggedIn || cantAfford || isBuying
+  const imageSrc = shopImageSrc(item.imagem)
 
   return (
     <article className="flex flex-col rounded-[8px] bg-[#1F1F3E] border border-[#141433] overflow-hidden">
@@ -43,11 +56,11 @@ function ShopCard({
       <div className="flex h-[140px] items-center justify-center bg-[#303060]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={item.imagem}
+          src={imageSrc}
           alt={item.nome}
           className="h-[100px] w-auto object-contain image-pixelated"
           loading="lazy"
-          onError={(e) => { (e.target as HTMLImageElement).src = '/img/box.png' }}
+          onError={setShopImageFallback}
         />
       </div>
 
@@ -176,6 +189,7 @@ export default function BoutiqueClient({
   const [coins, setCoins] = useState(initialCoins)
   const [buying, setBuying] = useState<string | null>(null)
   const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null)
+  const confirmImageSrc = confirmItem ? shopImageSrc(confirmItem.imagem) : SHOP_IMAGE_FALLBACK
 
   // Purchase execution (called after dialog confirm)
   const executePurchase = useCallback(async (item: ShopItem) => {
@@ -313,10 +327,10 @@ export default function BoutiqueClient({
             <div className="flex items-center gap-4 rounded-[6px] border border-white/10 bg-[#272746] p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={confirmItem.imagem}
+                src={confirmImageSrc}
                 alt={confirmItem.nome}
                 className="h-[60px] w-[60px] object-contain image-pixelated"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/img/box.png' }}
+                onError={setShopImageFallback}
               />
               <div className="flex-1">
                 <p className="text-[14px] font-bold text-white">{confirmItem.nome}</p>
