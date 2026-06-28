@@ -24,6 +24,18 @@ import type { ShopItem, ShopOrder } from "@/types/shop";
 import { useAdminFetch } from "@/hooks/useAdminFetch";
 import { mediaUrl } from "@/lib/media-url";
 
+const SHOP_IMAGE_FALLBACK = "/img/box.png";
+
+function shopImageSrc(value?: string | null) {
+  const raw = value?.trim() || "";
+  return mediaUrl(raw) || raw || SHOP_IMAGE_FALLBACK;
+}
+
+function setShopImageFallback(event: React.SyntheticEvent<HTMLImageElement>) {
+  if (event.currentTarget.src.endsWith(SHOP_IMAGE_FALLBACK)) return;
+  event.currentTarget.src = SHOP_IMAGE_FALLBACK;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -119,12 +131,10 @@ function ImageUpload({
         <div className="relative inline-block rounded-[8px] border border-white/10 bg-[#1A1A3A] p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={value}
+            src={shopImageSrc(value)}
             alt="Aperçu"
             className="max-h-[120px] max-w-[200px] rounded-[4px] object-contain image-pixelated"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/img/box.png";
-            }}
+            onError={setShopImageFallback}
           />
           <button
             type="button"
@@ -499,10 +509,10 @@ function ItemsTab() {
                       <div className="h-[40px] w-[40px] shrink-0 overflow-hidden rounded-[4px] bg-[#303060]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={mediaUrl(item.imagem) || item.imagem}
+                          src={shopImageSrc(item.imagem)}
                           alt={item.nome}
                           className="h-full w-full object-contain image-pixelated"
-                          onError={(e) => { (e.target as HTMLImageElement).src = "/img/box.png"; }}
+                          onError={setShopImageFallback}
                         />
                       </div>
                       <span className="text-[13px] font-semibold text-white">{item.nome}</span>
@@ -707,10 +717,10 @@ function OrdersTab() {
                         <div className="h-[28px] w-[28px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={mediaUrl(order.item_imagem) || order.item_imagem}
+                            src={shopImageSrc(order.item_imagem)}
                             alt=""
                             className="h-full w-full object-contain image-pixelated"
-                            onError={(e) => { (e.target as HTMLImageElement).src = "/img/box.png"; }}
+                            onError={setShopImageFallback}
                           />
                         </div>
                       )}

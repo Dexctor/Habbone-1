@@ -20,8 +20,12 @@ const CSP_CONFIG: CSPDirectives = {
   'media-src': ["'self'", 'data:', 'blob:', 'https:'],
   'font-src': ["'self'", 'https:', 'data:'],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-  'script-src': (isProd) => (isProd ? ["'self'", "'unsafe-inline'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"]),
-  'connect-src': (isProd) => (isProd ? ["'self'", 'https:'] : ["'self'", 'https:', 'ws:']),
+  'script-src': (isProd) =>
+    isProd
+      ? ["'self'", "'unsafe-inline'", 'https://vercel.live']
+      : ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://vercel.live'],
+  'connect-src': (isProd) =>
+    isProd ? ["'self'", 'https:', 'https://vercel.live'] : ["'self'", 'https:', 'https://vercel.live', 'ws:'],
 };
 
 function buildCSP(isProd: boolean): string {
