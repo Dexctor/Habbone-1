@@ -16,6 +16,7 @@ export type StoryItem = {
 export default function StoriesClient({ items }: { items: StoryItem[] }) {
   const [active, setActive] = useState<StoryItem | null>(null)
   const reduce = useReducedMotion()
+  const activeDate = active ? formatDateTimeLoose(active.date) : ""
 
   // Close on Escape
   useEffect(() => {
@@ -83,7 +84,15 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--bg-800)]">
                 <div className="min-w-0">
                   <div className="font-semibold text-[var(--text-100)] truncate">{active.alt}</div>
-                  <div className="text-xs text-[var(--text-500)]">{active.author || ""}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--text-500)]">
+                    {active.author && <span>{active.author}</span>}
+                    {activeDate && (
+                      <>
+                        {active.author && <span className="opacity-50">•</span>}
+                        <time dateTime={String(active.date)}>Publié le {activeDate}</time>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <button
                   className="rounded px-2 py-1 text-[var(--text-100)] hover:bg-[var(--bg-600)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-500)]"
@@ -101,9 +110,11 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
               </div>
 
               {/* Footer */}
-              <div className="px-4 py-3 border-t border-[var(--bg-800)] text-xs text-[var(--text-500)]">
-                {formatDateTimeLoose(active.date) || ""}
-              </div>
+              {activeDate && (
+                <div className="px-4 py-3 border-t border-[var(--bg-800)] text-xs text-[var(--text-500)]">
+                  Date de publication : <time dateTime={String(active.date)}>{activeDate}</time>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

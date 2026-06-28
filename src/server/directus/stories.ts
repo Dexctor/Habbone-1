@@ -109,7 +109,7 @@ export async function countStoriesThisMonthByAuthor(author: string): Promise<num
   try {
     return await pbCount(TABLE, {
       author: { _eq: authorId },
-      created: { _gte: startIso },
+      published_at: { _gte: startIso },
     });
   } catch {
     return 0;
@@ -119,8 +119,19 @@ export async function countStoriesThisMonthByAuthor(author: string): Promise<num
 // ============ LIST ============
 
 export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
+  return listStoryRows({ limit, publicOnly: true });
+}
+
+async function listStoryRows({
+  limit,
+  publicOnly,
+}: {
+  limit: number;
+  publicOnly: boolean;
+}): Promise<StoryRecord[]> {
   try {
     const rows = await pbList<V2StoryRow>(TABLE, {
+      filter: publicOnly ? { status: { _eq: 'public' } } : undefined,
       sort: '-published_at',
       perPage: limit,
       fields: 'id,title,image,author,status,published_at',
@@ -134,7 +145,7 @@ export async function listStoriesService(limit = 30): Promise<StoryRecord[]> {
 // ============ ADMIN FUNCTIONS ============
 
 export async function adminListStories(limit = 500): Promise<StoryRecord[]> {
-  return listStoriesService(limit);
+  return listStoryRows({ limit, publicOnly: false });
 }
 
 export async function adminUpdateStory(id: string, patch: Partial<StoryRecord>): Promise<void> {

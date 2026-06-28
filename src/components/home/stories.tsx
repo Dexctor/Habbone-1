@@ -46,8 +46,8 @@ export default async function Stories() {
         const src = mediaUrl(r.image ?? r.imagem ?? r.Image ?? r.Imagem ?? '')
         const author = String(r.autor ?? r.Autor ?? '')?.trim() || null
         const timestamp = resolveStoryTimestamp(r)
-        const fallbackDate = r.published_at ?? r.data ?? r.dta ?? r.date_created ?? r.dateCreated ?? null
-        const date = timestamp || fallbackDate || null
+        const fallbackDate = r.published_at ?? r.date_created ?? r.dateCreated ?? r.data ?? r.dta ?? null
+        const date = fallbackDate || timestamp || null
         const alt = author ? author : `Story #${r.id ?? ''}`
         return { id: String(r.id ?? ''), src, alt, author, date, timestamp }
       })
