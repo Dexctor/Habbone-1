@@ -1,11 +1,11 @@
 /**
- * Smoke test for the Lot 3 socle (client.ts + pb-helpers.ts) against the real
+ * Smoke test for the PocketBase service helpers against the real
  * local PocketBase. Full CRUD cycle on `roles` + count + filter.
  * Run: npx tsx scripts/migration-pb/_test-helpers.ts
  * Temp file — removed once the socle is trusted.
  */
 
-import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete, pbCount } from '../../src/server/directus/pb-helpers';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete, pbCount } from '../../src/server/pocketbase/helpers';
 
 let pass = 0, fail = 0;
 function check(label: string, cond: boolean, extra?: string) {

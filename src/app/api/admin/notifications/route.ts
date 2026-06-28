@@ -5,7 +5,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   countUnreadNotifications,
-} from '@/server/directus/shop';
+} from '@/server/pocketbase/shop';
 
 export const dynamic = 'force-dynamic';
 

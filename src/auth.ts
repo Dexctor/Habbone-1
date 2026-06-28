@@ -7,11 +7,11 @@ import {
   asTrue,
   asFalse,
   tryUpdateHabboSnapshotForUser,
-} from '@/server/directus/users';
-import { getRoleById } from '@/server/directus/roles';
+} from '@/server/pocketbase/users';
+import { getRoleById } from '@/server/pocketbase/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
-import { ensureRoleBadge } from '@/server/directus/badges';
-import { syncHabboName } from '@/server/directus/pseudo-changes';
+import { ensureRoleBadge } from '@/server/pocketbase/badges';
+import { syncHabboName } from '@/server/pocketbase/pseudo-changes';
 import { checkRateLimitByKey } from '@/server/rate-limit';
 
 // Validate the signing secret at RUNTIME (not at module load — that would fire
@@ -74,7 +74,8 @@ export const authOptions: NextAuthOptions = {
           }
         } catch {}
 
-        // ── Unified role system: read directus_role_id from usuarios ──
+        // Role system: PocketBase users.role relation, exposed under the
+        // legacy session key names for backwards-compatible JWTs.
         const directusRoleId: string | null = (user as any).directus_role_id || null;
         let directusRoleName: string | null = null;
         let directusAdminAccess = false;
@@ -91,7 +92,7 @@ export const authOptions: NextAuthOptions = {
 
         // Fallback: ADMIN_NICKS env var for bootstrapping.
         // This is ONLY honoured until ADMIN_NICKS_UNTIL (unix timestamp, seconds).
-        // Rationale: once a real admin exists in Directus, the nick-based fallback
+        // Rationale: once a real admin exists in PocketBase, the nick-based fallback
         // should stop being a trust anchor — otherwise anyone who grabs the nick
         // regains admin after rotation.
         const adminNicksUntilRaw = process.env.ADMIN_NICKS_UNTIL || '';

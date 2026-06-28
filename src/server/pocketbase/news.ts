@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './pb-helpers';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNick } from './user-cache';
 import type { NewsRecord, NewsCommentRecord } from './types';

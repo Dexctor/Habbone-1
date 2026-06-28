@@ -7,7 +7,7 @@ import {
   normalizeHotelCode,
   tryUpdateHabboSnapshotForUser,
   updateUserVerification,
-} from '@/server/directus/users';
+} from '@/server/pocketbase/users';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
 import { RegisterBodySchema, formatZodError, buildError } from '@/types/api';
 import { computeVerificationExpiry, generateVerificationCode } from '@/lib/verification';

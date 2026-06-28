@@ -8,7 +8,7 @@ import { useAdminFetch } from "@/hooks/useAdminFetch";
 import { mediaUrl } from "@/lib/media-url";
 
 type PubItem = {
-  id: number;
+  id: string;
   nome: string;
   link: string;
   imagem: string;
@@ -16,7 +16,7 @@ type PubItem = {
 };
 
 type EditState = {
-  id: number | null; // null = creating new
+  id: string | null; // null = creating new
   nome: string;
   link: string;
   imagem: string;
@@ -40,8 +40,7 @@ export default function AdminPubPanel() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Upload une image vers Directus et stocke l'UUID dans le champ `imagem`.
-  // mediaUrl() résoudra l'UUID en /assets/<uuid> côté lecture.
+  // Upload une image et stocke son URL publique dans le champ `imagem`.
   const handleUpload = async (file: File) => {
     if (!edit) return;
     setUploading(true);
@@ -50,11 +49,11 @@ export default function AdminPubPanel() {
       formData.set("file", file);
       const res = await fetch("/api/upload/image", { method: "POST", body: formData });
       const json = await res.json();
-      if (!res.ok || !json?.id) {
+      if (!res.ok || !json?.url) {
         toast.error(json?.error || "Échec du téléversement");
         return;
       }
-      setEdit((prev) => (prev ? { ...prev, imagem: json.id } : prev));
+      setEdit((prev) => (prev ? { ...prev, imagem: json.url } : prev));
       toast.success("Image téléversée");
     } catch {
       toast.error("Erreur réseau pendant le téléversement");
@@ -109,10 +108,10 @@ export default function AdminPubPanel() {
     }
   };
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     setDeleteConfirmId(id);
   };
 
@@ -208,7 +207,7 @@ export default function AdminPubPanel() {
                 type="text"
                 value={edit.imagem}
                 onChange={(e) => setEdit({ ...edit, imagem: e.target.value })}
-                placeholder="UUID Directus, URL https://… ou clique sur Téléverser"
+                placeholder="URL https://… ou clique sur Téléverser"
                 className="flex-1 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#2596FF] focus:outline-none"
               />
               <input
@@ -232,7 +231,7 @@ export default function AdminPubPanel() {
               </button>
             </div>
             <p className="mt-1 text-[10px] text-admin-text-tertiary">
-              PNG, JPEG, WebP ou GIF — max 5 Mo. L&apos;image est stockée sur Directus.
+              PNG, JPEG, WebP ou GIF — max 5 Mo. L&apos;image est stockée sur PocketBase.
             </p>
           </div>
           {edit.imagem && (

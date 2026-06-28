@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { pbList } from '@/server/directus/pb-helpers'
-import { TABLES } from '@/server/directus/tables'
-import { resolveUserNick } from '@/server/directus/user-cache'
+import { pbList } from '@/server/pocketbase/helpers'
+import { TABLES } from '@/server/pocketbase/tables'
+import { resolveUserNick } from '@/server/pocketbase/user-cache'
 
 export const dynamic = 'force-dynamic'
 

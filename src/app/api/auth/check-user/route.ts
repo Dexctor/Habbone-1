@@ -1,6 +1,6 @@
 // app/api/auth/check-user/route.ts
 import { NextResponse } from 'next/server'
-import { getUserByNick, listUsersByNick, normalizeHotelCode } from '@/server/directus/users'
+import { getUserByNick, listUsersByNick, normalizeHotelCode } from '@/server/pocketbase/users'
 import { CheckUserQuerySchema, searchParamsToObject, formatZodError, buildError } from '@/types/api'
 import { checkRateLimit } from '@/server/rate-limit'
 

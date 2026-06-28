@@ -1,53 +1,44 @@
 import 'server-only';
 
-import { USERS_TABLE } from './client';
-import { directusFetch } from './fetch';
+import { pbList } from './helpers';
+import { TABLES } from './tables';
 import { parseTimestamp } from '@/lib/date-utils';
 import type { TeamMember } from './types';
 
-type LegacyTeamRow = {
-  id?: number | string | null;
+type TeamUserRow = {
+  id?: string | null;
   nick?: string | null;
-  role?: string | null;
-  directus_role_id?: string | null;
-  data_criacao?: string | null;
+  created?: string | null;
   twitter?: string | null;
-  banido?: string | null;
-  ativado?: string | null;
+  active?: boolean | null;
+  banned?: boolean | null;
+  role?: string | null;
 };
 
-type DirectusRole = {
+type RoleRow = {
   id: string;
   name: string;
 };
 
-async function fetchRoles(): Promise<DirectusRole[]> {
-  try {
-    const json = await directusFetch<{ data: DirectusRole[] }>('/roles', {
-      params: { fields: 'id,name', sort: 'name' },
-    });
-    return Array.isArray(json?.data) ? json.data : [];
-  } catch {
-    return [];
-  }
+async function fetchRoles(): Promise<RoleRow[]> {
+  return pbList<RoleRow>(TABLES.roles, {
+    fields: 'id,name',
+    sort: 'name',
+    perPage: 200,
+  }).catch(() => []);
 }
 
-async function fetchUsersByRoleId(roleId: string): Promise<LegacyTeamRow[]> {
-  try {
-    const json = await directusFetch<{ data: LegacyTeamRow[] }>(`/items/${encodeURIComponent(USERS_TABLE)}`, {
-      params: {
-        fields: 'id,nick,role,directus_role_id,data_criacao,twitter,banido,ativado',
-        'filter[directus_role_id][_eq]': roleId,
-        'filter[banido][_neq]': 's',
-        'filter[ativado][_neq]': 'n',
-        limit: '200',
-        sort: 'nick',
-      },
-    });
-    return Array.isArray(json?.data) ? json.data : [];
-  } catch {
-    return [];
-  }
+async function fetchUsersByRoleId(roleId: string): Promise<TeamUserRow[]> {
+  return pbList<TeamUserRow>(TABLES.users, {
+    filter: {
+      role: { _eq: roleId },
+      active: { _eq: true },
+      banned: { _eq: false },
+    },
+    fields: 'id,nick,created,twitter,active,banned,role',
+    perPage: 200,
+    sort: 'nick',
+  }).catch(() => []);
 }
 
 // Hidden roles that shouldn't appear on the team page
@@ -66,7 +57,6 @@ const ROLE_ORDER: Record<string, number> = {
 };
 
 export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Record<string, TeamMember[]>> {
-  // Fetch all Directus roles dynamically
   const roles = await fetchRoles();
   const visibleRoles = roles.filter(r => !HIDDEN_ROLES.has(r.name.toLowerCase()));
 
@@ -82,7 +72,7 @@ export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Rec
           id: Number(u.id) || 0,
           nick: String(u.nick).trim(),
           role: role.name,
-          joinedAt: typeof u.data_criacao === 'string' ? u.data_criacao : String(u.data_criacao ?? ''),
+          joinedAt: typeof u.created === 'string' ? u.created : String(u.created ?? ''),
           twitter: typeof u.twitter === 'string' ? u.twitter.trim() || null : null,
         }))
         .sort((a, b) => {

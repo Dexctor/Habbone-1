@@ -7,13 +7,13 @@
  * Cleans up everything it creates. Temp file.
  */
 
-import { createRole, getRoleById, updateRole } from '../../src/server/directus/roles';
-import { createUser, getUserByNick, getUserById } from '../../src/server/directus/users';
-import { invalidateUserCache } from '../../src/server/directus/user-cache';
-import { adminCreateNews, getPublicNewsById, adminDeleteNews } from '../../src/server/directus/news';
-import { createForumTopic, getPublicTopicById, adminDeleteForumTopic } from '../../src/server/directus/forum';
-import { createShopItem, getShopItem, deleteShopItem } from '../../src/server/directus/shop';
-import { pbAdmin } from '../../src/server/directus/client';
+import { createRole, getRoleById, updateRole } from '../../src/server/pocketbase/roles';
+import { createUser, getUserByNick, getUserById } from '../../src/server/pocketbase/users';
+import { invalidateUserCache } from '../../src/server/pocketbase/user-cache';
+import { adminCreateNews, getPublicNewsById, adminDeleteNews } from '../../src/server/pocketbase/news';
+import { createForumTopic, getPublicTopicById, adminDeleteForumTopic } from '../../src/server/pocketbase/forum';
+import { createShopItem, getShopItem, deleteShopItem } from '../../src/server/pocketbase/shop';
+import { pbAdmin } from '../../src/server/pocketbase/client';
 
 let pass = 0, fail = 0;
 const cleanup: Array<() => Promise<unknown>> = [];

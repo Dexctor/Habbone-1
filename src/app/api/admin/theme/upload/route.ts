@@ -7,11 +7,8 @@ import { withAdmin } from '@/server/api-helpers';
 import { themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
 import { validateUploadedFile } from '@/server/upload-security';
 
-// TODO(migration): upload PB. Cette route téléversait vers l'API Directus /files
-// quand le thème était stocké côté Directus. Ce mode a été retiré pendant la
-// migration PocketBase : le thème est désormais toujours stocké en local
-// (public/uploads/theme) et l'upload écrit directement sur le filesystem local.
-// L'upload PocketBase éventuel sera traité dans un lot ultérieur.
+// TODO: store theme assets outside the ephemeral Vercel filesystem. The theme
+// is currently written locally under public/uploads/theme.
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([

@@ -1,9 +1,9 @@
 import { unstable_cache } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
-import { listShopItems } from '@/server/directus/shop';
-import { pbOne } from '@/server/directus/pb-helpers';
-import { TABLES } from '@/server/directus/tables';
+import { listShopItems } from '@/server/pocketbase/shop';
+import { pbOne } from '@/server/pocketbase/helpers';
+import { TABLES } from '@/server/pocketbase/tables';
 import BoutiqueClient from './boutique-client';
 
 const USERS_TABLE = TABLES.users;

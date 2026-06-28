@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList } from './pb-helpers';
+import { pbList } from './helpers';
 import { TABLES } from './tables';
 
 type LikeRow = { comment: string };

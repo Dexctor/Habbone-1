@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { getPublicTopics } from '@/server/directus/forum'
+import { getPublicTopics } from '@/server/pocketbase/forum'
 import ForumTopicsClient from './forum-topics-client'
 
 const getCachedTopics = unstable_cache(

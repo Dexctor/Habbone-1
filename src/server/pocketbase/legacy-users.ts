@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbFirst, pbUpdate, pbDelete, pbCount } from './pb-helpers';
+import { pbList, pbFirst, pbUpdate, pbDelete, pbCount } from './helpers';
 import { TABLES } from './tables';
 import type { LegacyUserLite } from './types';
 
@@ -108,10 +108,10 @@ export async function setLegacyUserRole(userId: string, _roleName: string) {
   return { id: userId };
 }
 
-export async function setLegacyUserRoleId(userId: string, directusRoleId: string, _roleName?: string) {
+export async function setLegacyUserRoleId(userId: string, roleId: string, _roleName?: string) {
   // v2: the role is a relation. Direct update (the old raw-PATCH workaround for
   // the Directus SDK is no longer needed).
-  return pbUpdate(USERS_TABLE, String(userId), { role: directusRoleId });
+  return pbUpdate(USERS_TABLE, String(userId), { role: roleId });
 }
 
 export async function setLegacyUserBanStatus(userId: string, banned: boolean) {

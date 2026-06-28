@@ -9,7 +9,7 @@ import {
   deleteShopItem,
   listShopOrders,
   updateShopOrder,
-} from '@/server/directus/shop';
+} from '@/server/pocketbase/shop';
 
 // Force dynamic — never cache admin API routes
 export const dynamic = 'force-dynamic';
@@ -97,7 +97,7 @@ export const POST = withAdmin(async (req) => {
     try {
       const order = await updateShopOrder(id, { status });
       if (!order) {
-        return NextResponse.json({ error: 'Commande non trouvée ou Directus a rejeté la MAJ' }, { status: 500 });
+        return NextResponse.json({ error: 'Commande non trouvée ou mise à jour refusée' }, { status: 500 });
       }
       revalidateTag('shop');
       return NextResponse.json({ ok: true, data: order });

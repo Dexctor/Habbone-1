@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
-import { pbUploadFile } from '@/server/directus/pb-helpers'
+import { pbUploadFile } from '@/server/pocketbase/helpers'
 
 /**
  * POST /api/upload/image

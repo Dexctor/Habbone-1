@@ -5,7 +5,7 @@ import {
   markUserAsVerified,
   normalizeHotelCode,
   updateUserVerification,
-} from '@/server/directus/users'
+} from '@/server/pocketbase/users'
 import { getHabboUserByIdForHotel, getHabboUserByNameForHotel } from '@/server/habbo-cache'
 import { isVerificationExpired } from '@/lib/verification'
 import { parseTimestamp } from '@/lib/date-utils'

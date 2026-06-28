@@ -2,10 +2,10 @@
  * Create a known test admin user for browser login testing. Temp helper.
  * Run: node --env-file=.env.local --import tsx scripts/migration-pb/_make-test-user.ts
  */
-import { createUser, getUserByNick } from '../../src/server/directus/users';
-import { createRole, listRoles } from '../../src/server/directus/roles';
-import { setLegacyUserRoleId } from '../../src/server/directus/legacy-users';
-import { invalidateUserCache } from '../../src/server/directus/user-cache';
+import { createUser, getUserByNick } from '../../src/server/pocketbase/users';
+import { createRole, listRoles } from '../../src/server/pocketbase/roles';
+import { setLegacyUserRoleId } from '../../src/server/pocketbase/legacy-users';
+import { invalidateUserCache } from '../../src/server/pocketbase/user-cache';
 
 async function main() {
   // reuse existing test role/user if present

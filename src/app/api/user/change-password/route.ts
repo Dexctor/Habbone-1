@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/auth'
 import { checkRateLimit } from '@/server/rate-limit'
-import { getUserById, changeUserPassword } from '@/server/directus/users'
-import { passwordsMatch } from '@/server/directus/security'
+import { getUserById, changeUserPassword } from '@/server/pocketbase/users'
+import { passwordsMatch } from '@/server/pocketbase/security'
 
 const BodySchema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),

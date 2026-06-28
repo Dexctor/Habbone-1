@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbFirst, pbCreate, pbUpdate, pbCount } from './pb-helpers';
+import { pbList, pbFirst, pbCreate, pbUpdate, pbCount } from './helpers';
 import { TABLES } from './tables';
 import { isoToUnixSeconds } from './user-cache';
 

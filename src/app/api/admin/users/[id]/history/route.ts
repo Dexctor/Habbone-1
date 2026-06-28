@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { assertAdmin } from "@/server/authz";
-import { pbList } from "@/server/directus/pb-helpers";
-import { TABLES } from "@/server/directus/tables";
+import { pbList } from "@/server/pocketbase/helpers";
+import { TABLES } from "@/server/pocketbase/tables";
 
 /**
  * GET /api/admin/users/[id]/history

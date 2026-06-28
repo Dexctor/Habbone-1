@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbFullList } from './pb-helpers';
+import { pbFullList } from './helpers';
 import { TABLES } from './tables';
 
 /**

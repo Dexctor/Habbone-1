@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { pbFirst } from '@/server/directus/pb-helpers'
-import { TABLES } from '@/server/directus/tables'
-import { getUserBadges } from '@/server/directus/badges'
+import { pbFirst } from '@/server/pocketbase/helpers'
+import { TABLES } from '@/server/pocketbase/tables'
+import { getUserBadges } from '@/server/pocketbase/badges'
 
 export const dynamic = 'force-dynamic'
 

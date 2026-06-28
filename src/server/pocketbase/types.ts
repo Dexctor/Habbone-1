@@ -1,14 +1,8 @@
 export type Dateish = string | number | Date | null | undefined;
 
-/** Generic Directus collection response shape (used for raw fetch calls) */
-export type CollectionResponse<T> = {
-  data?: T[];
-  meta?: { total_count?: number };
-};
-
 export type HabboVerificationStatus = 'pending' | 'ok' | 'failed' | 'locked';
 
-export type DirectusUserLite = {
+export type AdminUserLite = {
   id: string;
   email: string | null;
   first_name: string | null;
@@ -17,7 +11,7 @@ export type DirectusUserLite = {
   role?: { id: string; name?: string; admin_access?: boolean; app_access?: boolean } | string | null;
 };
 
-export type DirectusRoleLite = {
+export type RoleLite = {
   id: string;
   name: string;
   description?: string | null;

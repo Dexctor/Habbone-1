@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbFirst, pbCreate } from './pb-helpers';
+import { pbList, pbFirst, pbCreate } from './helpers';
 import { TABLES } from './tables';
 
 const BADGES_TABLE = TABLES.badges;

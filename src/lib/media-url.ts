@@ -1,4 +1,4 @@
-const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_URL || '';
+const legacyAssetBase = process.env.NEXT_PUBLIC_DIRECTUS_URL || '';
 
 /**
  * Vérifie qu'une URL absolue est syntaxiquement valide.
@@ -26,8 +26,8 @@ export function mediaUrl(idOrPath?: string) {
             idOrPath
         );
     if (isUUID) {
-        if (!directusUrl) return '';
-        return validateUrl(`${directusUrl}/assets/${idOrPath}`);
+        if (!legacyAssetBase) return '';
+        return validateUrl(`${legacyAssetBase}/assets/${idOrPath}`);
     }
 
     if (/^https?:\/\//i.test(idOrPath)) {
@@ -46,6 +46,6 @@ export function mediaUrl(idOrPath?: string) {
     }
 
     const path = idOrPath.startsWith('/') ? idOrPath : `/${idOrPath}`;
-    const base = process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || directusUrl || '';
+    const base = process.env.NEXT_PUBLIC_LEGACY_MEDIA_BASE || legacyAssetBase || '';
     return validateUrl(`${base}${path}`);
 }

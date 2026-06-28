@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listNewsByAuthorService } from '@/server/directus/news';
+import { listNewsByAuthorService } from '@/server/pocketbase/news';
 import { buildError } from '@/types/api';
 
 export const dynamic = 'force-dynamic';

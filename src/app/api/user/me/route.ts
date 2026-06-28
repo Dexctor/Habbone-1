@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { pbOne } from '@/server/directus/pb-helpers'
-import { TABLES } from '@/server/directus/tables'
+import { pbOne } from '@/server/pocketbase/helpers'
+import { TABLES } from '@/server/pocketbase/tables'
 
 /**
  * Returns the currently authenticated user's editable profile fields

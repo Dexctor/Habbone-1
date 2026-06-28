@@ -3,19 +3,19 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
-import { adminCount, adminCountUsers } from '@/server/directus/admin';
-import { TABLES } from '@/server/directus/tables';
+import { adminCount, adminCountUsers } from '@/server/pocketbase/admin';
+import { TABLES } from '@/server/pocketbase/tables';
 import {
   adminListForumTopics,
   adminListForumPosts,
   adminListForumComments,
-} from '@/server/directus/forum';
+} from '@/server/pocketbase/forum';
 import {
   adminListNews,
   adminListNewsComments,
-} from '@/server/directus/news';
-import { adminListStories } from '@/server/directus/stories';
-import { getAdminLogs } from '@/server/directus/admin-logs';
+} from '@/server/pocketbase/news';
+import { adminListStories } from '@/server/pocketbase/stories';
+import { getAdminLogs } from '@/server/pocketbase/admin-logs';
 import {
   updateTopicAction,
   deleteTopicAction,
@@ -73,7 +73,7 @@ export default async function AdminPage() {
     topicsCount,
     newsCount,
     legacyUsersCount,
-    directusUsersCount,
+    pocketbaseUsersCount,
     forumCommentsCount,
     newsCommentsCount,
     forumComments,
@@ -100,7 +100,7 @@ export default async function AdminPage() {
     { label: 'Articles', value: newsCount },
     { label: 'Sujets forum', value: topicsCount },
     { label: 'Commentaires', value: commentsTotal },
-    { label: 'Utilisateurs', value: legacyUsersCount || directusUsersCount },
+    { label: 'Utilisateurs', value: legacyUsersCount || pocketbaseUsersCount },
   ];
 
   const topicsArray = Array.isArray(topics) ? topics : [];
@@ -142,12 +142,9 @@ export default async function AdminPage() {
     });
   }
 
-  // Admin logs (last 10)
-  // MySQL stores DATETIME without a timezone suffix, and Directus returns it
-  // as "2026-04-24T09:38:20" which Date.parse interprets as LOCAL time. Force
-  // UTC by appending `Z` when missing, otherwise admin logs appear shifted by
-  // the local TZ offset (e.g. 2h in Europe/Paris summer).
-  const parseDirectusUtc = (s: string | null | undefined): Date | null => {
+  // Admin logs are stored without a timezone suffix. Force UTC by appending `Z`
+  // when missing, otherwise dates appear shifted by the local TZ offset.
+  const parseStoredUtc = (s: string | null | undefined): Date | null => {
     if (!s) return null;
     const normalised = /[Z+-]\d\d?:?\d\d?$|Z$/i.test(s) ? s : `${s}Z`;
     const d = new Date(normalised);
@@ -179,7 +176,7 @@ export default async function AdminPage() {
   };
 
   for (const log of adminLogs.data) {
-    const dateObj = parseDirectusUtc(log.created_at);
+    const dateObj = parseStoredUtc(log.created_at);
     const byWhom = log.admin_name ? ` par ${log.admin_name}` : '';
     const nick = getStr(log.details, 'nick');
 

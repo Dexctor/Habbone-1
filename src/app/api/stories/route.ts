@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
-import { uploadFileToDirectus, createStoryRow, countStoriesThisMonthByAuthor } from '@/server/directus/stories'
+import { uploadStoryFile, createStoryRow, countStoriesThisMonthByAuthor } from '@/server/pocketbase/stories'
 import { buildError, formatZodError } from '@/types/api'
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +39,7 @@ export const POST = withAuth(async (req, { nick }) => {
     const filename = file.name?.trim() ? file.name.trim() : `story-${Date.now()}`
     const mime = file.type || 'application/octet-stream'
 
-    const upload = await uploadFileToDirectus(file, filename, mime)
+    const upload = await uploadStoryFile(file, filename, mime)
     const story = await createStoryRow({ author: nick, imageId: upload.id, title: filename })
     const storyId =
       story && typeof story === 'object' && story !== null ? (story as { id?: unknown }).id : null

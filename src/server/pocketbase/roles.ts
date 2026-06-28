@@ -1,16 +1,14 @@
 import 'server-only';
 
-import { pbList, pbOne, pbCreate, pbUpdate } from './pb-helpers';
+import { pbList, pbOne, pbCreate, pbUpdate } from './helpers';
 import { TABLES } from './tables';
-import type { DirectusRoleLite, DirectusUserLite } from './types';
+import type { AdminUserLite, RoleLite } from './types';
 
 /**
  * Roles service (PocketBase).
  *
- * Big simplification vs Directus: in Directus v11+ `admin_access` lived on
- * *policies* and required resolving a role's policy array (cache + extra calls).
- * In PocketBase, `admin_access` is a plain boolean column on the `roles`
- * collection, so this whole module collapses to straightforward CRUD.
+ * PocketBase stores `admin_access` directly on the `roles` collection, so role
+ * management is straightforward CRUD.
  */
 
 export type CreateRoleInput = {
@@ -35,7 +33,7 @@ type RoleRow = {
   app_access?: boolean;
 };
 
-function toLite(row: RoleRow): DirectusRoleLite {
+function toLite(row: RoleRow): RoleLite {
   return {
     id: row.id,
     name: row.name ?? '',
@@ -45,7 +43,7 @@ function toLite(row: RoleRow): DirectusRoleLite {
   };
 }
 
-export async function listRoles(): Promise<DirectusRoleLite[]> {
+export async function listRoles(): Promise<RoleLite[]> {
   const rows = await pbList<RoleRow>(TABLES.roles, {
     sort: 'name',
     fields: 'id,name,description,admin_access,app_access',
@@ -54,7 +52,7 @@ export async function listRoles(): Promise<DirectusRoleLite[]> {
   return rows.map(toLite);
 }
 
-export async function createRole(role: CreateRoleInput): Promise<DirectusRoleLite> {
+export async function createRole(role: CreateRoleInput): Promise<RoleLite> {
   const created = await pbCreate<RoleRow>(TABLES.roles, {
     name: role.name,
     description: role.description ?? null,
@@ -64,7 +62,7 @@ export async function createRole(role: CreateRoleInput): Promise<DirectusRoleLit
   return toLite(created);
 }
 
-export async function updateRole(roleId: string, patch: UpdateRoleInput): Promise<DirectusRoleLite> {
+export async function updateRole(roleId: string, patch: UpdateRoleInput): Promise<RoleLite> {
   const payload: Record<string, unknown> = {};
   if (patch.name !== undefined) payload.name = patch.name;
   if (patch.description !== undefined) payload.description = patch.description ?? null;
@@ -74,7 +72,7 @@ export async function updateRole(roleId: string, patch: UpdateRoleInput): Promis
   return toLite(updated);
 }
 
-export async function getRoleById(roleId: string): Promise<DirectusRoleLite | null> {
+export async function getRoleById(roleId: string): Promise<RoleLite | null> {
   const row = await pbOne<RoleRow>(TABLES.roles, roleId, {
     fields: 'id,name,description,admin_access,app_access',
   });
@@ -86,4 +84,4 @@ export async function setUserRole(userId: string, roleId: string) {
   return pbUpdate(TABLES.users, userId, { role: roleId });
 }
 
-export type { DirectusRoleLite, DirectusUserLite };
+export type { AdminUserLite, RoleLite };

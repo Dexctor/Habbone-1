@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
-import { createRole, listRoles } from '@/server/directus/roles';
+import { createRole, listRoles } from '@/server/pocketbase/roles';
 import { DEFAULT_ROLES } from '@/lib/config/roles';
 
 export const POST = withAdmin(async () => {

@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { setAdminUserRole } from '@/server/services/admin-users';
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards';
-import { logAdminAction } from '@/server/directus/admin-logs';
-import { getRoleById } from '@/server/directus/roles';
+import { logAdminAction } from '@/server/pocketbase/admin-logs';
+import { getRoleById } from '@/server/pocketbase/roles';
 
 const Body = z.object({ userId: z.string().min(1), roleId: z.string().min(1) });
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from 'next/cache';
 import { z } from "zod";
 import { withAuth } from '@/server/api-helpers';
-import { createNewsComment } from "@/server/directus/news";
+import { createNewsComment } from "@/server/pocketbase/news";
 import { buildError, formatZodError } from "@/types/api";
 import { sanitizeCommentBody } from "@/server/comment-sanitize";
 

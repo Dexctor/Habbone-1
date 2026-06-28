@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './pb-helpers';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks, unixSecondsToIso, isoToUnixSeconds } from './user-cache';
 import type { ForumTopicRecord, ForumPostRecord, ForumCommentRecord, ForumCategoryRecord } from './types';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit } from '@/server/rate-limit'
-import { listUsersByNick, updateUserVerification, changeUserPassword, normalizeHotelCode } from '@/server/directus/users'
+import { listUsersByNick, updateUserVerification, changeUserPassword, normalizeHotelCode } from '@/server/pocketbase/users'
 import { generateVerificationCode, computeVerificationExpiry, isVerificationExpired } from '@/lib/verification'
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache'
 

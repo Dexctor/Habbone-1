@@ -37,7 +37,7 @@ import type {
   NewsCommentRecord as AdminNewsComment,
   NewsRecord as AdminArticle,
   StoryRecord as AdminStory,
-} from '@/server/directus/types';
+} from '@/server/pocketbase/types';
 
 type ServerActionFn = (formData: FormData) => Promise<void>;
 
@@ -87,8 +87,8 @@ export default function AdminDashboard(props: AdminDashboardProps) {
   const shopSummary = useShopSummary();
 
   const legacyUsers = getStatValue(props.stats, 'Utilisateurs (legacy)');
-  const directusUsers = getStatValue(props.stats, 'Utilisateurs (Directus)');
-  const usersCount = getStatValue(props.stats, 'Utilisateurs') || legacyUsers + directusUsers;
+  const pocketbaseUsers = getStatValue(props.stats, 'Utilisateurs PocketBase');
+  const usersCount = getStatValue(props.stats, 'Utilisateurs') || legacyUsers + pocketbaseUsers;
   const articleCount = getStatValue(props.stats, 'Articles');
   const topicCount = getStatValue(props.stats, 'Sujets forum');
   const commentCount = getStatValue(props.stats, 'Commentaires');

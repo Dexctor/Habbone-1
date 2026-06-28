@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbCreate, pbUpdate, pbDelete, pbCount, pbUploadFile } from './pb-helpers';
+import { pbList, pbCreate, pbUpdate, pbDelete, pbCount, pbUploadFile } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks, isoToUnixSeconds, nowIso } from './user-cache';
 import type { StoryRecord } from './types';
@@ -46,7 +46,7 @@ async function v2StoriesToLegacy(rows: V2StoryRow[]): Promise<StoryRecord[]> {
 
 // ============ FILE UPLOAD ============
 
-export async function uploadFileToDirectus(
+export async function uploadStoryFile(
   file: File,
   _filename: string,
   _mimeType: string,

@@ -1,7 +1,7 @@
 import 'server-only';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
-import { getRoleById } from '@/server/directus/roles';
+import { getRoleById } from '@/server/pocketbase/roles';
 
 export type AdminAssertion = { userId: string | null };
 
@@ -25,7 +25,7 @@ export async function assertAdmin(): Promise<AdminAssertion> {
     forbid();
   }
 
-  // Verify against Directus role (single source of truth: usuarios.directus_role_id)
+  // Verify against the persisted PocketBase role relation.
   const directusRoleId = sessionUser.directusRoleId;
   if (directusRoleId) {
     try {
@@ -36,11 +36,11 @@ export async function assertAdmin(): Promise<AdminAssertion> {
         if (sessionUser.directusAdminAccess !== true) forbid();
       }
     } catch {
-      // Directus unreachable -> trust the token if it says admin
+      // Backend unreachable -> trust the token only if it already says admin.
       if (sessionUser.directusAdminAccess !== true) forbid();
     }
   } else {
-    // No directus_role_id at all -> only ADMIN_NICKS fallback can grant access
+    // No persisted role at all -> only ADMIN_NICKS fallback can grant access.
     if (sessionUser.directusAdminAccess !== true) forbid();
   }
 

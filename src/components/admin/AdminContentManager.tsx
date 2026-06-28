@@ -27,7 +27,7 @@ import type {
   NewsCommentRecord as AdminNewsComment,
   NewsRecord as AdminArticle,
   StoryRecord as AdminStory,
-} from "@/server/directus/types";
+} from "@/server/pocketbase/types";
 import { ContentListItem } from "@/components/admin/content/ContentList";
 import { ContentDetailPanel } from "@/components/admin/content/ContentDetail";
 import {

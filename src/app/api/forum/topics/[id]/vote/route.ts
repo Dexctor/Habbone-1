@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
-import { setTopicVote, getTopicVoteSummary } from '@/server/directus/forum'
+import { setTopicVote, getTopicVoteSummary } from '@/server/pocketbase/forum'
 import { buildError } from '@/types/api'
 
 export const POST = withAuth(async (req, { nick, params }) => {

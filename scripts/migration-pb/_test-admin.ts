@@ -5,13 +5,13 @@
  * Run: node --env-file=.env.vps --import tsx scripts/migration-pb/_test-admin.ts
  */
 
-import * as news from '../../src/server/directus/news';
-import * as forum from '../../src/server/directus/forum';
-import * as shop from '../../src/server/directus/shop';
-import * as roles from '../../src/server/directus/roles';
-import * as legacyUsers from '../../src/server/directus/legacy-users';
-import * as adminUsers from '../../src/server/directus/admin-users';
-import { invalidateUserCache } from '../../src/server/directus/user-cache';
+import * as news from '../../src/server/pocketbase/news';
+import * as forum from '../../src/server/pocketbase/forum';
+import * as shop from '../../src/server/pocketbase/shop';
+import * as roles from '../../src/server/pocketbase/roles';
+import * as legacyUsers from '../../src/server/pocketbase/legacy-users';
+import * as adminUsers from '../../src/server/pocketbase/admin-users';
+import { invalidateUserCache } from '../../src/server/pocketbase/user-cache';
 
 let pass = 0, fail = 0;
 const cleanup: Array<() => Promise<unknown>> = [];
@@ -73,7 +73,7 @@ async function main() {
   const role: any = await roles.createRole({ name: '__admrole__', adminAccess: false }).catch((e) => ({ error: e?.message }));
   check('createRole', !!role?.id, role?.error);
   if (role?.id) {
-    cleanup.push(() => import('../../src/server/directus/pb-helpers').then(m => m.pbDelete('roles', role.id)));
+    cleanup.push(() => import('../../src/server/pocketbase/helpers').then(m => m.pbDelete('roles', role.id)));
     const upd = await roles.updateRole(role.id, { adminAccess: true }).catch((e) => ({ error: e?.message }));
     check('updateRole', (upd as any)?.admin_access === true, (upd as any)?.error);
   }
@@ -87,8 +87,8 @@ async function main() {
     check('setLegacyUserRoleId', !(setR as any)?.error, (setR as any)?.error);
     const ban = await legacyUsers.setLegacyUserBanStatus(String(uid), false).catch((e) => ({ error: e?.message }));
     check('setLegacyUserBanStatus', !(ban as any)?.error, (ban as any)?.error);
-    const lite = await adminUsers.getDirectusUserById(String(uid)).catch(() => null);
-    check('getDirectusUserById', !!lite, 'null');
+    const lite = await adminUsers.getAdminUserById(String(uid)).catch(() => null);
+    check('getAdminUserById', !!lite, 'null');
   } else {
     check('user ops (testadmin found)', false, 'testadmin introuvable');
   }

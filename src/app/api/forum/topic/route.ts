@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
-import { createForumTopic } from '@/server/directus/forum'
+import { createForumTopic } from '@/server/pocketbase/forum'
 import { sanitizeRichContentHtml, sanitizePlainText } from '@/server/comment-sanitize'
 
 export const dynamic = 'force-dynamic';

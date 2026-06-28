@@ -1,13 +1,13 @@
 import 'server-only';
 
-import { listRoles, getRoleById } from '@/server/directus/roles';
-import { ensureRoleBadge } from '@/server/directus/badges';
+import { listRoles, getRoleById } from '@/server/pocketbase/roles';
+import { ensureRoleBadge } from '@/server/pocketbase/badges';
 import {
   searchLegacyUsuarios,
   setLegacyUserBanStatus,
   deleteLegacyUser,
   setLegacyUserRoleId,
-} from '@/server/directus/legacy-users';
+} from '@/server/pocketbase/legacy-users';
 
 type SearchInput = {
   q?: string;
@@ -59,7 +59,7 @@ export async function searchAdminUsers(input: SearchInput): Promise<SearchResult
     const isBanned = legacyStatus.isBanned;
     const isActive = activeStatus.isActive;
 
-    // Role resolution: prefer directus_role_id, fallback to role string
+    // Role resolution: prefer the migrated role relation, fallback to role string.
     const directusRoleId = row?.directus_role_id || null;
     const roleNameRaw = String(row?.role || '').trim();
     let rolePayload: any = null;
@@ -133,7 +133,7 @@ export async function deleteAdminUser(userId: string): Promise<ActionResult> {
   return { data: true };
 }
 
-// ── Set role: writes directus_role_id + role name to usuarios ─────
+// ── Set role: writes the migrated role relation on users ─────
 export async function setAdminUserRole(userId: string, roleId: string): Promise<ActionResult> {
   const cleanId = userId.startsWith('legacy:') ? userId.split(':')[1] : userId;
 
@@ -153,7 +153,7 @@ export async function setAdminUserRole(userId: string, roleId: string): Promise<
     return { error: 'ROLE_WRITE_FAILED', code: 'ROLE_WRITE_FAILED', status: 500 };
   }
 
-  // Verify the write actually applied (some Directus configs may 200 without
+  // Verify the write actually applied.
   // persisting if a hook or permission filter silently drops the patch).
   const persistedRoleId = (writeResult as any)?.directus_role_id ?? null;
   if (persistedRoleId !== roleId) {

@@ -4,7 +4,7 @@ import PocketBase from 'pocketbase';
 
 import type { HabboUserCore } from '@/lib/habbo';
 
-import { pbList, pbOne, pbFirst, pbCreate, pbUpdate } from './pb-helpers';
+import { pbList, pbOne, pbFirst, pbCreate, pbUpdate } from './helpers';
 import { TABLES } from './tables';
 import type { HabboVerificationStatus } from './types';
 
@@ -337,4 +337,4 @@ export async function verifyLogin(nick: string, password: string) {
 
 export { isBcrypt, md5, hashPassword, passwordsMatch } from './security';
 
-export type { HabboVerificationStatus, LegacyUserLite, DirectusUserLite } from './types';
+export type { AdminUserLite, HabboVerificationStatus, LegacyUserLite } from './types';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
-import { listRoles } from '@/server/directus/roles';
+import { listRoles } from '@/server/pocketbase/roles';
 import { DEFAULT_ROLES } from '@/lib/config/roles';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export const GET = withAdmin(async () => {
       return NextResponse.json({ data: filtered, meta: { virtual: false } });
     }
   } catch {}
-  // Fallback virtual roles (no Directus system access)
+  // Fallback virtual roles.
   const data = DEFAULT_ROLES.map((r) => ({
     id: r.name, // use name as id when system roles are unavailable
     name: r.name,

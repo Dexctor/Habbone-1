@@ -1,22 +1,21 @@
 import 'server-only';
 
-import { pbList, pbOne, pbUpdate, pbDelete, pbCount } from './pb-helpers';
+import { pbList, pbOne, pbUpdate, pbDelete, pbCount } from './helpers';
 import { TABLES } from './tables';
-import type { DirectusUserLite } from './types';
+import type { AdminUserLite } from './types';
 
 /**
  * Admin users service (PocketBase).
  *
- * Previously operated on Directus' internal `directus_users`. In PocketBase the
- * app users live in the `users` auth collection with a `role` relation. We expose
- * the same DirectusUserLite shape so admin UI code doesn't change.
+ * App users live in the PocketBase `users` auth collection with a `role`
+ * relation. The returned shape is still compatible with the admin UI.
  */
 
 const USERS = TABLES.users;
 
 const USER_FIELDS = 'id,email,nick,active,banned,role,expand.role.id,expand.role.name,expand.role.admin_access,expand.role.app_access';
 
-function toLite(row: any): DirectusUserLite {
+function toLite(row: any): AdminUserLite {
   const role = row?.expand?.role;
   return {
     id: String(row.id),
@@ -35,7 +34,7 @@ function toLite(row: any): DirectusUserLite {
   };
 }
 
-export async function getDirectusUserById(userId: string): Promise<DirectusUserLite | null> {
+export async function getAdminUserById(userId: string): Promise<AdminUserLite | null> {
   const row = await pbOne<any>(USERS, userId, { fields: USER_FIELDS, expand: 'role' }).catch(
     () => null,
   );
@@ -48,7 +47,7 @@ export async function searchUsers(
   status?: string,
   limit = 20,
   page = 1,
-): Promise<{ items: DirectusUserLite[]; total: number }> {
+): Promise<{ items: AdminUserLite[]; total: number }> {
   const filter: Record<string, unknown> = {};
   if (roleId) filter.role = { _eq: roleId };
   if (status === 'active') filter.active = { _eq: true };
@@ -74,14 +73,14 @@ export async function searchUsers(
   return { items: items.map(toLite), total };
 }
 
-export async function setDirectusUserStatus(userId: string, status: 'active' | 'suspended') {
+export async function setAdminUserStatus(userId: string, status: 'active' | 'suspended') {
   const payload =
     status === 'suspended' ? { banned: true } : { banned: false, active: true };
   return pbUpdate(USERS, userId, payload);
 }
 
-export async function deleteDirectusUser(userId: string) {
+export async function deleteAdminUser(userId: string) {
   return pbDelete(USERS, userId);
 }
 
-export type { DirectusUserLite };
+export type { AdminUserLite };

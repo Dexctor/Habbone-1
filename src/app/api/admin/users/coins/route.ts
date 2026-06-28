@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
-import { pbOne, pbUpdate } from '@/server/directus/pb-helpers'
-import { TABLES } from '@/server/directus/tables'
+import { pbOne, pbUpdate } from '@/server/pocketbase/helpers'
+import { TABLES } from '@/server/pocketbase/tables'
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards'
-import { logAdminAction } from '@/server/directus/admin-logs'
+import { logAdminAction } from '@/server/pocketbase/admin-logs'
 
 const MAX_BALANCE = 10_000_000
 const USERS_TABLE = TABLES.users

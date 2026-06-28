@@ -2,7 +2,7 @@ import { mediaUrl } from '@/lib/media-url'
 import { parseTimestamp } from '@/lib/date-utils'
 
 import { unstable_cache } from 'next/cache'
-import { listStoriesService } from '@/server/directus/stories'
+import { listStoriesService } from '@/server/pocketbase/stories'
 import StoriesClient from './stories-client'
 
 const getCachedStories = unstable_cache(

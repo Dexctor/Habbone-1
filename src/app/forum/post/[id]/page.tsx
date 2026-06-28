@@ -1,8 +1,8 @@
 import {
   getPublicPostById,
   getPublicTopicComments,
-} from '@/server/directus/forum';
-import { getLikesMapForTopicComments } from '@/server/directus/likes';
+} from '@/server/pocketbase/forum';
+import { getLikesMapForTopicComments } from '@/server/pocketbase/likes';
 import { formatDateTimeSmart } from '@/lib/date-utils';
 
 export const revalidate = 300;

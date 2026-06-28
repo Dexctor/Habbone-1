@@ -1,27 +1,26 @@
 import 'server-only';
 
 import { pbAdmin } from './client';
-import { directusFilterToPB } from './pb-filter';
+import { toPocketBaseFilter } from './filter';
 
 /**
  * Typed PocketBase data-access helpers used by the service layer.
  *
- * They accept a Directus-flavoured options shape (filter object, sort string,
- * fields, pagination) so the 20 service files keep building familiar queries,
- * but execute them against PocketBase. Filters are translated + escaped by
- * directusFilterToPB.
+ * They accept a compact service-layer options shape (filter object, sort string,
+ * fields, pagination) and execute it against PocketBase. Filters are translated
+ * and escaped centrally by toPocketBaseFilter().
  */
 
 export type ListOptions = {
-  /** Directus-style filter object, e.g. { author: { _eq: 'x' } }. */
+  /** Service filter object, e.g. { author: { _eq: 'x' } }. */
   filter?: Record<string, unknown>;
-  /** PB/Directus sort string, e.g. '-created' or 'name'. Comma-separated for multi. */
+  /** PocketBase sort string, e.g. '-created' or 'name'. Comma-separated for multi. */
   sort?: string;
   /** Comma-separated projection, e.g. 'id,title'. */
   fields?: string;
   /** Relations to expand, e.g. 'author,category'. */
   expand?: string;
-  /** Page size. Defaults to a large value to mimic Directus "give me all". */
+  /** Page size. Defaults high enough for the app's small admin collections. */
   perPage?: number;
   /** 1-based page. */
   page?: number;
@@ -30,7 +29,7 @@ export type ListOptions = {
 function buildCommonParams(opts: ListOptions | undefined): Record<string, string> {
   const params: Record<string, string> = {};
   if (opts?.filter) {
-    const f = directusFilterToPB(opts.filter);
+    const f = toPocketBaseFilter(opts.filter);
     if (f) params.filter = f;
   }
   if (opts?.sort) params.sort = opts.sort;
@@ -80,7 +79,7 @@ export async function pbFirst<T = any>(
   opts?: { sort?: string; fields?: string; expand?: string },
 ): Promise<T | null> {
   const pb = await pbAdmin();
-  const f = directusFilterToPB(filter);
+  const f = toPocketBaseFilter(filter);
   try {
     const params: Record<string, string> = {};
     if (opts?.sort) params.sort = opts.sort;
@@ -116,12 +115,12 @@ export async function pbDelete(collection: string, id: string): Promise<boolean>
   return true;
 }
 
-/** Count records matching an optional Directus-style filter. */
+/** Count records matching an optional service filter. */
 export async function pbCount(collection: string, filter?: Record<string, unknown>): Promise<number> {
   const pb = await pbAdmin();
   const params: Record<string, string> = {};
   if (filter) {
-    const f = directusFilterToPB(filter);
+    const f = toPocketBaseFilter(filter);
     if (f) params.filter = f;
   }
   // getList(1,1) returns totalItems without fetching all rows.
@@ -132,9 +131,8 @@ export async function pbCount(collection: string, filter?: Record<string, unknow
 /**
  * Upload a file to the `uploads` collection and return its public URL + id.
  *
- * Replaces the old Directus /files API. PocketBase attaches files to records,
- * so we store each upload as a row in the dedicated `uploads` collection (file
- * field, public read) and return the served file URL.
+ * PocketBase attaches files to records, so every app upload is stored as a row
+ * in the dedicated `uploads` collection and returned as a public served URL.
  */
 export async function pbUploadFile(
   file: File,

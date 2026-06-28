@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
 import { sanitizeCommentBody } from '@/server/comment-sanitize'
-import { createForumComment } from '@/server/directus/forum'
+import { createForumComment } from '@/server/pocketbase/forum'
 import { buildError, formatZodError } from '@/types/api'
 
 const BodySchema = z.object({

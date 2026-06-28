@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
-import { updateRole } from '@/server/directus/roles';
+import { updateRole } from '@/server/pocketbase/roles';
 import { resolveHttpError } from '@/lib/http-error';
 
 const Body = z.object({

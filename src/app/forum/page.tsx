@@ -3,12 +3,12 @@ import {
   adminListForumComments,
   listForumCategoriesService,
   listForumTopicsWithCategories,
-} from '@/server/directus/forum'
+} from '@/server/pocketbase/forum'
 import type {
   ForumCategoryRecord,
   ForumCommentRecord,
   ForumTopicRecord,
-} from '@/server/directus/types'
+} from '@/server/pocketbase/types'
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
 

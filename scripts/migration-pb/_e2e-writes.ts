@@ -1,6 +1,6 @@
 /**
  * E2E write test — exercises every public WRITE path against the live PocketBase,
- * using the REAL service functions the API routes call (src/server/directus/*).
+ * using the REAL service functions the API routes call (src/server/pocketbase/*).
  *
  * Covers: create article, create topic, comment on both, like/unlike both,
  * vote/unvote a topic. Reads back each result to confirm it persisted, then
@@ -20,7 +20,7 @@ import {
   getPublicNewsById,
   getPublicNewsComments,
   adminDeleteNewsComment,
-} from '../../src/server/directus/news';
+} from '../../src/server/pocketbase/news';
 import {
   createForumTopic,
   adminDeleteForumTopic,
@@ -32,10 +32,10 @@ import {
   getPublicTopicComments,
   adminDeleteForumComment,
   listForumCategoriesService,
-} from '../../src/server/directus/forum';
-import { getLikesMapForNewsComments, getLikesMapForTopicComments } from '../../src/server/directus/likes';
-import { pbAdmin } from '../../src/server/directus/client';
-import { TABLES } from '../../src/server/directus/tables';
+} from '../../src/server/pocketbase/forum';
+import { getLikesMapForNewsComments, getLikesMapForTopicComments } from '../../src/server/pocketbase/likes';
+import { pbAdmin } from '../../src/server/pocketbase/client';
+import { TABLES } from '../../src/server/pocketbase/tables';
 
 // --- tiny test harness ---------------------------------------------------
 let passed = 0;

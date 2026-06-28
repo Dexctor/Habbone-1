@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
-import { pbCount, pbDelete } from '@/server/directus/pb-helpers';
-import { TABLES } from '@/server/directus/tables';
-import { logAdminAction } from '@/server/directus/admin-logs';
+import { pbCount, pbDelete } from '@/server/pocketbase/helpers';
+import { TABLES } from '@/server/pocketbase/tables';
+import { logAdminAction } from '@/server/pocketbase/admin-logs';
 
 const Body = z.object({ roleId: z.string().min(1) });
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listForumTopicsByAuthorService } from '@/server/directus/forum';
+import { listForumTopicsByAuthorService } from '@/server/pocketbase/forum';
 import { buildError } from '@/types/api';
 
 export const dynamic = 'force-dynamic';

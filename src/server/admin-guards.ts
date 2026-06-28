@@ -2,9 +2,9 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
-import { pbOne } from '@/server/directus/pb-helpers';
-import { TABLES } from '@/server/directus/tables';
-import { getRoleById } from '@/server/directus/roles';
+import { pbOne } from '@/server/pocketbase/helpers';
+import { TABLES } from '@/server/pocketbase/tables';
+import { getRoleById } from '@/server/pocketbase/roles';
 import { cleanUserId, decideGuard, isFounderRoleName } from '@/server/admin-guards-core';
 
 const USERS_TABLE = TABLES.users;

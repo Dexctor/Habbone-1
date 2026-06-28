@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache"
-import { listPublicNewsForCards } from "@/server/directus/news"
+import { listPublicNewsForCards } from "@/server/pocketbase/news"
 import LatestArticlesClient from "./latest-articles-client"
 
 const getCachedNews = unstable_cache(

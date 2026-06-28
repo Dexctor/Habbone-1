@@ -13,10 +13,10 @@ import {
   getPublicTopicById,
   getPublicTopicComments,
   getTopicVoteSummary,
-} from "@/server/directus/forum";
-import { getLikesMapForTopicComments } from "@/server/directus/likes";
-import type { ForumCommentRecord, ForumTopicRecord } from "@/server/directus/types";
-import { getRoleBadgesForNicks } from "@/server/directus/badges";
+} from "@/server/pocketbase/forum";
+import { getLikesMapForTopicComments } from "@/server/pocketbase/likes";
+import type { ForumCommentRecord, ForumTopicRecord } from "@/server/pocketbase/types";
+import { getRoleBadgesForNicks } from "@/server/pocketbase/badges";
 import { stripHtml } from "@/lib/text-utils";
 import { formatDateTimeFromAny } from "@/lib/date-utils";
 import styles from "@/components/forum/forum-content.module.css";

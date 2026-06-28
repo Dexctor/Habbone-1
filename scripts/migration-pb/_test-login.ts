@@ -6,12 +6,12 @@
  * Run: node --env-file=.env.local --import tsx scripts/migration-pb/_test-login.ts
  */
 
-import { createUser, verifyLogin, asTrue, asFalse, normalizeHotelCode } from '../../src/server/directus/users';
-import { invalidateUserCache } from '../../src/server/directus/user-cache';
-import { createRole } from '../../src/server/directus/roles';
-import { setLegacyUserRoleId } from '../../src/server/directus/legacy-users';
-import { getRoleById } from '../../src/server/directus/roles';
-import { pbAdmin } from '../../src/server/directus/client';
+import { createUser, verifyLogin, asTrue, asFalse, normalizeHotelCode } from '../../src/server/pocketbase/users';
+import { invalidateUserCache } from '../../src/server/pocketbase/user-cache';
+import { createRole } from '../../src/server/pocketbase/roles';
+import { setLegacyUserRoleId } from '../../src/server/pocketbase/legacy-users';
+import { getRoleById } from '../../src/server/pocketbase/roles';
+import { pbAdmin } from '../../src/server/pocketbase/client';
 
 let pass = 0, fail = 0;
 function check(label: string, cond: boolean, extra?: string) {

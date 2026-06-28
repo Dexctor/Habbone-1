@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { getUserMoedas } from '@/server/directus/users'
+import { getUserMoedas } from '@/server/pocketbase/users'
 import { buildError } from '@/types/api'
 
 export const dynamic = 'force-dynamic';

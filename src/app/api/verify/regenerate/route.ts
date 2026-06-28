@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { VerificationRegenerateSchema, formatZodError, buildError } from '@/types/api'
-import { getUserByNick, listUsersByNick, normalizeHotelCode, updateUserVerification } from '@/server/directus/users'
+import { getUserByNick, listUsersByNick, normalizeHotelCode, updateUserVerification } from '@/server/pocketbase/users'
 import { computeVerificationExpiry, generateVerificationCode } from '@/lib/verification'
 import { parseTimestamp } from '@/lib/date-utils'
 import * as logger from '@/server/logger'

@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { getPublicNews } from '@/server/directus/news';
+import { getPublicNews } from '@/server/pocketbase/news';
 import NewsPageClient from './news-page-client';
 
 export const revalidate = 300;

@@ -8,7 +8,7 @@ import {
   getAllAchievements,
 } from '@/server/habbo-cache';
 import { enrichHabboBadges, buildHabboProfilePayload } from '@/server/habbo-profile-core';
-import { syncHabboName } from '@/server/directus/pseudo-changes';
+import { syncHabboName } from '@/server/pocketbase/pseudo-changes';
 import { HabboProfileQuerySchema, searchParamsToObject, formatZodError, buildError } from '@/types/api';
 
 export const dynamic = 'force-dynamic';

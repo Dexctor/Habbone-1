@@ -5,13 +5,8 @@ import PocketBase from 'pocketbase';
 /**
  * PocketBase client for server-side data access.
  *
- * Replaces the previous Directus SDK client. The app talks to PocketBase using a
- * superuser (service-account) login — same trust model as the old Directus
- * service token: server code bypasses per-collection API rules.
- *
- * Migration note: this file used to export Directus SDK helpers (directusService,
- * rItems/rItem/cItem/uItem/dItem, directusUrl, serviceToken). Those are gone.
- * Services now use the typed helpers in ./pb-helpers (pbList/pbOne/...).
+ * Trusted server-side data access uses a PocketBase superuser account. Public
+ * requests still go through route handlers, auth checks, and application guards.
  */
 
 const PB_URL = process.env.POCKETBASE_URL || 'http://127.0.0.1:8090';

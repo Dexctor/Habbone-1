@@ -5,7 +5,7 @@ import type {
   NewsCommentRecord as AdminNewsComment,
   NewsRecord as AdminArticle,
   StoryRecord as AdminStory,
-} from "@/server/directus/types";
+} from "@/server/pocketbase/types";
 
 export type ContentType =
   | "topics"

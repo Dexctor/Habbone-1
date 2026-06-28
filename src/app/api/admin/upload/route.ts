@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
 import { validateUploadedFile } from '@/server/upload-security';
-import { pbUploadFile } from '@/server/directus/pb-helpers';
+import { pbUploadFile } from '@/server/pocketbase/helpers';
 
 /**
  * POST /api/admin/upload

@@ -3,12 +3,11 @@ import 'server-only';
 import PocketBase from 'pocketbase';
 
 /**
- * Translates a Directus-style filter object into a PocketBase filter string.
+ * Translates the service-layer filter object into a PocketBase filter string.
  *
- * During the Directus -> PocketBase migration, the 20 service files use a small,
- * well-known set of Directus filter operators. Rather than rewrite ~110 call
- * sites by hand, services build the same filter object shape and we translate it
- * here once, safely.
+ * Services use a compact query operator shape (`_eq`, `_in`,
+ * `_contains`, `_and`, `_or`, ...). Keeping that shape centralised means service
+ * modules stay readable while PocketBase-specific escaping lives in one place.
  *
  * Supported operators (the only ones actually used in the codebase):
  *   _eq, _neq, _in, _nin, _gt, _gte, _lt, _lte, _null, _nnull, _empty, _nempty,
@@ -19,7 +18,7 @@ import PocketBase from 'pocketbase';
  * concatenation — so user input cannot break out of the filter (injection-safe).
  *
  * Example:
- *   directusFilterToPB({ author: { _eq: 'abc' }, status: { _in: ['a','b'] } })
+ *   toPocketBaseFilter({ author: { _eq: 'abc' }, status: { _in: ['a','b'] } })
  *   => "author = 'abc' && (status = 'a' || status = 'b')"
  */
 
@@ -87,7 +86,6 @@ function fieldExpr(field: string, ops: Record<string, unknown>): string {
         break;
       }
       case '_null':
-        // Directus: _null:true => IS NULL ; _null:false => IS NOT NULL
         parts.push(`${field} ${raw ? '=' : '!='} null`);
         break;
       case '_nnull':
@@ -101,7 +99,7 @@ function fieldExpr(field: string, ops: Record<string, unknown>): string {
         parts.push(raw ? `(${field} != '' && ${field} != null)` : `(${field} = '' || ${field} = null)`);
         break;
       default:
-        throw new Error(`directusFilterToPB: unsupported operator "${op}" on field "${field}"`);
+        throw new Error(`toPocketBaseFilter: unsupported operator "${op}" on field "${field}"`);
     }
   }
 
@@ -111,10 +109,10 @@ function fieldExpr(field: string, ops: Record<string, unknown>): string {
 }
 
 /**
- * Main entry: translate a Directus filter object to a PocketBase filter string.
+ * Main entry: translate a service filter object to a PocketBase filter string.
  * Returns '' for an empty/undefined filter (meaning "no filter").
  */
-export function directusFilterToPB(filter: Record<string, unknown> | undefined | null): string {
+export function toPocketBaseFilter(filter: Record<string, unknown> | undefined | null): string {
   if (!filter || typeof filter !== 'object') return '';
 
   const parts: string[] = [];
@@ -123,7 +121,7 @@ export function directusFilterToPB(filter: Record<string, unknown> | undefined |
     if (key === '_and' || key === '_or') {
       const sub = Array.isArray(value) ? value : [value];
       const joined = sub
-        .map((f) => directusFilterToPB(f as Record<string, unknown>))
+        .map((f) => toPocketBaseFilter(f as Record<string, unknown>))
         .filter(Boolean);
       if (joined.length === 0) continue;
       const glue = key === '_and' ? ' && ' : ' || ';
@@ -132,7 +130,7 @@ export function directusFilterToPB(filter: Record<string, unknown> | undefined |
     }
 
     // Field entry. Value is either an operator object { _eq: ... } or a bare
-    // scalar (Directus shorthand for _eq).
+    // scalar shorthand for equality.
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       const expr = fieldExpr(key, value as Record<string, unknown>);
       if (expr) parts.push(expr);

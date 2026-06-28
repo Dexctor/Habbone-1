@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
-import { pbCount } from '@/server/directus/pb-helpers';
-import { listRoles } from '@/server/directus/roles';
-import { TABLES } from '@/server/directus/tables';
+import { pbCount } from '@/server/pocketbase/helpers';
+import { listRoles } from '@/server/pocketbase/roles';
+import { TABLES } from '@/server/pocketbase/tables';
 
 /**
  * GET /api/admin/roles/counts

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
-import { toggleForumCommentLike } from '@/server/directus/forum'
+import { toggleForumCommentLike } from '@/server/pocketbase/forum'
 import { buildError } from '@/types/api'
 
 export const POST = withAuth(async (_req, { nick, params }) => {

@@ -1,4 +1,4 @@
-import { listPseudoChanges } from '@/server/directus/pseudo-changes'
+import { listPseudoChanges } from '@/server/pocketbase/pseudo-changes'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 import PseudoChangesClient from './pseudo-changes-client'
 

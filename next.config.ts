@@ -15,9 +15,9 @@ const nextConfig: NextConfig = {
       // Habbone (legacy/news links)
       { protocol: 'https', hostname: 'habbone.fr', pathname: '/**' },
       { protocol: 'http', hostname: 'habbone.fr', pathname: '/**' },
-      // Directus API (production) — legacy, kept during transition
+      // Legacy media host, kept until every old asset has been rehosted.
       { protocol: 'https', hostname: 'api.habbone.fr', pathname: '/**' },
-      // Local Directus dev server
+      // Local legacy media/dev server
       { protocol: 'http', hostname: 'localhost', port: '8055', pathname: '/**' },
       // PocketBase (production) — uploaded images are served from here
       { protocol: 'https', hostname: 'pb.habbone.fr', pathname: '/**' },

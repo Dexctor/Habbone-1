@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
-import { pbList } from '@/server/directus/pb-helpers'
+import { pbList } from '@/server/pocketbase/helpers'
 import { mediaUrl } from '@/lib/media-url'
-import { TABLES } from '@/server/directus/tables'
+import { TABLES } from '@/server/pocketbase/tables'
 import PubliciteClient, { type Partner } from './publicite-client'
 
 async function fetchPartners(): Promise<Partner[]> {

@@ -25,7 +25,7 @@ import type {
   NewsCommentRecord as AdminNewsComment,
   NewsRecord as AdminArticle,
   StoryRecord as AdminStory,
-} from "@/server/directus/types";
+} from "@/server/pocketbase/types";
 import { StatusBadges } from "./ContentList";
 import {
   CONTENT_SECTIONS,
@@ -599,7 +599,7 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="UUID Directus ou URL de l'image..."
+          placeholder="URL de l'image..."
           className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white placeholder:text-[#BEBECE]/30"
         />
       )}

@@ -10,7 +10,7 @@
  *   created (system autodate)     <- timestamp
  */
 
-import { pbList, pbCreate, pbCount } from './pb-helpers';
+import { pbList, pbCreate, pbCount } from './helpers';
 import { TABLES } from './tables';
 
 const ADMIN_LOGS = TABLES.adminLogs;

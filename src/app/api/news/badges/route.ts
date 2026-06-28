@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listPublicNewsBadges } from "@/server/directus/news";
+import { listPublicNewsBadges } from "@/server/pocketbase/news";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

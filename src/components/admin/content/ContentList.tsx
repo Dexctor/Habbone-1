@@ -8,7 +8,7 @@ import type {
   ForumTopicRecord as AdminTopic,
   StoryRecord as AdminStory,
   NewsRecord as AdminArticle,
-} from "@/server/directus/types";
+} from "@/server/pocketbase/types";
 import {
   type ContentItem,
   type ContentType,

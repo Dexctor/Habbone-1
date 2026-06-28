@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/auth'
-import { adminCreateNews } from '@/server/directus/news'
+import { adminCreateNews } from '@/server/pocketbase/news'
 import { checkRateLimit } from '@/server/rate-limit'
 import { sanitizeRichContentHtml, sanitizePlainText } from '@/server/comment-sanitize'
 

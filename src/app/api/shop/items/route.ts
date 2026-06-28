@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listShopItems } from '@/server/directus/shop';
+import { listShopItems } from '@/server/pocketbase/shop';
 
 // Force dynamic — never cache this route (items change when admin adds/edits)
 export const dynamic = 'force-dynamic';

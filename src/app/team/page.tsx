@@ -1,5 +1,5 @@
-import { listTeamMembersByRoles } from '@/server/directus/team'
-import { getRoleBadgeImage } from '@/server/directus/badges'
+import { listTeamMembersByRoles } from '@/server/pocketbase/team'
+import { getRoleBadgeImage } from '@/server/pocketbase/badges'
 import { CalendarClock, Twitter } from 'lucide-react'
 
 import { parseTimestamp } from '@/lib/date-utils'
@@ -52,7 +52,7 @@ function resolveTwitterLink(value?: string | null) {
 export default async function TeamPage() {
   const membersByRole = await listTeamMembersByRoles()
 
-  // Get roles that have members (order comes from Directus roles sort)
+  // Get roles that have members.
   const activeRoles = Object.keys(membersByRole).filter(
     (role) => membersByRole[role].length > 0
   )

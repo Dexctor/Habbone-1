@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { deleteAdminUser } from '@/server/services/admin-users';
 import { guardTargetUser, isCallerFounder } from '@/server/admin-guards';
-import { logAdminAction } from '@/server/directus/admin-logs';
+import { logAdminAction } from '@/server/pocketbase/admin-logs';
 
 const BodySchema = z.object({
   userId: z.string().min(1),

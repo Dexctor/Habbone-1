@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { withAuth } from '@/server/api-helpers';
-import { purchaseItem } from '@/server/directus/shop';
+import { purchaseItem } from '@/server/pocketbase/shop';
 
 const BodySchema = z.object({
   itemId: z.coerce.string().trim().min(1),

@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/auth';
 import { assertAdmin } from '@/server/authz';
-import { logAdminAction, type AdminAction } from '@/server/directus/admin-logs';
+import { logAdminAction, type AdminAction } from '@/server/pocketbase/admin-logs';
 import {
   TAG_NEWS,
   TAG_NEWS_DETAIL,
@@ -21,14 +21,14 @@ import {
   adminDeleteForumPost,
   adminUpdateForumComment,
   adminDeleteForumComment,
-} from '@/server/directus/forum';
+} from '@/server/pocketbase/forum';
 import {
   adminUpdateNews,
   adminDeleteNews,
   adminUpdateNewsComment,
   adminDeleteNewsComment,
-} from '@/server/directus/news';
-import { adminUpdateStory, adminDeleteStory } from '@/server/directus/stories';
+} from '@/server/pocketbase/news';
+import { adminUpdateStory, adminDeleteStory } from '@/server/pocketbase/stories';
 
 type AdminCaller = {
   id: string;

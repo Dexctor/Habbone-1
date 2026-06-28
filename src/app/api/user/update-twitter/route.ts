@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/auth'
 import { checkRateLimit } from '@/server/rate-limit'
-import { updateUserTwitter } from '@/server/directus/users'
+import { updateUserTwitter } from '@/server/pocketbase/users'
 
 // Twitter/X handles: 1-15 chars, alphanumeric + underscore. We accept empty string
 // (to clear) and also tolerate a leading "@" or a full URL — we normalize before saving.

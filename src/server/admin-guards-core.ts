@@ -1,7 +1,7 @@
 /**
- * Pure decision logic for admin guard checks — no Next.js, no Directus I/O.
+ * Pure decision logic for admin guard checks — no Next.js or backend I/O.
  *
- * `admin-guards.ts` wires these rules to real fetch() calls against Directus.
+ * `admin-guards.ts` wires these rules to real PocketBase reads.
  * We keep them in a separate module so the business rules (self-action,
  * admin-target, founder-only) can be unit-tested in plain Node.
  */

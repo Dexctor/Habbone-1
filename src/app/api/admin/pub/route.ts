@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { withAdmin } from '@/server/api-helpers'
-import { pbList, pbCreate, pbUpdate, pbDelete } from '@/server/directus/pb-helpers'
-import { TABLES } from '@/server/directus/tables'
+import { pbList, pbCreate, pbUpdate, pbDelete } from '@/server/pocketbase/helpers'
+import { TABLES } from '@/server/pocketbase/tables'
 
 export const dynamic = 'force-dynamic';
 

@@ -11,7 +11,7 @@
  */
 
 import { migrateTable, loadUserMap, unixToIso, asBool, nickToId, type IdMap } from './_migrate-lib';
-import { TABLES } from '../../src/server/directus/tables';
+import { TABLES } from '../../src/server/pocketbase/tables';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
