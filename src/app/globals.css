@@ -237,6 +237,13 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+html.admin-shell-open,
+body.admin-shell-open {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* utilities */
 .image-pixelated {
   image-rendering: pixelated;

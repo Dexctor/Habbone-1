@@ -172,6 +172,15 @@ export default function AdminLayout({
     return () => clearInterval(interval);
   }, [fetchNotifs]);
 
+  useEffect(() => {
+    document.documentElement.classList.add('admin-shell-open');
+    document.body.classList.add('admin-shell-open');
+    return () => {
+      document.documentElement.classList.remove('admin-shell-open');
+      document.body.classList.remove('admin-shell-open');
+    };
+  }, []);
+
   const handleMarkAllRead = async () => {
     setNotifCount(0);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
