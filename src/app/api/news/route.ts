@@ -57,7 +57,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     const id = article && typeof article === 'object' ? (article as any).id : null
     revalidateTag('news')
     revalidateTag('home')
-    return NextResponse.json({ ok: true, id: id != null ? Number(id) : null })
+    // PocketBase ids are 15-char strings, not numbers — Number(id) would be NaN
+    // (serialized as null), breaking the client redirect to the new article.
+    return NextResponse.json({ ok: true, id: id != null ? String(id) : null })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
