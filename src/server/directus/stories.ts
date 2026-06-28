@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { pbList, pbCreate, pbUpdate, pbDelete, pbCount } from './pb-helpers';
+import { pbList, pbCreate, pbUpdate, pbDelete, pbCount, pbUploadFile } from './pb-helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks, isoToUnixSeconds, nowIso } from './user-cache';
 import type { StoryRecord } from './types';
@@ -46,27 +46,13 @@ async function v2StoriesToLegacy(rows: V2StoryRow[]): Promise<StoryRecord[]> {
 
 // ============ FILE UPLOAD ============
 
-/**
- * Image handling note (schema-v2 §7.5): stories.image is a TEXT/URL column,
- * not a PocketBase file field. The migration keeps existing image URLs as-is
- * and does NOT re-upload into PB storage.
- *
- * The interactive "upload an image then attach it to a story" flow therefore
- * needs a storage destination decision (PB file collection vs external host),
- * which is OUT OF SCOPE for the data layer (Lot 3). Until that's decided, this
- * throws a clear error so the call site fails loudly rather than silently.
- *
- * TODO(Lot 5/storage): implement upload (PB file field or external) and return
- * the resulting URL/id to store in stories.image.
- */
 export async function uploadFileToDirectus(
-  _file: File,
+  file: File,
   _filename: string,
   _mimeType: string,
 ): Promise<{ id: string }> {
-  throw new Error(
-    'uploadFileToDirectus: image upload not yet implemented for PocketBase (storage destination TBD — see schema-v2 §7.5).',
-  );
+  const uploaded = await pbUploadFile(file, { context: 'story' });
+  return { id: uploaded.url };
 }
 
 // ============ CREATE ============
