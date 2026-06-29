@@ -12,13 +12,8 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'images.habbo.com', pathname: '/**' },
       { protocol: 'https', hostname: 'www.habbo.fr', pathname: '/**' },
       { protocol: 'https', hostname: 'www.habbo.com', pathname: '/**' },
-      // Habbone (legacy/news links)
+      // Habbone public domain
       { protocol: 'https', hostname: 'habbone.fr', pathname: '/**' },
-      { protocol: 'http', hostname: 'habbone.fr', pathname: '/**' },
-      // Legacy media host, kept until every old asset has been rehosted.
-      { protocol: 'https', hostname: 'api.habbone.fr', pathname: '/**' },
-      // Local legacy media/dev server
-      { protocol: 'http', hostname: 'localhost', port: '8055', pathname: '/**' },
       // PocketBase (production) — uploaded images are served from here
       { protocol: 'https', hostname: 'pb.habbone.fr', pathname: '/**' },
       // PocketBase (local dev)

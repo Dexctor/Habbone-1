@@ -90,8 +90,6 @@ export const CONTENT_META: Record<ContentType, ContentTypeMeta> = {
   },
 };
 
-const DIRECTUS_BASE_URL = (process.env.NEXT_PUBLIC_DIRECTUS_URL || "").replace(/\/$/, "");
-
 export function getItemTitle(
   item: ContentItem,
   contentType: ContentType,
@@ -120,7 +118,7 @@ export function resolveItemDate(item: ContentItem): string | undefined {
 export function resolveAssetUrl(value?: string | null): string | null {
   if (!value) return null;
   if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
-  return `${DIRECTUS_BASE_URL}/assets/${value}`;
+  return null;
 }
 
 /**

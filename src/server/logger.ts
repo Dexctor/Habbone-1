@@ -10,8 +10,9 @@ const SENSITIVE_KEYS = new Set([
   'verificationCode',
   'code',
   'habbo_verification_code',
-  'DIRECTUS_SERVICE_TOKEN',
   'NEXTAUTH_SECRET',
+  'POCKETBASE_ADMIN_PASSWORD',
+  'REDIS_URL',
 ])
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
