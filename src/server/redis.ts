@@ -1,11 +1,12 @@
 import 'server-only';
 import Redis from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://37.59.101.4:6379';
+const REDIS_URL = process.env.REDIS_URL?.trim() || '';
 
 let redis: Redis | null = null;
 
 function getRedis(): Redis | null {
+  if (!REDIS_URL) return null;
   if (redis) return redis;
   try {
     redis = new Redis(REDIS_URL, {
@@ -72,7 +73,11 @@ export async function invalidatePattern(pattern: string): Promise<void> {
   const r = getRedis();
   if (!r) return;
   try {
-    const keys = await r.keys(pattern);
-    if (keys.length > 0) await r.del(...keys);
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await r.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = nextCursor;
+      if (keys.length > 0) await r.del(...keys);
+    } while (cursor !== '0');
   } catch {}
 }
