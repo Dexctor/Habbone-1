@@ -1,0 +1,6 @@
+[Unit]
+Description=Backup PocketBase data
+
+[Service]
+Type=oneshot
+ExecStart=/opt/pocketbase/backup-pocketbase.sh
