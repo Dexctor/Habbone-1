@@ -3,6 +3,7 @@ import 'server-only';
 import { pbList, pbOne, pbCreate, pbUpdate, pbDelete, pbCount } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks } from './user-cache';
+import { getUserBySessionIdentity } from './users';
 import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
 
 export type { ShopItem, ShopOrder, AdminNotification };
@@ -252,18 +253,17 @@ export async function purchaseItem(
   if (item.status !== 'ativo') return { ok: false, error: 'Article indisponible' };
   if (item.estoque <= 0) return { ok: false, error: 'Rupture de stock' };
 
-  const userData = await pbOne<{ id: string; nick: string; coins?: number }>(USERS_TABLE, userId, {
-    fields: 'id,nick,coins',
-  });
+  const userData = await getUserBySessionIdentity({ id: userId, nick: userNick });
   if (!userData) return { ok: false, error: 'Utilisateur introuvable' };
+  const resolvedUserId = String(userData.id);
 
-  const currentCoins = Number(userData.coins) || 0;
+  const currentCoins = Number(userData.moedas) || 0;
   if (currentCoins < item.preco) {
     return { ok: false, error: `Coins insuffisants (${currentCoins}/${item.preco})` };
   }
 
   try {
-    await pbUpdate(USERS_TABLE, userId, { coins: currentCoins - item.preco });
+    await pbUpdate(USERS_TABLE, resolvedUserId, { coins: currentCoins - item.preco });
   } catch {
     return { ok: false, error: 'Erreur lors du paiement' };
   }
@@ -271,7 +271,7 @@ export async function purchaseItem(
   await updateShopItem(item.id, { estoque: Math.max(0, item.estoque - 1) });
 
   const order = await createShopOrder({
-    user_id: userId,
+    user_id: resolvedUserId,
     user_nick: userNick || userData.nick || 'Inconnu',
     item_id: item.id,
     item_nome: item.nome,

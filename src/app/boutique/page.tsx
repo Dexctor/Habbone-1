@@ -2,11 +2,8 @@ import { unstable_cache } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 import { listShopItems } from '@/server/pocketbase/shop';
-import { pbOne } from '@/server/pocketbase/helpers';
-import { TABLES } from '@/server/pocketbase/tables';
+import { getUserMoedas } from '@/server/pocketbase/users';
 import BoutiqueClient from './boutique-client';
-
-const USERS_TABLE = TABLES.users;
 
 export const revalidate = 300;
 
@@ -24,11 +21,10 @@ export default async function BoutiquePage() {
 
   // Pre-fetch user coins server-side if logged in
   let coins = 0;
-  const user = session?.user as { id?: string; nick?: string } | undefined;
-  if (user?.id) {
+  const user = session?.user as { id?: string; nick?: string; hotel?: string | null } | undefined;
+  if (user?.id || user?.nick) {
     try {
-      const row = await pbOne<{ coins?: number }>(USERS_TABLE, String(user.id), { fields: 'coins' });
-      coins = Number(row?.coins) || 0;
+      coins = await getUserMoedas(String(user.id || ''), { nick: user.nick, hotel: user.hotel });
     } catch { /* silent */ }
   }
 

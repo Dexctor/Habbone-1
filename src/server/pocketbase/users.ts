@@ -185,6 +185,27 @@ export async function getUserById(userId: string) {
   return v2ToLegacyRow(row);
 }
 
+function cleanSessionUserId(userId?: string | null): string {
+  const id = String(userId || '').trim();
+  return id.startsWith('legacy:') ? id.slice('legacy:'.length) : id;
+}
+
+export async function getUserBySessionIdentity(input: {
+  id?: string | null;
+  nick?: string | null;
+  hotel?: string | null;
+}) {
+  const id = cleanSessionUserId(input.id);
+  if (id) {
+    const byId = await getUserById(id).catch(() => null);
+    if (byId) return byId;
+  }
+
+  const nick = typeof input.nick === 'string' ? input.nick.trim() : '';
+  if (!nick) return null;
+  return getUserByNick(nick, input.hotel).catch(() => null);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Create                                                             */
 /* ------------------------------------------------------------------ */
@@ -286,11 +307,16 @@ export async function tryUpdateHabboSnapshotForUser(
   }
 }
 
-export async function getUserMoedas(userId: string): Promise<number> {
-  const row = await pbOne<{ coins?: number }>(USERS_TABLE, userId, { fields: 'coins' }).catch(
-    () => null,
-  );
-  const value = row?.coins;
+export async function getUserMoedas(
+  userId: string,
+  fallback?: { nick?: string | null; hotel?: string | null },
+): Promise<number> {
+  const user = await getUserBySessionIdentity({
+    id: userId,
+    nick: fallback?.nick,
+    hotel: fallback?.hotel,
+  });
+  const value = user?.moedas;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : 0;
 }
