@@ -233,12 +233,10 @@ export async function toggleNewsCommentLike(commentId: string, author: string) {
 
 export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
   const q = typeof query === 'string' ? query.trim() : '';
-  // Only published articles, and serve them all (client paginates). Without this
-  // the list was capped at 24 of 95 articles.
   const filter: Record<string, unknown> = { status: { _eq: 'published' } };
-  if (q) filter._or = [{ title: { _contains: q } }, { body: { _contains: q } }];
+  if (q) filter._or = [{ title: { _contains: q } }, { summary: { _contains: q } }];
   const rows = await pbList<V2NewsRow>(TABLES.articles, {
-    fields: NEWS_SELECT_FIELDS,
+    fields: NEWS_CARD_FIELDS,
     sort: '-published_at',
     perPage: 200,
     filter,
