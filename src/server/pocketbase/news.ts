@@ -5,19 +5,10 @@ import { TABLES } from './tables';
 import { resolveUserId, resolveUserNick } from './user-cache';
 import type { NewsRecord, NewsCommentRecord } from './types';
 import { stripHtml } from '@/lib/text-utils';
+import type { NewsBadgeItem } from '@/types/news-badges';
 
 const NEWS_BADGE_IMAGE_RE =
   /(?:https?:)?\/\/[^"'\s>]*\/c_images\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]{2,})\.(?:gif|png)\b/gi;
-
-export type NewsBadgeItem = {
-  newsId: string;
-  title: string;
-  badgeCode: string;
-  badgeAlbum: string;
-  badgeImageUrl: string;
-  articleUrl: string;
-  publishedAt: string | null;
-};
 
 /* ------------------------------------------------------------------ */
 /*  Column <-> domain mapping (v2 English <-> legacy portuguese out)    */

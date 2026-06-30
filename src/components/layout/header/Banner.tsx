@@ -10,19 +10,12 @@ type BannerProps = {
 }
 
 export default function Banner({ transition, initialTheme }: BannerProps) {
-  const [theme, setTheme] = useState<SiteThemeSettings>(initialTheme ?? DEFAULT_THEME_SETTINGS)
+  const [theme, setTheme] = useState<SiteThemeSettings>(
+    normalizeThemeSettings(initialTheme ?? DEFAULT_THEME_SETTINGS),
+  )
 
   useEffect(() => {
     let cancelled = false
-
-    ; (async () => {
-      try {
-        const response = await fetch('/api/theme', { cache: 'no-store' })
-        if (!response.ok) return
-        const json = await response.json().catch(() => ({}))
-        if (!cancelled) setTheme(normalizeThemeSettings(json?.data))
-      } catch { }
-    })()
 
     const onThemeUpdated = (event: Event) => {
       try {

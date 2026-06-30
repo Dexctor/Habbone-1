@@ -58,7 +58,6 @@ function renderLink(entry: NavEntry) {
 
 function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
   const [open, setOpen] = useState(false)
-  const [hoveredTrigger, setHoveredTrigger] = useState<string | null>(null)
   const closeTimer = useRef<number | null>(null)
 
   const clearCloseTimer = () => {
@@ -68,9 +67,8 @@ function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
     }
   }
 
-  const openMenu = (triggerKey: string) => {
+  const openMenu = () => {
     clearCloseTimer()
-    setHoveredTrigger(triggerKey)
     setOpen(true)
   }
 
@@ -78,7 +76,6 @@ function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
     clearCloseTimer()
     closeTimer.current = window.setTimeout(() => {
       setOpen(false)
-      setHoveredTrigger(null)
       closeTimer.current = null
     }, 180)
   }
@@ -105,7 +102,6 @@ function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
     if (nextItem && nextItem !== current) {
       clearCloseTimer()
       setOpen(false)
-      setHoveredTrigger(null)
       return
     }
     scheduleClose()
@@ -141,17 +137,25 @@ function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
     <motion.li
       data-nav-item
       className="item relative inline-flex items-center justify-center cursor-pointer min-h-[80px] md:min-h-[100px] lg:min-h-[120px] border-l border-[#141433] hover:bg-[#1F1F3E]"
-      onMouseEnter={() => openMenu(entry.label)}
+      onMouseEnter={openMenu}
       onMouseLeave={handleMouseLeave}
-      onFocusCapture={() => openMenu(entry.label)}
+      onFocusCapture={openMenu}
       onBlurCapture={handleBlur}
     >
-      <span className={`${itemBaseClasses} transition-colors ${open ? 'text-[#DDDDDD]' : ''}`}>{entry.label}</span>
+      <button
+        type="button"
+        className={`${itemBaseClasses} transition-colors ${open ? 'text-[#DDDDDD]' : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {entry.label}
+      </button>
       <motion.ul
         variants={submenuVariants}
         initial="closed"
         animate={open ? 'open' : 'closed'}
-        onMouseEnter={() => openMenu(entry.label)}
+        onMouseEnter={openMenu}
         onMouseLeave={scheduleClose}
         className="submenu absolute left-1/2 top-full mt-2 w-[220px] -translate-x-1/2 p-[10px] rounded-[5px] bg-[#1b1b3d] z-50 flex flex-col justify-center shadow-lg shadow-black/40"
         style={{ originY: 0 }}

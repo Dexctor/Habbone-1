@@ -8,6 +8,7 @@ import Footer from '@/components/layout/footer';
 import HeaderTW from '@/components/layout/header-tw';
 import { unstable_cache } from 'next/cache';
 import { readThemeSettings } from '@/server/theme-settings-store';
+import { listPublicNewsBadges } from '@/server/pocketbase/news';
 import SonnerClient from '@/components/ui/sonner-client';
 import MotionProvider from '@/components/motion/motion-provider';
 import LayoutClient from './layout-client';
@@ -60,7 +61,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ['theme-settings'],
     { tags: ['theme'], revalidate: 300 }
   );
-  const initialTheme = await getCachedTheme();
+  const getCachedHeaderBadges = unstable_cache(
+    () => listPublicNewsBadges().catch(() => []),
+    ['header-news-badges'],
+    { tags: ['news', 'home'], revalidate: 300 }
+  );
+  const [initialTheme, initialBadges] = await Promise.all([
+    getCachedTheme(),
+    getCachedHeaderBadges(),
+  ]);
 
   return (
     <html lang="fr" className="dark">
@@ -71,7 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <MotionProvider>
             <LayoutClient>
-              <AppShell topbar={<HeaderTW initialTheme={initialTheme} />} footer={<Footer />}>{children}</AppShell>
+              <AppShell topbar={<HeaderTW initialTheme={initialTheme} initialBadges={initialBadges} />} footer={<Footer />}>{children}</AppShell>
             </LayoutClient>
           </MotionProvider>
           <SonnerClient />

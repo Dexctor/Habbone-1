@@ -3,20 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import type { NewsBadgeItem } from '@/types/news-badges'
 
 const C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_C_IMAGES_BASE || 'https://images.habbo.com/c_images'
 const EU_SSL_C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_EUSSL_C_IMAGES_BASE || 'https://images-eussl.habbo.com/c_images'
 const ALT_C_IMAGES_BASE = process.env.NEXT_PUBLIC_HABBO_ALT_C_IMAGES_BASE || 'https://habboo-a.akamaihd.net/c_images'
-
-type NewsBadgeItem = {
-  newsId: number
-  title: string
-  badgeCode: string
-  badgeAlbum?: string | null
-  badgeImageUrl: string
-  articleUrl: string
-  publishedAt: string | null
-}
 
 const MAX_BADGES = 220
 const PAGE_SIZE = 4
@@ -153,8 +144,8 @@ function NavButton({
   )
 }
 
-export default function BadgesSlider() {
-  const [items, setItems] = useState<NewsBadgeItem[]>([])
+export default function BadgesSlider({ initialItems = [] }: { initialItems?: NewsBadgeItem[] }) {
+  const [items, setItems] = useState<NewsBadgeItem[]>(initialItems)
   const [page, setPage] = useState(0)
 
   const visibleItems = useMemo(() => items.slice(0, MAX_BADGES), [items])
@@ -174,24 +165,8 @@ export default function BadgesSlider() {
   }, [page, visibleItems])
 
   useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      try {
-        const response = await fetch('/api/news/badges', { cache: 'no-store' })
-        if (!response.ok) return
-        const json = await response.json().catch(() => ({}))
-        const data = Array.isArray(json?.data) ? (json.data as NewsBadgeItem[]) : []
-        if (!cancelled) setItems(data)
-      } catch {}
-    }
-
-    void load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    setItems(initialItems)
+  }, [initialItems])
 
   useEffect(() => {
     setPage((prev) => Math.min(prev, Math.max(0, totalPages - 1)))
