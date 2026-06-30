@@ -22,6 +22,7 @@ import { useHabboProfile } from "@/lib/use-habbo-profile";
 import { formatDateTime } from "@/lib/date-utils";
 import { stripHtml } from "@/lib/text-utils";
 import { usePaginatedList } from "./hooks/usePaginatedList";
+import { useProfileContent } from "./hooks/useProfileContent";
 
 import type { HabboFriend, HabboGroup, HabboRoom, HabboBadge } from "@/lib/habbo";
 import type { HabboProfileResponse } from "@/types/habbo";
@@ -36,22 +37,6 @@ const personCardClass =
 const loadMoreClass =
   "mt-3 rounded-[6px] border border-white/5 bg-[#303060]/70 px-4 text-[#DDD] transition hover:border-[#2596FF]/45 hover:bg-[#2596FF] hover:text-white";
 
-type TopicCard = {
-  id: number | string;
-  imagem?: string;
-  titulo?: string;
-  autor?: string;
-  data?: string | number | null;
-};
-
-type ArticleCard = {
-  id: number | string;
-  imagem?: string;
-  titulo?: string;
-  autor?: string;
-  data?: string | number | null;
-};
-
 export default function ProfileClient({ nick, initialData }: { nick: string; initialData?: HabboProfileResponse | null }) {
   const { data: fetchedData, error, loading: fetchLoading, refresh } = useHabboProfile(nick, {
     fallbackMessage: "Erreur de recuperation du profil",
@@ -63,15 +48,13 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
   const data = fetchedData ?? initialData ?? null;
   const loading = !data && fetchLoading;
 
-  const [topics, setTopics] = useState<TopicCard[]>([]);
-  const [topicsLoading, setTopicsLoading] = useState(false);
   const [topicsPage, setTopicsPage] = useState(0);
   const [topicsDir, setTopicsDir] = useState<1 | -1>(1);
-  const [articles, setArticles] = useState<ArticleCard[]>([]);
-  const [articlesLoading, setArticlesLoading] = useState(false);
   const [articlesPage, setArticlesPage] = useState(0);
   const [articlesDir, setArticlesDir] = useState<1 | -1>(1);
   const reduce = useReducedMotion();
+  const profileAuthor = data?.user?.name || nick;
+  const { topics, topicsLoading, articles, articlesLoading } = useProfileContent(profileAuthor);
 
   const friendsPagination = usePaginatedList(data?.friends ?? [], PAGE_SIZE);
   const groupsPagination = usePaginatedList(data?.groups ?? [], PAGE_SIZE);
@@ -90,84 +73,6 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
       // noop
     }
   }, [data]);
-
-  useEffect(() => {
-    const author = data?.user?.name || nick;
-    if (!author) return;
-
-    let cancelled = false;
-    const controller = new AbortController();
-    setTopicsLoading(true);
-
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/profile/topics?author=${encodeURIComponent(author)}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = (await response.json().catch(() => null)) as unknown;
-        if (cancelled) return;
-        if (!response.ok) {
-          const maybeErr = (payload as { error?: unknown } | null)?.error;
-          const msg = typeof maybeErr === "string" ? maybeErr : "Erreur de recuperation des sujets";
-          throw new Error(msg);
-        }
-
-        const rows = (payload as { data?: unknown } | null)?.data;
-        setTopics(Array.isArray(rows) ? (rows as TopicCard[]) : []);
-      } catch {
-        if (!cancelled) setTopics([]);
-      } finally {
-        if (!cancelled) setTopicsLoading(false);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [nick, data?.user?.name]);
-
-  useEffect(() => {
-    const author = data?.user?.name || nick;
-    if (!author) return;
-
-    let cancelled = false;
-    const controller = new AbortController();
-    setArticlesLoading(true);
-
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/profile/articles?author=${encodeURIComponent(author)}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = (await response.json().catch(() => null)) as unknown;
-        if (cancelled) return;
-        if (!response.ok) {
-          const maybeErr = (payload as { error?: unknown } | null)?.error;
-          const msg = typeof maybeErr === "string" ? maybeErr : "Erreur de recuperation des articles";
-          throw new Error(msg);
-        }
-
-        const rows = (payload as { data?: unknown } | null)?.data;
-        setArticles(Array.isArray(rows) ? (rows as ArticleCard[]) : []);
-      } catch {
-        if (!cancelled) setArticles([]);
-      } finally {
-        if (!cancelled) setArticlesLoading(false);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [nick, data?.user?.name]);
 
   useEffect(() => {
     setTopicsPage(0);
