@@ -5,11 +5,12 @@ import { motion, type Transition } from 'framer-motion'
 import Link from 'next/link'
 import { navigation, type NavEntry } from './navigation'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
+import { dur, easings } from '@/lib/motion-tokens'
 import { useRadioPlayer } from '@/lib/use-radio-player'
 
 type TopBarProps = {
   reduce: boolean | null
-  fast?: Transition
+  transition?: Transition
   menuOpen: boolean
   setMenuOpen: (open: boolean) => void
 }
@@ -114,28 +115,26 @@ function TopLevelItemWithChildren({ entry }: { entry: NavEntry }) {
     return () => clearCloseTimer()
   }, [])
 
-  const easeOutExpo = [0.16, 1, 0.3, 1] as const
-
   const submenuVariants = {
     closed: {
       opacity: 0,
-      y: -8,
-      scale: 0.96,
+      y: -6,
+      scale: 0.98,
       pointerEvents: 'none' as const,
-      transition: { duration: 0.12, ease: easeOutExpo },
+      transition: { duration: dur.xs, ease: easings.std },
     },
     open: {
       opacity: 1,
       y: 0,
       scale: 1,
       pointerEvents: 'auto' as const,
-      transition: { duration: 0.18, ease: easeOutExpo },
+      transition: { duration: dur.sm, ease: easings.std },
     },
   }
 
   const submenuItemVariants = {
-    closed: { opacity: 0, y: -6 },
-    open: { opacity: 1, y: 0, transition: { duration: 0.16, ease: easeOutExpo } },
+    closed: { opacity: 0, y: -4 },
+    open: { opacity: 1, y: 0, transition: { duration: dur.xs, ease: easings.std } },
   }
 
   return (
@@ -197,7 +196,7 @@ function TopLevelItem({ entry }: { entry: NavEntry }) {
   return <TopLevelItemWithChildren entry={entry} />
 }
 
-export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarProps) {
+export default function TopBar({ reduce, transition, menuOpen, setMenuOpen }: TopBarProps) {
   const radio = useRadioPlayer()
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,11 +205,10 @@ export default function TopBar({ reduce, fast, menuOpen, setMenuOpen }: TopBarPr
 
   return (
     <motion.section
-      layout
       className="navtop w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] bg-[#25254D] border-b border-[#141433] z-[999]"
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: -10 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
       animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-      transition={fast}
+      transition={transition}
     >
       <div className="container max-w-[1200px] mx-auto px-4">
         <div className="bar-top flex w-full min-h-[80px] md:min-h-[100px] lg:min-h-[120px] items-center justify-between">

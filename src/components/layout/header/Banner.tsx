@@ -5,11 +5,11 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { DEFAULT_THEME_SETTINGS, normalizeThemeSettings, type SiteThemeSettings } from '@/lib/theme-settings'
 
 type BannerProps = {
-  slow: any
+  transition: any
   initialTheme?: SiteThemeSettings
 }
 
-export default function Banner({ slow, initialTheme }: BannerProps) {
+export default function Banner({ transition, initialTheme }: BannerProps) {
   const [theme, setTheme] = useState<SiteThemeSettings>(initialTheme ?? DEFAULT_THEME_SETTINGS)
 
   useEffect(() => {
@@ -56,13 +56,11 @@ export default function Banner({ slow, initialTheme }: BannerProps) {
 
   return (
     <motion.section
-      layout
       className="bg flex items-center justify-center w-full min-h-[250px] md:min-h-[350px] lg:min-h-[400px]"
       style={style}
       initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      transition={slow as any}
+      animate={{ opacity: 1 }}
+      transition={transition as any}
     >
       {theme.showLogo !== false && (
         // eslint-disable-next-line @next/next/no-img-element

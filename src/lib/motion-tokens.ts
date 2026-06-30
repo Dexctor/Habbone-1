@@ -14,5 +14,11 @@ export const spring = {
   smooth: { type: 'spring', stiffness: 220, damping: 28, mass: 0.9 } as const,
 }
 
+export const transitions = {
+  instant: { duration: dur.xs, ease: easings.std },
+  quick: { duration: dur.sm, ease: easings.std },
+  standard: { duration: dur.md, ease: easings.std },
+} as const
+
 export type EasingKey = keyof typeof easings
 export type DurationKey = keyof typeof dur

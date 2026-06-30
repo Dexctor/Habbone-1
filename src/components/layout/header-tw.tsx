@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
-import { dur, easings } from '@/lib/motion-tokens'
+import { transitions } from '@/lib/motion-tokens'
 import { toastError, toastSuccess } from '@/lib/sonner'
 import { cachedValue, invalidateCache } from '@/lib/client-cache'
 import { useHabboProfile } from '@/lib/use-habbo-profile'
@@ -44,14 +44,16 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
   const [level, setLevel] = useState<number | null>(null)
   const [coins, setCoins] = useState<number | null>(null)
   const reduce = useReducedMotion()
-  const fast = useMemo(() => ({ duration: reduce ? dur.xs : dur.sm, ease: easings.std as any }), [reduce])
-  const slow = useMemo(() => ({ duration: reduce ? dur.xs : dur.lg, ease: easings.emph as any }), [reduce])
   const menuRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const habboLiteTtlMs = 30_000
   const moedasTtlMs = 15_000
   const sessionNick = (session?.user as any)?.nick as string | undefined
   const onProfilePage = pathname.startsWith('/profile')
+  const motionTransition = useMemo(
+    () => reduce ? transitions.instant : transitions.quick,
+    [reduce]
+  )
   const { data: habboLite } = useHabboProfile(sessionNick || '', {
     lite: true,
     enabled: status === 'authenticated' && !!sessionNick && !onProfilePage,
@@ -240,16 +242,14 @@ export default function HeaderTW({ initialTheme }: { initialTheme?: SiteThemeSet
 
   return (
     <header className="header w-full min-h-[60vh]" suppressHydrationWarning>
-      <TopBar reduce={reduce} fast={fast} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <Banner slow={slow} initialTheme={initialTheme} />
+      <TopBar reduce={reduce} transition={motionTransition} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Banner transition={reduce ? transitions.instant : transitions.standard} initialTheme={initialTheme} />
 
       <motion.section
-        layout
         className="userbar w-full min-h-[92px] bg-[#25254D] shadow-[0_-1px_0_rgba(255,255,255,.1),_0_1px_0_#141433]"
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10 }}
-        whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        transition={fast as any}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={motionTransition as any}
       >
         <div className="container max-w-[1200px] mx-auto px-4">
           <div className="row flex flex-wrap">
