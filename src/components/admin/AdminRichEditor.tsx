@@ -115,7 +115,7 @@ export default function AdminRichEditor({
     const insertRoomIdChip = () => {
         const id = roomIdInput.trim().replace(/[^0-9]/g, "");
         if (!id || !editor) return;
-        const chip = `<a href="#roomid-${id}" data-roomid="${id}" class="roomid-chip" rel="nofollow noopener">:roomid ${id}</a>&nbsp;`;
+        const chip = `&nbsp;<a href="#roomid-${id}" data-roomid="${id}" class="roomid-chip" rel="nofollow noopener">RoomID ${id}</a>&nbsp;`;
         editor.chain().focus().insertContent(chip).run();
         setRoomIdInput("");
         setShowRoomIdModal(false);
@@ -267,7 +267,7 @@ export default function AdminRichEditor({
                                     data-roomid={roomIdInput}
                                     onClick={(e) => e.preventDefault()}
                                 >
-                                    :roomid {roomIdInput}
+                                    RoomID {roomIdInput}
                                 </a>
                             </div>
                         )}

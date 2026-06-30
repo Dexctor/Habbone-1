@@ -44,8 +44,11 @@
 .forumContent video,
 .forumContent iframe {
   display: block;
-  max-width: 100%;
+  width: auto;
+  max-width: min(100%, 760px);
+  max-height: min(420px, 55vh);
   height: auto;
+  object-fit: contain;
   margin: 0.5rem auto 1rem auto;
   border-radius: 4px;
   background: color-mix(in srgb, hsl(var(--bg-800, 223 40% 18%)) 85%, transparent);

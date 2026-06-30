@@ -8,7 +8,7 @@ import { toast } from "sonner";
 // insécable, 1 à 12 chiffres). On garde le \b à la fin pour ne pas matcher
 // au milieu d'un autre mot. On exige au moins un caractère blanc avant ":"
 // (ou début de chaîne) pour ne pas matcher une URL ou une ancre fragmentée.
-const ROOMID_REGEX = /(^|[\s>])(:roomid)[\s ]+(\d{1,12})\b/gi;
+const ROOMID_REGEX = /(^|[\s>])(:?roomid)[\s ]+(\d{1,12})\b/gi;
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -179,7 +179,7 @@ export default function ContentWithLightbox({
         chip.setAttribute("href", `#roomid-${id}`);
         chip.setAttribute("data-roomid", id);
         chip.setAttribute("rel", "nofollow noopener noreferrer");
-        chip.textContent = `:roomid ${id}`;
+        chip.textContent = `RoomID ${id}`;
         fragment.appendChild(chip);
         lastIndex = start + full.length;
       }

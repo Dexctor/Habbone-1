@@ -123,8 +123,10 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
         <div className="flex flex-col items-center gap-4 px-6 py-8">
           {/* Centered image 150×150 */}
           {imageUrl ? (
-            <div className="flex items-center justify-center">
-              <ClickableImage src={imageUrl} alt={title} className="h-[150px] w-[150px] object-cover rounded" />
+            <div className="flex w-full items-center justify-center">
+              <div className="flex w-full max-w-[760px] items-center justify-center overflow-hidden rounded-[4px] border border-[#141433] bg-[#272746] p-3">
+                <ClickableImage src={imageUrl} alt={title} className="max-h-[320px] w-auto max-w-full object-contain" />
+              </div>
             </div>
           ) : null}
 

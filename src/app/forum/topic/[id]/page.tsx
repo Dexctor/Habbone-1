@@ -143,8 +143,8 @@ export default async function TopicPage(props: TopicPageProps) {
         <div className="rounded-b-[4px] border border-[#141433] bg-[#272746] py-6">
           <div className="mx-auto flex w-full max-w-[1150px] flex-col gap-5 px-4">
             {imageUrl ? (
-              <div className="mx-auto w-full max-w-[563px] overflow-hidden rounded-[3px] bg-[#295A90]">
-                <ClickableImage src={imageUrl} alt="" className="h-[138px] w-full object-cover" />
+              <div className="mx-auto flex w-full max-w-[760px] items-center justify-center overflow-hidden rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-3">
+                <ClickableImage src={imageUrl} alt="" className="max-h-[320px] w-auto max-w-full object-contain" />
               </div>
             ) : null}
 
