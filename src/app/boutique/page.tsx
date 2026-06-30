@@ -4,6 +4,7 @@ import { authOptions } from '@/auth';
 import { listShopItems } from '@/server/directus/shop';
 import { getUserMoedas } from '@/server/directus/users';
 import BoutiqueClient from './boutique-client';
+import SectionReveal from '@/components/motion/section-reveal';
 
 export const revalidate = 300;
 
@@ -32,10 +33,12 @@ export default async function BoutiquePage() {
   }
 
   return (
-    <BoutiqueClient
-      initialItems={items}
-      initialCoins={coins}
-      loggedIn={!!user?.nick}
-    />
+    <SectionReveal>
+      <BoutiqueClient
+        initialItems={items}
+        initialCoins={coins}
+        loggedIn={!!user?.nick}
+      />
+    </SectionReveal>
   );
 }

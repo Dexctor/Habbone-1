@@ -4,6 +4,7 @@ import { CalendarClock, Twitter } from 'lucide-react'
 
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
+import SectionReveal from '@/components/motion/section-reveal'
 
 // Force fully-dynamic rendering: bypass the full-route cache and the CDN edge
 // cache so role/ban changes from the admin panel are reflected immediately.
@@ -59,7 +60,7 @@ export default async function TeamPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1200px] space-y-3 px-4 py-10 sm:px-6">
-      <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+      <SectionReveal as="section" className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -71,19 +72,24 @@ export default async function TeamPage() {
             Equipe Habbone
           </h1>
         </div>
-      </header>
+      </SectionReveal>
 
       {activeRoles.length === 0 ? (
-        <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6">
+        <SectionReveal as="section" className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6">
           <p className="rounded-[6px] border border-dashed border-white/15 px-4 py-6 text-center text-sm text-[#BEBECE]">
             Aucun membre reference pour le moment.
           </p>
-        </section>
+        </SectionReveal>
       ) : (
-        activeRoles.map((role) => {
+        activeRoles.map((role, index) => {
           const members = membersByRole[role] ?? []
           return (
-            <section key={role} className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6">
+            <SectionReveal
+              key={role}
+              as="section"
+              delay={Math.min(index * 0.04, 0.16)}
+              className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6"
+            >
               <h2 className="text-[16px] font-bold text-white">{role}</h2>
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:justify-start md:[grid-template-columns:repeat(2,minmax(0,278px))]">
@@ -138,7 +144,7 @@ export default async function TeamPage() {
                   )
                 })}
               </div>
-            </section>
+            </SectionReveal>
           )
         })
       )}

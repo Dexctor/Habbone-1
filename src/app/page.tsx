@@ -5,22 +5,37 @@ import ForumTopics from "@/components/home/forum-topics";
 import LatestBadges from "@/components/home/latest-mobis";
 import Publicite from "@/components/home/publicite";
 import Ranking from "@/components/home/ranking";
+import SectionReveal from "@/components/motion/section-reveal";
 
 export const revalidate = 300;
 
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-[1200px] space-y-[70px] px-4 py-10 sm:px-6">
-      <Stories />
-      <LatestArticles />
-      <ForumTopics />
+      <SectionReveal>
+        <Stories />
+      </SectionReveal>
+
+      <SectionReveal delay={0.06}>
+        <LatestArticles />
+      </SectionReveal>
+
+      <SectionReveal>
+        <ForumTopics />
+      </SectionReveal>
 
       <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-        <LatestBadges />
-        <Publicite />
+        <SectionReveal>
+          <LatestBadges />
+        </SectionReveal>
+        <SectionReveal delay={0.06}>
+          <Publicite />
+        </SectionReveal>
       </section>
 
-      <Ranking />
+      <SectionReveal>
+        <Ranking />
+      </SectionReveal>
     </main>
   );
 }

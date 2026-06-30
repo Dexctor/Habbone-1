@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { mediaUrl } from '@/lib/media-url'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
+import SectionReveal from '@/components/motion/section-reveal'
 
 const NEWS_FALLBACK_ICON = '/img/news.png'
 const PAGE_SIZE = 10
@@ -76,7 +77,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-8 sm:px-8">
-      <section className="rounded-[4px] bg-[#2C2C4F]">
+      <SectionReveal as="section" className="rounded-[4px] bg-[#2C2C4F]">
         <div className="flex flex-col gap-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,9 +111,9 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
             </div>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section className="space-y-[10px]">
+      <SectionReveal as="section" className="space-y-[10px]" delay={0.05}>
         {visible.length === 0 ? (
           <div className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-6 py-14 text-center text-sm font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
             Aucun article trouvé.
@@ -198,10 +199,10 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
             )
           })
         )}
-      </section>
+      </SectionReveal>
 
       {pageCount > 1 ? (
-        <nav className="flex items-center justify-center gap-4 py-3" aria-label="Pagination des actualités">
+        <SectionReveal as="nav" className="flex items-center justify-center gap-4 py-3" aria-label="Pagination des actualités">
           <button
             type="button"
             onClick={() => setPage((value) => Math.max(0, value - 1))}
@@ -227,9 +228,9 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                   aria-label={`Page ${index + 1}`}
                 >
                   {index + 1}
-                </button>
-              )
-            })}
+              </button>
+            )
+          })}
           </div>
 
           <button
@@ -241,7 +242,7 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
           >
             <i className="material-icons text-[18px]" aria-hidden>chevron_right</i>
           </button>
-        </nav>
+        </SectionReveal>
       ) : null}
     </main>
   )

@@ -11,6 +11,7 @@ import type {
 } from '@/server/directus/types'
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
+import SectionReveal from '@/components/motion/section-reveal'
 
 import { unstable_cache } from 'next/cache'
 
@@ -179,7 +180,7 @@ function SectionBlock({
   responsesByTopicId: Map<number, number>
 }) {
   return (
-    <section className="space-y-2">
+    <SectionReveal as="section" className="space-y-2">
       <div className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0px_0px_0px_0px_rgba(255,255,255,0.05)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={icon} alt="" className="h-[38px] w-auto image-pixelated object-contain" />
@@ -201,7 +202,7 @@ function SectionBlock({
           ))
         )}
       </div>
-    </section>
+    </SectionReveal>
   )
 }
 
@@ -273,7 +274,7 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-[50px] px-4 py-10 sm:px-8">
-      <div className="flex w-full justify-end gap-3">
+      <SectionReveal className="flex w-full justify-end gap-3">
         <Link
           href="/forum/nouveau"
           className="inline-flex h-[50px] items-center rounded-[4px] bg-[#2596FF] px-5 text-[11px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
@@ -313,7 +314,7 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
             </button>
           )}
         </form>
-      </div>
+      </SectionReveal>
 
       <div className="space-y-8">
         {isAllView ? (
