@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdmin } from '@/server/api-helpers';
 import { validateUploadedFile } from '@/server/upload-security';
+import { UPLOAD_POLICIES } from '@/server/upload-policies';
 import { pbUploadFile } from '@/server/pocketbase/helpers';
 
 /**
@@ -12,13 +13,11 @@ import { pbUploadFile } from '@/server/pocketbase/helpers';
 
 export const runtime = 'nodejs';
 
-const ALLOWED_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-]);
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(buffer.byteLength);
+  bytes.set(buffer);
+  return bytes;
+}
 
 export const POST = withAdmin(async (req) => {
   try {
@@ -29,16 +28,13 @@ export const POST = withAdmin(async (req) => {
       return NextResponse.json({ error: 'Aucun fichier envoyé' }, { status: 400 });
     }
 
-    const validation = await validateUploadedFile(file, {
-      allowedMimes: ALLOWED_TYPES,
-      maxSize: MAX_SIZE,
-      allowSvg: false,
-    });
+    const validation = await validateUploadedFile(file, UPLOAD_POLICIES.adminImage);
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 });
     }
 
-    const { id, url } = await pbUploadFile(file, { context: 'admin' });
+    const safeFile = new File([toBlobPart(validation.buffer)], file.name || 'image', { type: validation.detectedMime });
+    const { id, url } = await pbUploadFile(safeFile, { context: 'admin' });
     return NextResponse.json({ ok: true, url, id });
   } catch (e: unknown) {
     console.error('[upload] Error:', e);

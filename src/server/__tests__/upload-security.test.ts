@@ -40,6 +40,30 @@ describe('validateUploadedFile', () => {
     if (result.ok) assert.equal(result.detectedMime, 'image/png');
   });
 
+  it('rejects an image wider than the configured limit', async () => {
+    const { default: sharp } = await import('sharp');
+    const png = await sharp({
+      create: {
+        width: 20,
+        height: 10,
+        channels: 4,
+        background: { r: 37, g: 150, b: 255, alpha: 1 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    const result = await validateUploadedFile(fileFrom(new Uint8Array(png), 'image/png'), {
+      allowedMimes: ALLOWED_IMAGE,
+      maxSize: 4096,
+      maxWidth: 10,
+      maxHeight: 20,
+    });
+
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.code, 'IMAGE_TOO_WIDE');
+  });
+
   it('accepts a JPEG', async () => {
     const result = await validateUploadedFile(fileFrom(JPEG_MAGIC, 'image/jpeg'), {
       allowedMimes: ALLOWED_IMAGE,

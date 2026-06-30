@@ -1,6 +1,7 @@
 // Pure helpers — no Next.js runtime dependencies. Safe to import from both
 // server routes and unit tests running under plain Node.
 import sanitizeHtml from 'sanitize-html';
+import { formatFileSize } from './upload-policies';
 
 /**
  * Magic bytes signature checks for common image formats.
@@ -60,13 +61,17 @@ function looksLikeSvg(bytes: Uint8Array): boolean {
 }
 
 export type UploadValidationResult =
-  | { ok: true; detectedMime: string; buffer: Buffer }
+  | { ok: true; detectedMime: string; buffer: Buffer; width?: number; height?: number; frames?: number }
   | { ok: false; code: string; error: string };
 
 export type UploadValidationOptions = {
   allowedMimes: Set<string>;
   maxSize: number;
   allowSvg?: boolean;
+  maxWidth?: number;
+  maxHeight?: number;
+  maxPixels?: number;
+  maxFrames?: number;
 };
 
 /**
@@ -81,7 +86,11 @@ export async function validateUploadedFile(
   opts: UploadValidationOptions,
 ): Promise<UploadValidationResult> {
   if (file.size <= 0 || file.size > opts.maxSize) {
-    return { ok: false, code: 'INVALID_FILE_SIZE', error: 'Fichier trop volumineux ou vide' };
+    return {
+      ok: false,
+      code: 'INVALID_FILE_SIZE',
+      error: file.size <= 0 ? 'Fichier vide' : `Fichier trop volumineux (max ${formatFileSize(opts.maxSize)})`,
+    };
   }
 
   const declaredMime = (file.type || '').toLowerCase();
@@ -122,7 +131,88 @@ export async function validateUploadedFile(
     return { ok: true, detectedMime, buffer: sanitizedBuffer };
   }
 
-  return { ok: true, detectedMime, buffer: Buffer.from(bytes) };
+  const buffer = Buffer.from(bytes);
+  const dimensions = await validateRasterDimensions(buffer, detectedMime, opts);
+  if (!dimensions.ok) return dimensions;
+
+  return {
+    ok: true,
+    detectedMime,
+    buffer,
+    width: dimensions.width,
+    height: dimensions.height,
+    frames: dimensions.frames,
+  };
+}
+
+type RasterDimensionResult =
+  | { ok: true; width?: number; height?: number; frames?: number }
+  | { ok: false; code: string; error: string };
+
+async function validateRasterDimensions(
+  buffer: Buffer,
+  detectedMime: string,
+  opts: UploadValidationOptions,
+): Promise<RasterDimensionResult> {
+  const shouldInspect =
+    opts.maxWidth !== undefined ||
+    opts.maxHeight !== undefined ||
+    opts.maxPixels !== undefined ||
+    opts.maxFrames !== undefined;
+
+  if (!shouldInspect) return { ok: true };
+
+  let metadata: { width?: number; height?: number; pages?: number; pageHeight?: number } | null = null;
+  try {
+    const { default: sharp } = await import('sharp');
+    metadata = await sharp(buffer, {
+      animated: detectedMime === 'image/gif',
+      limitInputPixels: false,
+    }).metadata();
+  } catch {
+    return { ok: false, code: 'IMAGE_METADATA_ERROR', error: 'Impossible de lire les dimensions de l’image' };
+  }
+
+  const width = metadata?.width;
+  const height = detectedMime === 'image/gif' && metadata?.pageHeight ? metadata.pageHeight : metadata?.height;
+  if (!width || !height) {
+    return { ok: false, code: 'IMAGE_METADATA_ERROR', error: 'Dimensions de l’image introuvables' };
+  }
+
+  if (opts.maxWidth !== undefined && width > opts.maxWidth) {
+    return {
+      ok: false,
+      code: 'IMAGE_TOO_WIDE',
+      error: `Image trop large (${width}px, max ${opts.maxWidth}px)`,
+    };
+  }
+
+  if (opts.maxHeight !== undefined && height > opts.maxHeight) {
+    return {
+      ok: false,
+      code: 'IMAGE_TOO_TALL',
+      error: `Image trop haute (${height}px, max ${opts.maxHeight}px)`,
+    };
+  }
+
+  if (opts.maxPixels !== undefined && width * height > opts.maxPixels) {
+    return {
+      ok: false,
+      code: 'IMAGE_TOO_LARGE_DIMENSIONS',
+      error: `Image trop grande (${width}x${height}px)`,
+    };
+  }
+
+  const frames = detectedMime === 'image/gif' ? metadata?.pages : undefined;
+  if (opts.maxFrames !== undefined && frames !== undefined && frames > opts.maxFrames) {
+    return {
+      ok: false,
+      code: 'GIF_TOO_MANY_FRAMES',
+      error: `GIF trop long (${frames} frames, max ${opts.maxFrames})`,
+    };
+  }
+
+  return { ok: true, width, height, frames };
 }
 
 async function sanitiseSvgBuffer(bytes: Uint8Array): Promise<Buffer | null> {

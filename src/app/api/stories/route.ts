@@ -5,11 +5,11 @@ import { withAuth } from '@/server/api-helpers'
 import { uploadStoryFile, createStoryRow, countStoriesThisMonthByAuthor } from '@/server/pocketbase/stories'
 import { buildError, formatZodError } from '@/types/api'
 import { validateUploadedFile } from '@/server/upload-security'
+import { formatFileSize, UPLOAD_POLICIES } from '@/server/upload-policies'
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif'])
-const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10MB
+const STORY_POLICY = UPLOAD_POLICIES.storyImage
 
 function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(buffer.byteLength)
@@ -20,8 +20,8 @@ function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
 const StoryUploadSchema = z.object({
   file: z
     .custom<File>((value) => value instanceof File, 'Fichier requis')
-    .refine((file) => ALLOWED_MIME_SET.has(file.type), 'Type de fichier invalide (png, jpg, gif uniquement)')
-    .refine((file) => file.size <= MAX_FILE_BYTES, 'Fichier trop volumineux (max 10MB)'),
+    .refine((file) => STORY_POLICY.allowedMimes.has(file.type), 'Type de fichier invalide (png, jpg, gif uniquement)')
+    .refine((file) => file.size <= STORY_POLICY.maxSize, `Fichier trop volumineux (max ${formatFileSize(STORY_POLICY.maxSize)})`),
 })
 
 export const POST = withAuth(async (req, { nick }) => {
@@ -34,11 +34,7 @@ export const POST = withAuth(async (req, { nick }) => {
     }
 
     const file = parsed.data.file
-    const validation = await validateUploadedFile(file, {
-      allowedMimes: ALLOWED_MIME_SET,
-      maxSize: MAX_FILE_BYTES,
-      allowSvg: false,
-    })
+    const validation = await validateUploadedFile(file, STORY_POLICY)
     if (!validation.ok) {
       return NextResponse.json(
         buildError(validation.error, { code: validation.code }),

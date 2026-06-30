@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAuth } from '@/server/api-helpers'
 import { pbUploadFile } from '@/server/pocketbase/helpers'
 import { validateUploadedFile } from '@/server/upload-security'
+import { UPLOAD_POLICIES } from '@/server/upload-policies'
 
 /**
  * POST /api/upload/image
@@ -11,9 +12,6 @@ import { validateUploadedFile } from '@/server/upload-security'
  */
 
 export const runtime = 'nodejs'
-
-const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
-const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB
 
 function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(buffer.byteLength)
@@ -29,11 +27,7 @@ export const POST = withAuth(async (req) => {
       return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
     }
 
-    const validation = await validateUploadedFile(file, {
-      allowedMimes: ALLOWED_MIME_SET,
-      maxSize: MAX_FILE_BYTES,
-      allowSvg: false,
-    })
+    const validation = await validateUploadedFile(file, UPLOAD_POLICIES.contentImage)
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error, code: validation.code }, { status: 400 })
     }
