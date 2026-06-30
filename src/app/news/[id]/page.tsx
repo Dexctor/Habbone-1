@@ -17,6 +17,7 @@ import CommentsActionButton from "@/components/forum/CommentsActionButton"
 import ContentWithLightbox from "@/components/ui/image-lightbox"
 import { getRoleBadgesForNicks } from "@/server/directus/badges"
 import ClickableImage from "@/components/ui/clickable-image"
+import SectionReveal from "@/components/motion/section-reveal"
 
 import { unstable_cache } from 'next/cache'
 
@@ -108,7 +109,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   return (
     <main className="mx-auto w-full max-w-[1200px] space-y-16 px-4 py-10">
       {/* ─── Article Card ─── */}
-      <section className="w-full rounded-[8px] border border-[#141433] bg-[#1F1F3E] py-3">
+      <SectionReveal as="section" className="w-full rounded-[8px] border border-[#141433] bg-[#1F1F3E] py-3">
         {/* Title header bar */}
         <div className="mx-3 rounded-[8px] bg-[#141433] p-4">
           <div className="flex items-center gap-3">
@@ -149,10 +150,10 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
             </div>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
       {/* ─── Comments Section ─── */}
-      <section className="w-full space-y-8">
+      <SectionReveal as="section" className="w-full space-y-8" delay={0.05}>
         {/* Comments header bar */}
         <div className="flex items-center justify-between rounded-[4px] border border-[rgba(0,0,0,0.6)] bg-[#1F1F3E] px-5 py-4 shadow-[0_0_0_0_rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
@@ -212,7 +213,7 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
             })}
           </div>
         )}
-      </section>
+      </SectionReveal>
     </main>
   )
 }

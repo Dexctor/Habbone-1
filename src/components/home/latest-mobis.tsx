@@ -26,28 +26,69 @@ const TABS: { id: TabId; icon: string; tooltip: string }[] = [
   { id: 'mobis', icon: '/img/furni.png', tooltip: 'Mobis' },
 ]
 
+function firstArray(...values: unknown[]): any[] {
+  for (const value of values) {
+    if (Array.isArray(value)) return value
+  }
+
+  return []
+}
+
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  }
+
+  return ''
+}
+
 function parseBadges(json: any): Item[] {
-  return Array.isArray(json?.badges)
-    ? json.badges
-        .filter((r: any) => typeof r?.url_habbo === 'string' && r.url_habbo.length > 0)
-        .map((r: any) => ({
-          code: String(r?.code || ''),
-          name: String(r?.name || r?.code || 'Badge'),
-          image: String(r?.url_habbo || ''),
-        }))
-    : []
+  const rows = firstArray(json?.badges, json?.data?.badges, json?.data, json?.items, json)
+
+  return rows
+    .map((row: any) => {
+      const image = firstText(
+        row?.url_habbo,
+        row?.image,
+        row?.url,
+        row?.badge_image,
+        row?.url_icon_habbo,
+      )
+
+      if (!image) return null
+
+      return {
+        code: firstText(row?.code, row?.id, row?.name),
+        name: firstText(row?.name, row?.title, row?.code) || 'Badge',
+        image,
+      }
+    })
+    .filter(Boolean) as Item[]
 }
 
 function parseFurni(json: any): Item[] {
-  return Array.isArray(json?.furniture)
-    ? json.furniture
-        .filter((r: any) => typeof r?.url_icon_habbo === 'string' && r.url_icon_habbo.length > 0)
-        .map((r: any) => ({
-          code: String(r?.classname || r?.id || ''),
-          name: String(r?.name || r?.classname || 'Mobi'),
-          image: String(r?.url_icon_habbo || ''),
-        }))
-    : []
+  const rows = firstArray(json?.furniture, json?.data?.furniture, json?.data, json?.items, json)
+
+  return rows
+    .map((row: any) => {
+      const image = firstText(
+        row?.url_icon_habbo,
+        row?.url_habbo,
+        row?.image,
+        row?.icon,
+        row?.url,
+      )
+
+      if (!image) return null
+
+      return {
+        code: firstText(row?.classname, row?.code, row?.id, row?.name),
+        name: firstText(row?.name, row?.classname, row?.code) || 'Mobi',
+        image,
+      }
+    })
+    .filter(Boolean) as Item[]
 }
 
 function readCachedItems(tab: TabId): Item[] {
@@ -88,6 +129,7 @@ async function fetchJson(url: string) {
 export default function LatestBadges() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
+  const [unavailable, setUnavailable] = useState(false)
   const [page, setPage] = useState(0)
   const [tab, setTab] = useState<TabId>('mondial')
   const [direction, setDirection] = useState<1 | -1>(1)
@@ -99,6 +141,7 @@ export default function LatestBadges() {
 
     setItems(cached)
     setLoading(cached.length === 0)
+    setUnavailable(false)
     setPage(0)
 
     let url: string
@@ -122,14 +165,19 @@ export default function LatestBadges() {
         const nextItems = parser(json)
         if (nextItems.length > 0) {
           setItems(nextItems)
+          setUnavailable(false)
           writeCachedItems(tab, nextItems)
           return
         }
 
-        if (cached.length === 0) setItems([])
+        if (cached.length === 0) {
+          setItems([])
+          setUnavailable(true)
+        }
       })
       .catch(() => {
         if (!cancelled && cached.length > 0) setItems(cached)
+        if (!cancelled && cached.length === 0) setUnavailable(true)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -271,6 +319,13 @@ export default function LatestBadges() {
                         ))}
                 </motion.div>
               </AnimatePresence>
+              {!loading && unavailable ? (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center px-6 text-center">
+                  <div className="rounded-[4px] border border-[#34345A] bg-[#1F1F3E]/95 px-4 py-3 text-[12px] font-semibold text-[#BEBECE] shadow-lg">
+                    Données temporairement indisponibles
+                  </div>
+                </div>
+              ) : null}
             </div>
           </TooltipProvider>
         </div>

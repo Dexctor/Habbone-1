@@ -20,6 +20,7 @@ import { getRoleBadgesForNicks } from "@/server/directus/badges";
 import { stripHtml } from "@/lib/text-utils";
 import { formatDateTimeFromAny } from "@/lib/date-utils";
 import styles from "@/components/forum/forum-content.module.css";
+import SectionReveal from "@/components/motion/section-reveal";
 
 import { unstable_cache } from 'next/cache';
 
@@ -131,7 +132,7 @@ export default async function TopicPage(props: TopicPageProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 sm:px-8">
-      <section>
+      <SectionReveal as="section">
         <div className="flex h-[76px] items-center rounded-t-[4px] border border-[#141433] bg-[#1F1F3E] px-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/img/forum.png" alt="" className="h-[49px] w-auto image-pixelated object-contain" />
@@ -171,9 +172,9 @@ export default async function TopicPage(props: TopicPageProps) {
             </div>
           </div>
         </div>
-      </section>
+      </SectionReveal>
 
-      <section className="space-y-3">
+      <SectionReveal as="section" className="space-y-3" delay={0.05}>
         <div className="flex h-[76px] items-center justify-between rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -280,7 +281,7 @@ export default async function TopicPage(props: TopicPageProps) {
             )}
           </nav>
         ) : null}
-      </section>
+      </SectionReveal>
     </main>
   );
 }
