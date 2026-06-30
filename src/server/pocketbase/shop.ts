@@ -5,6 +5,7 @@ import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks } from './user-cache';
 import { getUserBySessionIdentity } from './users';
 import type { ShopItem, ShopOrder, AdminNotification } from '@/types/shop';
+import type { AdminNotificationRow, ShopItemRow, ShopOrderRow } from './types';
 
 export type { ShopItem, ShopOrder, AdminNotification };
 
@@ -42,7 +43,7 @@ function fixStr(v: unknown): string {
 /*  Mappers: DB rows → App types                                       */
 /* ------------------------------------------------------------------ */
 
-function mapDbToShopItem(row: any): ShopItem {
+function mapDbToShopItem(row: ShopItemRow): ShopItem {
   return {
     id: String(row.id),
     nome: fixStr(row.name),
@@ -78,7 +79,7 @@ function appStatusToDb(status: string): string {
   return status;
 }
 
-async function mapDbToShopOrder(row: any, itemsCache?: Map<string, ShopItem>): Promise<ShopOrder> {
+async function mapDbToShopOrder(row: ShopOrderRow, itemsCache?: Map<string, ShopItem>): Promise<ShopOrder> {
   const itemId = String(row.item || '');
   const item = itemId ? itemsCache?.get(itemId) : undefined;
   const buyerId = String(row.buyer || '');
@@ -95,7 +96,7 @@ async function mapDbToShopOrder(row: any, itemsCache?: Map<string, ShopItem>): P
   };
 }
 
-function mapDbToNotification(row: any): AdminNotification {
+function mapDbToNotification(row: AdminNotificationRow): AdminNotification {
   return {
     id: String(row.id),
     type: String(row.severity || 'info'),
@@ -113,7 +114,7 @@ function mapDbToNotification(row: any): AdminNotification {
 
 export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
   try {
-    const rows = await pbList<any>(SHOP_ITEMS_TABLE, {
+    const rows = await pbList<ShopItemRow>(SHOP_ITEMS_TABLE, {
       filter: onlyActive ? { active: { _eq: true } } : undefined,
       sort: '-created',
       perPage: 500,
@@ -128,7 +129,7 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
 
 export async function getShopItem(id: string): Promise<ShopItem | null> {
   try {
-    const row = await pbOne<any>(SHOP_ITEMS_TABLE, id, { fields: ITEMS_FIELDS });
+    const row = await pbOne<ShopItemRow>(SHOP_ITEMS_TABLE, id, { fields: ITEMS_FIELDS });
     return row ? mapDbToShopItem(row) : null;
   } catch {
     return null;
@@ -137,7 +138,7 @@ export async function getShopItem(id: string): Promise<ShopItem | null> {
 
 export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopItem | null> {
   try {
-    const row = await pbCreate<any>(SHOP_ITEMS_TABLE, {
+    const row = await pbCreate<ShopItemRow>(SHOP_ITEMS_TABLE, {
       ...mapShopItemToDb(data),
       sold_count: 0,
       free: false,
@@ -151,7 +152,7 @@ export async function createShopItem(data: Omit<ShopItem, 'id'>): Promise<ShopIt
 
 export async function updateShopItem(id: string, data: Partial<ShopItem>): Promise<ShopItem | null> {
   try {
-    const row = await pbUpdate<any>(SHOP_ITEMS_TABLE, id, mapShopItemToDb(data));
+    const row = await pbUpdate<ShopItemRow>(SHOP_ITEMS_TABLE, id, mapShopItemToDb(data));
     return row ? mapDbToShopItem(row) : null;
   } catch (error) {
     console.error('[Shop] Failed to update item:', error);
@@ -183,7 +184,7 @@ export async function listShopOrders(options?: {
     const filter = status ? { status: { _eq: appStatusToDb(status) } } : undefined;
 
     const [rows, total] = await Promise.all([
-      pbList<any>(SHOP_ORDERS_TABLE, {
+      pbList<ShopOrderRow>(SHOP_ORDERS_TABLE, {
         filter,
         sort: '-created',
         perPage: limit,
@@ -214,7 +215,7 @@ export async function createShopOrder(data: {
 }): Promise<ShopOrder | null> {
   try {
     const buyerId = data.user_id || (await resolveUserId(data.user_nick)) || null;
-    const row = await pbCreate<any>(SHOP_ORDERS_TABLE, {
+    const row = await pbCreate<ShopOrderRow>(SHOP_ORDERS_TABLE, {
       item: data.item_id,
       buyer: buyerId,
       price_paid: data.preco,
@@ -231,7 +232,7 @@ export async function updateShopOrder(id: string, data: Partial<ShopOrder>): Pro
   try {
     const dbData: Record<string, unknown> = {};
     if (data.status) dbData.status = appStatusToDb(data.status);
-    const row = await pbUpdate<any>(SHOP_ORDERS_TABLE, id, dbData);
+    const row = await pbUpdate<ShopOrderRow>(SHOP_ORDERS_TABLE, id, dbData);
     return row ? await mapDbToShopOrder(row) : null;
   } catch (error) {
     console.error('[Shop] Failed to update order:', error);
@@ -301,7 +302,7 @@ export async function listAdminNotifications(options?: {
 }): Promise<AdminNotification[]> {
   const { unreadOnly = false, limit = 50 } = options || {};
   try {
-    const rows = await pbList<any>(ADMIN_NOTIFICATIONS_TABLE, {
+    const rows = await pbList<AdminNotificationRow>(ADMIN_NOTIFICATIONS_TABLE, {
       filter: unreadOnly ? { read: { _eq: false } } : undefined,
       sort: '-created',
       perPage: limit,
@@ -321,7 +322,7 @@ export async function createAdminNotification(data: {
   link?: string;
 }): Promise<AdminNotification | null> {
   try {
-    const row = await pbCreate<any>(ADMIN_NOTIFICATIONS_TABLE, {
+    const row = await pbCreate<AdminNotificationRow>(ADMIN_NOTIFICATIONS_TABLE, {
       message: data.title + (data.message ? ` — ${data.message}` : ''),
       severity: data.type === 'shop_order' ? 'success' : 'info',
       read: false,

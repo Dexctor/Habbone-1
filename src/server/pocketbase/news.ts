@@ -3,7 +3,7 @@ import 'server-only';
 import { pbList, pbOne, pbFirst, pbCreate, pbUpdate, pbDelete } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNick } from './user-cache';
-import type { NewsRecord, NewsCommentRecord } from './types';
+import type { ArticleCommentRow, ArticleRow, NewsRecord, NewsCommentRecord } from './types';
 import { stripHtml } from '@/lib/text-utils';
 import type { NewsBadgeItem } from '@/types/news-badges';
 
@@ -19,26 +19,6 @@ const NEWS_CARD_FIELDS = 'id,title,summary,cover_image,published_at';
 const NEWS_COMMENT_SELECT = 'id,article,content,author,created,status';
 const NEWS_COMMENT_LIKE_TABLE = TABLES.articleCommentLikes;
 
-type V2NewsRow = {
-  id: string;
-  title: string | null;
-  summary: string | null;
-  cover_image: string | null;
-  body: string | null;
-  author: string | null;
-  published_at: string | null;
-  status: string | null;
-};
-
-type V2NewsCommentRow = {
-  id: string;
-  article: string;
-  content: string | null;
-  author: string | null;
-  created: string | null;
-  status: string | null;
-};
-
 function isoToUnixSeconds(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const t = Date.parse(iso);
@@ -51,7 +31,7 @@ function unixSecondsToIso(unix: number | string | null | undefined): string | nu
   return new Date(n > 1e11 ? n : n * 1000).toISOString().slice(0, 19).replace('T', ' ');
 }
 
-async function v2NewsToLegacy(row: V2NewsRow): Promise<NewsRecord> {
+async function v2NewsToLegacy(row: ArticleRow): Promise<NewsRecord> {
   const nick = await resolveUserNick(row.author);
   return {
     id: row.id,
@@ -65,7 +45,7 @@ async function v2NewsToLegacy(row: V2NewsRow): Promise<NewsRecord> {
   } as unknown as NewsRecord;
 }
 
-async function v2NewsCommentToLegacy(row: V2NewsCommentRow): Promise<NewsCommentRecord> {
+async function v2NewsCommentToLegacy(row: ArticleCommentRow): Promise<NewsCommentRecord> {
   const nick = await resolveUserNick(row.author);
   return {
     id: row.id,
@@ -82,7 +62,7 @@ async function v2NewsCommentToLegacy(row: V2NewsCommentRow): Promise<NewsComment
 /* ------------------------------------------------------------------ */
 
 export async function adminListNews(limit = 500): Promise<NewsRecord[]> {
-  const rows = await pbList<V2NewsRow>(TABLES.articles, {
+  const rows = await pbList<ArticleRow>(TABLES.articles, {
     perPage: limit,
     sort: '-published_at',
     fields: NEWS_SELECT_FIELDS,
@@ -100,7 +80,7 @@ export async function adminCreateNews(data: {
   status?: string | null;
 }): Promise<NewsRecord> {
   const authorId = await resolveUserId(data.autor);
-  const created = await pbCreate<V2NewsRow>(TABLES.articles, {
+  const created = await pbCreate<ArticleRow>(TABLES.articles, {
     title: data.titulo,
     summary: data.descricao ?? null,
     cover_image: data.imagem ?? null,
@@ -132,7 +112,7 @@ export async function adminUpdateNews(
   if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
   if ('data' in patch) mapped.published_at = unixSecondsToIso(patch.data);
   if ('status' in patch) mapped.status = patch.status;
-  const updated = await pbUpdate<V2NewsRow>(TABLES.articles, id, mapped);
+  const updated = await pbUpdate<ArticleRow>(TABLES.articles, id, mapped);
   return v2NewsToLegacy(updated);
 }
 
@@ -144,7 +124,7 @@ export async function listNewsByAuthorService(author: string, limit = 30): Promi
   if (!author) return [];
   const authorId = await resolveUserId(author);
   if (!authorId) return [];
-  const rows = await pbList<V2NewsRow>(TABLES.articles, {
+  const rows = await pbList<ArticleRow>(TABLES.articles, {
     filter: { author: { _eq: authorId } },
     fields: NEWS_CARD_FIELDS,
     sort: '-published_at',
@@ -155,7 +135,7 @@ export async function listNewsByAuthorService(author: string, limit = 30): Promi
 
 export async function adminListNewsComments(limit = 500, newsId?: string): Promise<NewsCommentRecord[]> {
   try {
-    const rows = await pbList<V2NewsCommentRow>(TABLES.articleComments, {
+    const rows = await pbList<ArticleCommentRow>(TABLES.articleComments, {
       filter: newsId ? { article: { _eq: newsId } } : undefined,
       sort: '-created',
       perPage: limit,
@@ -175,7 +155,7 @@ export async function adminUpdateNewsComment(
   if ('comentario' in patch) mapped.content = patch.comentario;
   if ('autor' in patch) mapped.author = await resolveUserId(patch.autor);
   if ('status' in patch) mapped.status = patch.status;
-  const updated = await pbUpdate<V2NewsCommentRow>(TABLES.articleComments, id, mapped);
+  const updated = await pbUpdate<ArticleCommentRow>(TABLES.articleComments, id, mapped);
   return v2NewsCommentToLegacy(updated);
 }
 
@@ -190,7 +170,7 @@ export async function createNewsComment(input: {
   status?: string | null;
 }): Promise<NewsCommentRecord> {
   const authorId = await resolveUserId(input.author);
-  const created = await pbCreate<V2NewsCommentRow>(TABLES.articleComments, {
+  const created = await pbCreate<ArticleCommentRow>(TABLES.articleComments, {
     article: input.newsId,
     content: input.content,
     author: authorId,
@@ -226,7 +206,7 @@ export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
   const q = typeof query === 'string' ? query.trim() : '';
   const filter: Record<string, unknown> = { status: { _eq: 'published' } };
   if (q) filter._or = [{ title: { _contains: q } }, { summary: { _contains: q } }];
-  const rows = await pbList<V2NewsRow>(TABLES.articles, {
+  const rows = await pbList<ArticleRow>(TABLES.articles, {
     fields: NEWS_CARD_FIELDS,
     sort: '-published_at',
     perPage: 200,
@@ -236,12 +216,12 @@ export async function getPublicNews(query?: string): Promise<NewsRecord[]> {
 }
 
 export async function getPublicNewsById(id: string): Promise<NewsRecord | null> {
-  const row = await pbOne<V2NewsRow>(TABLES.articles, id, { fields: NEWS_SELECT_FIELDS });
+  const row = await pbOne<ArticleRow>(TABLES.articles, id, { fields: NEWS_SELECT_FIELDS });
   return row ? v2NewsToLegacy(row) : null;
 }
 
 export async function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> {
-  const rows = await pbList<V2NewsRow>(TABLES.articles, {
+  const rows = await pbList<ArticleRow>(TABLES.articles, {
     fields: NEWS_CARD_FIELDS,
     sort: '-published_at',
     perPage: limit,
@@ -252,7 +232,7 @@ export async function listPublicNewsForCards(limit = 60): Promise<NewsRecord[]> 
 
 export async function getPublicNewsComments(newsId: string): Promise<NewsCommentRecord[]> {
   try {
-    const rows = await pbList<V2NewsCommentRow>(TABLES.articleComments, {
+    const rows = await pbList<ArticleCommentRow>(TABLES.articleComments, {
       fields: NEWS_COMMENT_SELECT,
       sort: 'created',
       perPage: 200,
@@ -267,12 +247,12 @@ export async function getPublicNewsComments(newsId: string): Promise<NewsComment
 export async function listPublicNewsBadges(limitNews = 160, limitBadges = 220): Promise<NewsBadgeItem[]> {
   let rows: Array<{ id: string; titulo?: string | null; noticia?: string | null; data?: string | null }> = [];
   try {
-    const raw = await pbList<any>(TABLES.articles, {
+    const raw = await pbList<ArticleRow>(TABLES.articles, {
       fields: 'id,title,body,published_at',
       sort: '-published_at',
       perPage: limitNews,
     });
-    rows = raw.map((r: any) => ({ id: String(r.id), titulo: r.title, noticia: r.body, data: r.published_at }));
+    rows = raw.map((r) => ({ id: String(r.id), titulo: r.title, noticia: r.body, data: r.published_at }));
   } catch {}
 
   if (rows.length === 0) return [];

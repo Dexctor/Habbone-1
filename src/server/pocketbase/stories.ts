@@ -3,7 +3,7 @@ import 'server-only';
 import { pbList, pbCreate, pbUpdate, pbDelete, pbCount, pbUploadFile } from './helpers';
 import { TABLES } from './tables';
 import { resolveUserId, resolveUserNicks, isoToUnixSeconds, nowIso } from './user-cache';
-import type { StoryRecord } from './types';
+import type { StoryRecord, StoryRow } from './types';
 
 const TABLE = TABLES.stories;
 
@@ -16,20 +16,9 @@ type StoryRowInput = {
   status?: string | null;
 };
 
-// NB: the `stories` collection has NO system `created` field (unlike the others).
-// Use `published_at` for ordering/dates.
-type V2StoryRow = {
-  id: string;
-  title: string | null;
-  image: string | null;
-  author: string | null;
-  status: string | null;
-  published_at: string | null;
-};
-
 // ============ TRANSLATORS ============
 
-async function v2StoriesToLegacy(rows: V2StoryRow[]): Promise<StoryRecord[]> {
+async function v2StoriesToLegacy(rows: StoryRow[]): Promise<StoryRecord[]> {
   const nickMap = await resolveUserNicks(rows.map((r) => r.author));
   return rows.map((r) => ({
     id: r.id,
@@ -116,7 +105,7 @@ async function listStoryRows({
   publicOnly: boolean;
 }): Promise<StoryRecord[]> {
   try {
-    const rows = await pbList<V2StoryRow>(TABLE, {
+    const rows = await pbList<StoryRow>(TABLE, {
       filter: publicOnly ? { status: { _eq: 'public' } } : undefined,
       sort: '-published_at',
       perPage: limit,
