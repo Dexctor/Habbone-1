@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Link from "next/link";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -14,13 +13,12 @@ import { ProfileInfoList } from "./modules/ProfileInfoList";
 import { ProfileRankings } from "./modules/ProfileRankings";
 import { ProfileSection } from "./modules/ProfileSection";
 import { ProfileTabs } from "./modules/ProfileTabs";
+import { ProfileContentCard } from "./modules/ProfileContentCard";
 import { BadgeIcon } from "./modules/BadgeIcon";
 
-import { mediaUrl } from "@/lib/media-url";
 import { buildHabboAvatarUrl, badgeImageUrl, groupBadgeUrl, badgeCodeFromEntry } from "@/lib/habbo-imaging";
 import { useHabboProfile } from "@/lib/use-habbo-profile";
 import { formatDateTime } from "@/lib/date-utils";
-import { stripHtml } from "@/lib/text-utils";
 import { usePaginatedList } from "./hooks/usePaginatedList";
 import { useProfileContent } from "./hooks/useProfileContent";
 
@@ -30,8 +28,6 @@ import type { HabboProfileResponse } from "@/types/habbo";
 const PAGE_SIZE = 100;
 const PER_TOPICS = 4;
 const PER_ARTICLES = 4;
-const contentCardClass =
-  "rounded-[6px] border border-[#141433] bg-[#25254D] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45";
 const personCardClass =
   "flex min-w-0 flex-col items-center gap-2 rounded-[6px] border border-[#141433] bg-[#25254D] p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45";
 const loadMoreClass =
@@ -348,31 +344,9 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                       transition={{ duration: 0.2 }}
                       className="grid grid-cols-1 gap-3 lg:grid-cols-2"
                     >
-                      {visibleTopics.map((topic) => {
-                        const title = stripHtml(topic.titulo ?? "") || `Sujet #${topic.id}`;
-                        const author = stripHtml(topic.autor ?? "") || "Anonyme";
-                        return (
-                          <li key={`topic-${topic.id}`} className={contentCardClass}>
-                            <Link href={`/forum/topic/${topic.id}`} className="group flex h-full gap-3">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={topic.imagem ? mediaUrl(topic.imagem) : "/img/thumbnail.png"}
-                                alt={title ? `Miniature de ${title}` : "Miniature du sujet"}
-                                className="h-[88px] w-[88px] shrink-0 rounded-[5px] border border-[#141433] bg-[#1F1F3E] object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 text-[16px] font-extrabold leading-[1.2] text-[#DDD] group-hover:text-white">
-                                  {title}
-                                </h3>
-                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[5px] border border-white/10 bg-[#1F1F3E]/75 px-3 text-[13px] font-bold text-[#F0F0F0]">
-                                  {author}
-                                </span>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                      {visibleTopics.map((topic) => (
+                        <ProfileContentCard key={`topic-${topic.id}`} item={topic} type="topic" />
+                      ))}
                     </motion.ul>
                   </AnimatePresence>
                 </div>
@@ -410,31 +384,9 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                       transition={{ duration: 0.2 }}
                       className="grid grid-cols-1 gap-3 lg:grid-cols-2"
                     >
-                      {visibleArticles.map((a) => {
-                        const title = stripHtml(a.titulo ?? "") || `Article #${a.id}`;
-                        const author = stripHtml(a.autor ?? "") || "Anonyme";
-                        return (
-                          <li key={`article-${a.id}`} className={contentCardClass}>
-                            <Link href={`/news/${a.id}`} className="group flex h-full gap-3">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={a.imagem ? mediaUrl(a.imagem) : "/img/thumbnail.png"}
-                                alt={title ? `Miniature de ${title}` : "Miniature d'article"}
-                                className="h-[88px] w-[88px] shrink-0 rounded-[5px] border border-[#141433] bg-[#1F1F3E] object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 text-[16px] font-extrabold leading-[1.2] text-[#DDD] group-hover:text-white">
-                                  {title}
-                                </h3>
-                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[5px] border border-white/10 bg-[#1F1F3E]/75 px-3 text-[13px] font-bold text-[#F0F0F0]">
-                                  {author}
-                                </span>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                      {visibleArticles.map((article) => (
+                        <ProfileContentCard key={`article-${article.id}`} item={article} type="article" />
+                      ))}
                     </motion.ul>
                   </AnimatePresence>
                 </div>
