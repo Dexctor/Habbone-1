@@ -5,9 +5,11 @@ import { withAdmin } from '@/server/api-helpers';
 import { writeThemeSettings } from '@/server/theme-settings-store';
 import { validateUploadedFile } from '@/server/upload-security';
 import { UPLOAD_POLICIES } from '@/server/upload-policies';
-import { pbUploadFile } from '@/server/pocketbase/helpers';
+import { pbAdmin } from '@/server/pocketbase/client';
 
 const TARGETS = new Set(['logo', 'background']);
+const POCKETBASE_THEME_UPLOAD_COLLECTION =
+  (process.env.POCKETBASE_THEME_UPLOAD_COLLECTION || 'theme_uploads').trim() || 'theme_uploads';
 
 export const runtime = 'nodejs';
 
@@ -29,10 +31,18 @@ function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
 }
 
 async function uploadToPocketBase(file: File, target: string, mimeType: string, buffer: Buffer): Promise<string> {
+  const pb = await pbAdmin();
   const ext = extensionFromMime(mimeType, file.name);
   const safeFile = new File([toBlobPart(buffer)], `theme-${target}-${Date.now()}.${ext}`, { type: mimeType });
-  const uploaded = await pbUploadFile(safeFile, { context: `theme:${target}` });
-  return uploaded.url;
+  const form = new FormData();
+  form.append('file', safeFile);
+  form.append('context', `theme:${target}`);
+  form.append('uploaded_by', 'admin-theme');
+
+  const record: any = await pb.collection(POCKETBASE_THEME_UPLOAD_COLLECTION).create(form);
+  const filename = Array.isArray(record.file) ? record.file[0] : record.file;
+  if (!filename) throw new Error('POCKETBASE_UPLOAD_RESPONSE_INVALID');
+  return pb.files.getURL(record, filename);
 }
 
 export const POST = withAdmin(async (req) => {
