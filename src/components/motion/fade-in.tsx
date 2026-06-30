@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { transitions } from '@/lib/motion-tokens'
+import { transitions, variants } from '@/lib/motion-tokens'
 
 type AsProp<T extends keyof React.JSX.IntrinsicElements> = {
   as?: T
@@ -18,8 +18,8 @@ export default function FadeIn<T extends keyof React.JSX.IntrinsicElements = 'di
   type MotionTag = keyof typeof motion
   const tag = (as || 'div') as MotionTag
   const Comp = motion[tag] as React.ComponentType<Record<string, unknown>>
-  const initial = reduce ? false : { opacity: 0, y: 14, scale: 0.996 }
-  const animate = reduce ? undefined : { opacity: 1, y: 0, scale: 1 }
+  const initial = reduce ? false : variants.reveal.initial
+  const animate = reduce ? undefined : variants.reveal.animate
 
   return (
     <Comp
@@ -27,7 +27,7 @@ export default function FadeIn<T extends keyof React.JSX.IntrinsicElements = 'di
       whileInView={animate}
       viewport={{ once: true, margin: '-6% 0px -6% 0px' }}
       transition={reduce ? { duration: 0 } : { ...transitions.reveal, delay }}
-      style={reduce ? undefined : { transformOrigin: '50% 0%', willChange: 'opacity, transform' }}
+      style={reduce ? undefined : { willChange: 'opacity, transform' }}
       className={cn(className)}
       {...(rest as Record<string, unknown>)}
     >
