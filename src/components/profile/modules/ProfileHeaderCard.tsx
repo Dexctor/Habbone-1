@@ -40,9 +40,14 @@ export function ProfileHeaderCard(props: {
       animate={reduce ? {} : { opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <Card aria-busy={ariaBusy} aria-live="polite" className="border-[#1F1F3E] bg-[#25254D]">
-        <CardContent className="flex gap-3 p-4">
-          <div className="relative h-[160px] w-[100px] shrink-0 overflow-hidden rounded-[3px] bg-[#303060]">
+      <Card
+        aria-busy={ariaBusy}
+        aria-live="polite"
+        className="overflow-hidden rounded-[6px] border-[#141433] bg-[#25254D] shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.04)]"
+      >
+        <CardContent className="flex gap-4 p-4">
+          <div className="relative h-[170px] w-[108px] shrink-0 overflow-hidden rounded-[6px] border border-[#141433] bg-[#303060] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="absolute inset-x-3 top-3 h-[42px] rounded-full bg-[#2596FF]/10 blur-xl" aria-hidden="true" />
             {/* Dalle (socle) : positionnée à 20px du bas */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -60,55 +65,60 @@ export function ProfileHeaderCard(props: {
             />
             {online ? (
               <span
-                className="absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-[#25254D] bg-green-500"
+                className="absolute bottom-2 right-2 h-3 w-3 rounded-full border-2 border-[#25254D] bg-[#0FD52F] shadow-[0_0_14px_rgba(15,213,47,0.55)]"
                 aria-label="En ligne"
                 title="En ligne"
               />
             ) : null}
           </div>
 
-          <div className="min-w-0 flex-1 space-y-4">
+          <div className="min-w-0 flex-1 space-y-4 py-1">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate text-[16px] font-bold text-white">{nick || "-"}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-[18px] font-extrabold text-white">{nick || "-"}</p>
                 {online ? (
-                  <span className="shrink-0 rounded-full bg-green-500/20 px-2 py-0.5 text-[11px] font-bold text-green-400">
+                  <span className="shrink-0 rounded-full border border-[#0FD52F]/25 bg-[#0FD52F]/15 px-2 py-0.5 text-[11px] font-bold text-[#49E400]">
                     En ligne
                   </span>
                 ) : lastSeen ? (
-                  <span className="shrink-0 text-[11px] text-[#BEBECE]">{lastSeen}</span>
+                  <span className="shrink-0 rounded-full border border-white/5 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-[#BEBECE]">{lastSeen}</span>
                 ) : null}
               </div>
-              {memberSince ? <p className="text-[14px] text-[#BEBECE]">Inscrit le {memberSince}</p> : null}
+              {memberSince ? <p className="text-[13px] font-medium text-[#BEBECE]">Inscrit le {memberSince}</p> : null}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {typeof level === "number" ? (
                 <div className="space-y-1">
-                  <p className="text-[16px] font-bold text-white">Niveau {level}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[16px] font-extrabold text-white">Niveau {level}</p>
+                    {typeof levelPercent === "number" ? (
+                      <span className="text-[11px] font-bold text-[#BEBECE]">{levelPercent}%</span>
+                    ) : null}
+                  </div>
                   {typeof levelPercent === "number" ? (
-                    <div className="h-[6px] w-full overflow-hidden rounded-full bg-[#1F1F3E]" title={`${levelPercent}% vers le niveau ${level + 1}`}>
+                    <div className="h-[7px] w-full overflow-hidden rounded-full bg-[#141433]" title={`${levelPercent}% vers le niveau ${level + 1}`}>
                       <div
-                        className="h-full rounded-full bg-[#2596FF] transition-all"
+                        className="h-full rounded-full bg-gradient-to-r from-[#25B1FF] to-[#0FD52F] transition-all"
                         style={{ width: `${Math.min(100, Math.max(0, levelPercent))}%` }}
                       />
                     </div>
                   ) : null}
                   {typeof levelPercent === "number" ? (
-                    <p className="text-[11px] text-[#BEBECE]">{levelPercent}% vers le niveau {level + 1}</p>
+                    <p className="text-[11px] text-[#BEBECE]">Vers le niveau {level + 1}</p>
                   ) : null}
                 </div>
               ) : null}
 
               {typeof starGems === "number" ? (
-                <p className="inline-flex items-center gap-2 text-[14px] text-[#DDDDDD]">
+                <p className="inline-flex h-[32px] items-center gap-2 rounded-[5px] border border-white/5 bg-[#1F1F3E] px-3 text-[13px] font-bold text-[#DDDDDD]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/img/star-blue-mini.png" alt="" className="h-[16px] w-[16px] image-pixelated" />
-                  {starGems}
+                  {starGems.toLocaleString("fr-FR")}
                 </p>
               ) : null}
 
-              {motto ? <p className="truncate text-[13px] text-[#BEBECE]">{motto}</p> : null}
+              {motto ? <p className="line-clamp-2 text-[13px] leading-relaxed text-[#BEBECE]">{motto}</p> : null}
             </div>
           </div>
         </CardContent>

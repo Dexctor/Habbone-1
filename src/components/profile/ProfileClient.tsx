@@ -29,6 +29,12 @@ import type { HabboProfileResponse } from "@/types/habbo";
 const PAGE_SIZE = 100;
 const PER_TOPICS = 4;
 const PER_ARTICLES = 4;
+const contentCardClass =
+  "rounded-[6px] border border-[#141433] bg-[#25254D] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45";
+const personCardClass =
+  "flex min-w-0 flex-col items-center gap-2 rounded-[6px] border border-[#141433] bg-[#25254D] p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45";
+const loadMoreClass =
+  "mt-3 rounded-[6px] border border-white/5 bg-[#303060]/70 px-4 text-[#DDD] transition hover:border-[#2596FF]/45 hover:bg-[#2596FF] hover:text-white";
 
 type TopicCard = {
   id: number | string;
@@ -257,7 +263,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
   return (
     <div className="w-full space-y-6" aria-busy={loading} aria-live="polite">
       {loading && !data ? (
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[350px_minmax(0,818px)]">
+        <div className="grid grid-cols-1 gap-7 xl:grid-cols-[350px_minmax(0,818px)]">
           {/* Left sidebar skeleton */}
           <aside className="space-y-4">
             {/* Profile header card */}
@@ -441,20 +447,20 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                         const title = stripHtml(topic.titulo ?? "") || `Sujet #${topic.id}`;
                         const author = stripHtml(topic.autor ?? "") || "Anonyme";
                         return (
-                          <li key={`topic-${topic.id}`} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                          <li key={`topic-${topic.id}`} className={contentCardClass}>
                             <Link href={`/forum/topic/${topic.id}`} className="group flex h-full gap-3">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={topic.imagem ? mediaUrl(topic.imagem) : "/img/thumbnail.png"}
                                 alt={title ? `Miniature de ${title}` : "Miniature du sujet"}
-                                className="h-[84px] w-[84px] shrink-0 rounded-[3px] object-cover"
+                                className="h-[88px] w-[88px] shrink-0 rounded-[5px] border border-[#141433] bg-[#1F1F3E] object-cover"
                                 loading="lazy"
                               />
                               <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 text-[16px] font-bold leading-[1.2] text-[#DDD] group-hover:text-white">
+                                <h3 className="line-clamp-2 text-[16px] font-extrabold leading-[1.2] text-[#DDD] group-hover:text-white">
                                   {title}
                                 </h3>
-                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[4px] border border-[rgba(255,255,255,0.18)] px-3 text-[14px] font-bold text-[#F0F0F0]">
+                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[5px] border border-white/10 bg-[#1F1F3E]/75 px-3 text-[13px] font-bold text-[#F0F0F0]">
                                   {author}
                                 </span>
                               </div>
@@ -503,20 +509,20 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                         const title = stripHtml(a.titulo ?? "") || `Article #${a.id}`;
                         const author = stripHtml(a.autor ?? "") || "Anonyme";
                         return (
-                          <li key={`article-${a.id}`} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                          <li key={`article-${a.id}`} className={contentCardClass}>
                             <Link href={`/news/${a.id}`} className="group flex h-full gap-3">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={a.imagem ? mediaUrl(a.imagem) : "/img/thumbnail.png"}
                                 alt={title ? `Miniature de ${title}` : "Miniature d'article"}
-                                className="h-[84px] w-[84px] shrink-0 rounded-[3px] object-cover"
+                                className="h-[88px] w-[88px] shrink-0 rounded-[5px] border border-[#141433] bg-[#1F1F3E] object-cover"
                                 loading="lazy"
                               />
                               <div className="flex min-w-0 flex-1 flex-col">
-                                <h3 className="line-clamp-2 text-[16px] font-bold leading-[1.2] text-[#DDD] group-hover:text-white">
+                                <h3 className="line-clamp-2 text-[16px] font-extrabold leading-[1.2] text-[#DDD] group-hover:text-white">
                                   {title}
                                 </h3>
-                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[4px] border border-[rgba(255,255,255,0.18)] px-3 text-[14px] font-bold text-[#F0F0F0]">
+                                <span className="mt-3 inline-flex h-[32px] w-fit items-center rounded-[5px] border border-white/10 bg-[#1F1F3E]/75 px-3 text-[13px] font-bold text-[#F0F0F0]">
                                   {author}
                                 </span>
                               </div>
@@ -543,9 +549,9 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                       {friendsPagination.visible.map((f: HabboFriend, idx: number) => (
                         <li
                           key={f?.uniqueId || f?.name || idx}
-                          className="flex min-w-0 flex-col items-center gap-2 rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-2 text-center"
+                          className={personCardClass}
                         >
-                          <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[#1F1F3E]">
+                          <div className="relative grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-[#141433] bg-[#1F1F3E]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={buildHabboAvatarUrl(f?.name || f?.habbo || "", {
@@ -581,7 +587,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                     </ul>
                   </ScrollArea>
                   {friendsPagination.hasMore ? (
-                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={friendsPagination.loadMore}>
+                    <Button variant="secondary" className={loadMoreClass} onClick={friendsPagination.loadMore}>
                       Charger +{friendsPagination.remaining}
                     </Button>
                   ) : null}
@@ -594,9 +600,9 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                       {groupsPagination.visible.map((g: HabboGroup, idx: number) => (
                         <li
                           key={g?.id || g?.groupId || idx}
-                          className="flex min-w-0 flex-col items-center gap-2 rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-2 text-center"
+                          className={personCardClass}
                         >
-                          <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[#1F1F3E]">
+                          <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-[#141433] bg-[#1F1F3E]">
                             {g?.badgeCode ? (
                               /* eslint-disable-next-line @next/next/no-img-element */
                               <img
@@ -617,7 +623,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                     </ul>
                   </ScrollArea>
                   {groupsPagination.hasMore ? (
-                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={groupsPagination.loadMore}>
+                    <Button variant="secondary" className={loadMoreClass} onClick={groupsPagination.loadMore}>
                       Charger +{groupsPagination.remaining}
                     </Button>
                   ) : null}
@@ -660,7 +666,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                     </ul>
                   </ScrollArea>
                   {badgesPagination.hasMore ? (
-                    <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={badgesPagination.loadMore}>
+                    <Button variant="secondary" className={loadMoreClass} onClick={badgesPagination.loadMore}>
                       Charger +{badgesPagination.remaining}
                     </Button>
                   ) : null}
@@ -672,7 +678,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               <ScrollArea className="max-h-72 scroll-area">
                 <ul className="space-y-2">
                   {roomsPagination.visible.map((r: HabboRoom, idx: number) => (
-                    <li key={r?.id || idx} className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-3">
+                    <li key={r?.id || idx} className="rounded-[6px] border border-[#141433] bg-[#25254D] p-3 transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-bold text-white">{r?.name || "-"}</div>
                         {typeof r?.usersMax === "number" ? (
@@ -686,7 +692,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
                 </ul>
               </ScrollArea>
               {roomsPagination.hasMore ? (
-                <Button variant="secondary" className="mt-3 bg-[rgba(255,255,255,0.1)] text-[#DDD] hover:bg-[#2596FF]" onClick={roomsPagination.loadMore}>
+                <Button variant="secondary" className={loadMoreClass} onClick={roomsPagination.loadMore}>
                   Charger +{roomsPagination.remaining}
                 </Button>
               ) : null}

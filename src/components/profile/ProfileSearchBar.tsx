@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ProfileSearchBar({ currentNick }: { currentNick: string }) {
+export default function ProfileSearchBar({ currentNick: _currentNick }: { currentNick: string }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -25,7 +25,7 @@ export default function ProfileSearchBar({ currentNick }: { currentNick: string 
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Rechercher un pseudo Habbo"
-        className="h-[50px] w-full rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] pl-10 pr-3 text-[12px] text-[#DDD] placeholder:text-[#BEBECE]/80 focus-visible:border-[#2596FF] focus-visible:outline-none"
+        className="h-[50px] w-full rounded-[6px] border border-white/5 bg-[#303060]/70 pl-10 pr-3 text-[12px] font-medium text-[#DDD] placeholder:text-[#BEBECE]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus-visible:border-[#2596FF]/80 focus-visible:bg-[#303060] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/15"
       />
     </form>
   );

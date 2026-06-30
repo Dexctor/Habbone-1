@@ -18,25 +18,25 @@ export function ProfileTabs({
   const b = typeof counts?.badges === "number" ? ` (${counts.badges})` : "";
 
   return (
-    <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
-      <div className="border-b border-[#1F1F3E] px-5 py-4">
+    <section className="overflow-hidden rounded-[6px] border border-[#141433] bg-[#272746] shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="px-5 py-4">
         <Tabs defaultValue="friends" className="w-full">
-          <TabsList className="h-auto w-full justify-start gap-2 bg-transparent p-0">
+          <TabsList className="h-auto w-full justify-start gap-2 rounded-[6px] border border-[#141433] bg-[#1F1F3E]/60 p-1">
             <TabsTrigger
               value="friends"
-              className="rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[12px] font-bold uppercase text-[#DDD] data-[state=active]:border-[#1F1F3E] data-[state=active]:bg-[#1F1F3E]"
+              className="rounded-[5px] border border-transparent bg-transparent px-3 py-2 text-[12px] font-extrabold uppercase text-[#BEBECE] transition hover:bg-[#303060]/60 hover:text-white data-[state=active]:border-[#2596FF]/30 data-[state=active]:bg-[#2596FF] data-[state=active]:text-white"
             >
               Amis{f}
             </TabsTrigger>
             <TabsTrigger
               value="groups"
-              className="rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[12px] font-bold uppercase text-[#DDD] data-[state=active]:border-[#1F1F3E] data-[state=active]:bg-[#1F1F3E]"
+              className="rounded-[5px] border border-transparent bg-transparent px-3 py-2 text-[12px] font-extrabold uppercase text-[#BEBECE] transition hover:bg-[#303060]/60 hover:text-white data-[state=active]:border-[#2596FF]/30 data-[state=active]:bg-[#2596FF] data-[state=active]:text-white"
             >
               Groupes{g}
             </TabsTrigger>
             <TabsTrigger
               value="badges"
-              className="rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[12px] font-bold uppercase text-[#DDD] data-[state=active]:border-[#1F1F3E] data-[state=active]:bg-[#1F1F3E]"
+              className="rounded-[5px] border border-transparent bg-transparent px-3 py-2 text-[12px] font-extrabold uppercase text-[#BEBECE] transition hover:bg-[#303060]/60 hover:text-white data-[state=active]:border-[#2596FF]/30 data-[state=active]:bg-[#2596FF] data-[state=active]:text-white"
             >
               Badges{b}
             </TabsTrigger>

@@ -64,7 +64,7 @@ export function BadgeIcon({ code, album, imageUrl }: { code: string; album?: str
 
   if (!norm || candidates.length === 0) {
     return (
-      <div className="w-8 h-8 grid place-items-center border border-[color:var(--border)] rounded text-[10px]">?</div>
+      <div className="grid h-10 w-10 place-items-center rounded-[5px] border border-[#141433] bg-[#1F1F3E] text-[10px] text-[#BEBECE]">?</div>
     );
   }
 
@@ -76,13 +76,13 @@ export function BadgeIcon({ code, album, imageUrl }: { code: string; album?: str
       src={src}
       alt={norm}
       loading="lazy"
-      className="w-8 h-8"
+      className="h-10 w-10 rounded-[5px] border border-[#141433] bg-[#1F1F3E] object-contain p-1 image-pixelated transition hover:border-[#2596FF]/35 hover:bg-[#303060]/45"
       onError={() => {
         setIdx((i) => i + 1);
       }}
     />
   ) : (
-    <div className="w-8 h-8 grid place-items-center border border-[color:var(--border)] rounded text-[10px]" title={norm}>{(() => {
+    <div className="grid h-10 w-10 place-items-center rounded-[5px] border border-[#141433] bg-[#1F1F3E] text-[10px] text-[#BEBECE]" title={norm}>{(() => {
       try {
         const g = (window as any)
         g.__badgeLog ||= new Set<string>()

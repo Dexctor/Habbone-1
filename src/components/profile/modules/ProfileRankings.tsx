@@ -100,11 +100,11 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
   const hasAnyData = rows.some((r) => r.entry !== null);
 
   return (
-    <section className="rounded-[4px] border border-[#1F1F3E] bg-[#25254D] p-4">
+    <section className="rounded-[6px] border border-[#141433] bg-[#25254D] p-4 shadow-[0_18px_45px_-36px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.04)]">
       <header className="mb-3 flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/img/medal.png" alt="" className="h-[20px] w-auto image-pixelated" />
-        <h3 className="text-[14px] font-bold text-white">Classements Mondiaux</h3>
+        <h3 className="text-[14px] font-extrabold text-white">Classements Mondiaux</h3>
       </header>
 
       <div className="space-y-2">
@@ -120,7 +120,7 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
           rows.map((row) => (
             <div
               key={row.label}
-              className="flex items-center justify-between gap-3 rounded-[6px] bg-[#1F1F3E] px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-[6px] border border-[#141433] bg-[#1F1F3E] px-3 py-2 transition hover:border-[#2596FF]/25 hover:bg-[#303060]/45"
             >
               <div className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -147,7 +147,7 @@ export function ProfileRankings({ data, favoriteBadges = [], nick, hotel }: Prop
         )}
 
         {favoriteBadges.length > 0 && (
-          <div className="flex items-center justify-between gap-3 rounded-[6px] bg-[#1F1F3E] px-3 py-2">
+          <div className="flex items-center justify-between gap-3 rounded-[6px] border border-[#141433] bg-[#1F1F3E] px-3 py-2">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/img/badges.gif" alt="" className="h-[18px] w-[18px] image-pixelated" />

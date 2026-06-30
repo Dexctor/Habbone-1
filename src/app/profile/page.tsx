@@ -77,11 +77,11 @@ export default async function ProfilePage({
 
   return (
     <main className="mx-auto w-full max-w-[1200px] space-y-6 px-4 py-10 sm:px-6">
-      <section className="flex h-[76px] items-center justify-between rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
+      <section className="flex min-h-[76px] items-center justify-between gap-4 rounded-[6px] border border-[#141433] bg-[#1F1F3E] px-5 shadow-[0_18px_45px_-32px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.04)]">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/profile.png" alt="" className="h-[41px] w-auto image-pixelated" />
-          <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+          <img src="/img/profile.png" alt="" className="h-[44px] w-auto image-pixelated drop-shadow-[0_6px_12px_rgba(0,0,0,0.35)]" />
+          <h1 className="text-[18px] font-extrabold uppercase tracking-[0.04em] text-[#F0F0F0] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
             {viewingNick === currentUser ? 'Mon Profil' : `Profil de ${viewingNick}`}
           </h1>
         </div>
