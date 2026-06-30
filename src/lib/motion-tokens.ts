@@ -18,6 +18,8 @@ export const transitions = {
   instant: { duration: dur.xs, ease: easings.std },
   quick: { duration: dur.sm, ease: easings.std },
   standard: { duration: dur.md, ease: easings.std },
+  page: { duration: 0.28, ease: easings.emph },
+  reveal: { duration: 0.22, ease: easings.emph },
 } as const
 
 export type EasingKey = keyof typeof easings

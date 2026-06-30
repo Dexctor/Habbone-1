@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { AnimatePresence, motion, useReducedMotion, type Transition } from 'framer-motion'
+import { motion, useReducedMotion, type Transition } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { transitions } from '@/lib/motion-tokens'
 
@@ -9,20 +9,19 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
   const pathname = usePathname()
   const reduce = useReducedMotion()
 
-  const transition: Partial<Transition> = reduce ? transitions.instant : transitions.standard
+  const transition: Partial<Transition> = reduce
+    ? { duration: 0 }
+    : transitions.page
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={pathname}
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
-        transition={transition}
-        layout
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={pathname}
+      initial={reduce ? false : { opacity: 0, y: 10 }}
+      animate={reduce ? undefined : { opacity: 1, y: 0 }}
+      transition={transition}
+      style={reduce ? undefined : { willChange: 'opacity, transform' }}
+    >
+      {children}
+    </motion.div>
   )
 }
