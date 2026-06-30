@@ -505,3 +505,38 @@ img.image-pixelated:not([class*="object-"]) {
   mask-repeat: no-repeat;
   flex-shrink: 0;
 }
+
+/* Profile page scroll zones: friends, groups, badges and rooms. */
+.profile-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: #303060 #1f1f3e;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+}
+
+.profile-scroll-area::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.profile-scroll-area::-webkit-scrollbar-track {
+  background: #1f1f3e;
+  border-left: 1px solid #141433;
+  border-radius: 999px;
+}
+
+.profile-scroll-area::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  background: linear-gradient(180deg, #303060 0%, #2596ff 100%);
+  border: 2px solid #1f1f3e;
+  border-radius: 999px;
+}
+
+.profile-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3a3a6a 0%, #25b1ff 100%);
+}
+
+.profile-scroll-area::-webkit-scrollbar-corner {
+  background: #1f1f3e;
+}

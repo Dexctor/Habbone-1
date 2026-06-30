@@ -544,7 +544,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               counts={{ friends: counts.friends, groups: counts.groups, badges: counts.badges }}
               friendsSlot={(
                 <>
-                  <ScrollArea className="max-h-72 scroll-area">
+                  <ScrollArea className="profile-scroll-area max-h-72">
                     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {friendsPagination.visible.map((f: HabboFriend, idx: number) => (
                         <li
@@ -595,7 +595,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               )}
               groupsSlot={(
                 <>
-                  <ScrollArea className="max-h-72 scroll-area">
+                  <ScrollArea className="profile-scroll-area max-h-72">
                     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {groupsPagination.visible.map((g: HabboGroup, idx: number) => (
                         <li
@@ -631,7 +631,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
               )}
               badgesSlot={(
                 <>
-                  <ScrollArea className="max-h-72 scroll-area">
+                  <ScrollArea className="profile-scroll-area max-h-72">
                     <ul className="grid grid-cols-6 gap-2 sm:grid-cols-10">
                       {badgesPagination.visible.map((b: HabboBadge, idx: number) => {
                         const code = badgeCodeFromEntry(b);
@@ -675,7 +675,7 @@ export default function ProfileClient({ nick, initialData }: { nick: string; ini
             />
 
             <ProfileSection title="Salles">
-              <ScrollArea className="max-h-72 scroll-area">
+              <ScrollArea className="profile-scroll-area max-h-72">
                 <ul className="space-y-2">
                   {roomsPagination.visible.map((r: HabboRoom, idx: number) => (
                     <li key={r?.id || idx} className="rounded-[6px] border border-[#141433] bg-[#25254D] p-3 transition hover:border-[#2596FF]/30 hover:bg-[#303060]/45">
