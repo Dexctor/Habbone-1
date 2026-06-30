@@ -53,7 +53,6 @@ export const revalidate = 0;
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/login?from=/admin');
-  if (session.user.role !== 'admin') redirect('/profile');
   try {
     await assertAdmin();
   } catch {

@@ -10,7 +10,6 @@ export const metadata = { title: 'Administration – HabbOne' };
 export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/login?from=/admin');
-  if (session.user.role !== 'admin') redirect('/profile');
 
   try {
     await assertAdmin();

@@ -38,7 +38,6 @@ type AdminCaller = {
 async function requireAdmin(): Promise<AdminCaller> {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/login?from=/admin');
-  if (session.user.role !== 'admin') redirect('/profile');
   try {
     await assertAdmin();
   } catch {
