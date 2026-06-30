@@ -1,15 +1,11 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { withAdmin } from '@/server/api-helpers';
-import { themeUploadDir, writeThemeSettings } from '@/server/theme-settings-store';
+import { writeThemeSettings } from '@/server/theme-settings-store';
 import { validateUploadedFile } from '@/server/upload-security';
 import { UPLOAD_POLICIES } from '@/server/upload-policies';
-
-// TODO: store theme assets outside the ephemeral Vercel filesystem. The theme
-// is currently written locally under public/uploads/theme.
+import { pbUploadFile } from '@/server/pocketbase/helpers';
 
 const TARGETS = new Set(['logo', 'background']);
 
@@ -26,12 +22,17 @@ function extensionFromMime(mimeType: string, fallbackName?: string): string {
   return 'png';
 }
 
-async function uploadToLocalPublicDir(file: File, target: string, mimeType: string, buffer: Buffer): Promise<string> {
+function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(buffer.byteLength);
+  bytes.set(buffer);
+  return bytes;
+}
+
+async function uploadToPocketBase(file: File, target: string, mimeType: string, buffer: Buffer): Promise<string> {
   const ext = extensionFromMime(mimeType, file.name);
-  const fileName = `${target}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
-  await mkdir(themeUploadDir, { recursive: true });
-  await writeFile(path.join(themeUploadDir, fileName), buffer);
-  return `/uploads/theme/${fileName}`;
+  const safeFile = new File([toBlobPart(buffer)], `theme-${target}-${Date.now()}.${ext}`, { type: mimeType });
+  const uploaded = await pbUploadFile(safeFile, { context: `theme:${target}` });
+  return uploaded.url;
 }
 
 export const POST = withAdmin(async (req) => {
@@ -55,7 +56,7 @@ export const POST = withAdmin(async (req) => {
   }
 
   try {
-    const uploadedUrl = await uploadToLocalPublicDir(file, target, validation.detectedMime, validation.buffer);
+    const uploadedUrl = await uploadToPocketBase(file, target, validation.detectedMime, validation.buffer);
 
     const settings = await writeThemeSettings(
       target === 'logo'

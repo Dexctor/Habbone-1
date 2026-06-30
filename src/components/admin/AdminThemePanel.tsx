@@ -306,7 +306,7 @@ export default function AdminThemePanel() {
                   headerBackgroundImageUrl: event.target.value || null,
                 }))
               }
-              placeholder="/uploads/theme/background.jpg"
+              placeholder="https://pb.habbone.fr/api/files/..."
               className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
             />
           </div>
