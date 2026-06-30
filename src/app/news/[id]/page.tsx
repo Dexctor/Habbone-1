@@ -4,7 +4,6 @@ import type { Session } from "next-auth"
 
 import { authOptions } from "@/auth"
 import NewsCommentForm from "@/components/news/NewsCommentForm"
-import { PageSection } from "@/components/shared/page-section"
 import { mediaUrl } from "@/lib/media-url"
 import { getPublicNewsById, getPublicNewsComments } from "@/server/pocketbase/news"
 import { getLikesMapForNewsComments } from "@/server/pocketbase/likes"

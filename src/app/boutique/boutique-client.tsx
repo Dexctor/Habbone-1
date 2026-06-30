@@ -1,6 +1,6 @@
 'use client'
 
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePagination, SiteSearch } from '@/components/site'
 import { mediaUrl } from '@/lib/media-url'
 import type { ShopItem } from '@/types/shop'
 
@@ -105,61 +106,6 @@ function ShopCard({
   )
 }
 
-function Pagination({
-  page,
-  pageCount,
-  onPageChange,
-}: {
-  page: number
-  pageCount: number
-  onPageChange: (p: number) => void
-}) {
-  if (pageCount <= 1) return null
-
-  return (
-    <nav className="flex items-center justify-center gap-4 py-3" aria-label="Pagination de la boutique">
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.max(0, page - 1))}
-        disabled={page === 0}
-        className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        aria-label="Page précédente"
-      >
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-      </button>
-      <div className="flex items-center gap-2">
-        {Array.from({ length: pageCount }, (_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => onPageChange(index)}
-            className={`px-2 py-1 text-[16px] font-normal transition ${
-              index === page ? 'text-white underline' : 'text-[#DDD] hover:text-white'
-            }`}
-            aria-current={index === page ? 'page' : undefined}
-            aria-label={`Page ${index + 1}`}
-          >
-            {index + 1}
-          </button>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.min(pageCount - 1, page + 1))}
-        disabled={page >= pageCount - 1}
-        className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-        aria-label="Page suivante"
-      >
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-        </svg>
-      </button>
-    </nav>
-  )
-}
-
 /* ------------------------------------------------------------------ */
 /*  Page Client                                                        */
 /* ------------------------------------------------------------------ */
@@ -247,51 +193,34 @@ export default function BoutiqueClient({
   const clampedPage = Math.min(page, pageCount - 1)
   const visible = filtered.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE)
 
-  return (
-    <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
-      {/* En-tête */}
-      <div className="flex flex-col gap-4 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/store.png" alt="" className="h-[45px] w-auto image-pixelated" />
-          <div>
-            <h1 className="text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">
-              Boutique
-            </h1>
-            {loggedIn && (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/img/icon-coin.png" alt="" className="h-[16px] w-[16px] image-pixelated" />
-                <span className="text-[13px] font-bold text-[#FFC800]">{coins.toLocaleString('fr-FR')}</span>
-                <span className="text-[11px] text-[#BEBECE]/50">coins</span>
-              </div>
-            )}
-          </div>
-        </div>
+  const coinMeta = loggedIn ? (
+    <div className="flex items-center gap-1.5">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/img/icon-coin.png" alt="" className="h-[16px] w-[16px] image-pixelated" />
+      <span className="text-[13px] font-bold text-[#FFC800]">{coins.toLocaleString('fr-FR')}</span>
+      <span className="text-[11px] text-[#BEBECE]/50">coins</span>
+    </div>
+  ) : null
 
-        {/* Barre de recherche */}
-        <div className="relative w-full sm:w-[255px]">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#BEBECE]">
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-          </span>
-          <input
-            type="search"
+  return (
+    <SitePage width="lg" className="gap-8 lg:px-8">
+      <SiteHeader
+        title="Boutique"
+        imageSrc="/img/store.png"
+        meta={coinMeta}
+        actions={
+          <SiteSearch
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(0) }}
             placeholder="Rechercher par nom"
-            className="h-[50px] w-full rounded-[3px] bg-white/10 pl-10 pr-3 text-[14px] font-normal text-[#DDD] placeholder:text-[#BEBECE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/40"
           />
-        </div>
-      </div>
+        }
+      />
 
       {/* Grille */}
       <section>
         {visible.length === 0 ? (
-          <div className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-6 py-14 text-center text-sm font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-            Aucun article trouvé.
-          </div>
+          <SiteEmptyState>Aucun article trouvé.</SiteEmptyState>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((item) => (
@@ -309,7 +238,7 @@ export default function BoutiqueClient({
       </section>
 
       {/* Pagination */}
-      <Pagination page={clampedPage} pageCount={pageCount} onPageChange={setPage} />
+      <SitePagination page={clampedPage} pageCount={pageCount} onPageChange={setPage} label="Pagination de la boutique" />
 
       {/* Dialog de confirmation d'achat */}
       <Dialog open={!!confirmItem} onOpenChange={(open) => { if (!open) setConfirmItem(null) }}>
@@ -346,14 +275,15 @@ export default function BoutiqueClient({
 
           <DialogFooter className="gap-2 sm:gap-2">
             <DialogClose asChild>
-              <button
+              <SiteButton
                 type="button"
-                className="rounded-[4px] border-2 border-white/10 bg-transparent px-5 py-2.5 text-[13px] font-bold uppercase tracking-wide text-[#BEBECE] transition hover:bg-white/5"
+                variant="secondary"
+                className="h-auto border-2 border-white/10 bg-transparent px-5 py-2.5 text-[13px] hover:bg-white/5"
               >
                 Annuler
-              </button>
+              </SiteButton>
             </DialogClose>
-            <button
+            <SiteButton
               type="button"
               disabled={buying !== null}
               onClick={() => {
@@ -362,13 +292,13 @@ export default function BoutiqueClient({
                   executePurchase(confirmItem)
                 }
               }}
-              className="rounded-[4px] bg-[#2596FF] px-5 py-2.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:bg-[#2976E8] disabled:opacity-50"
+              className="h-auto px-5 py-2.5 text-[13px]"
             >
               {buying !== null ? 'Achat en cours...' : 'Confirmer'}
-            </button>
+            </SiteButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </SitePage>
   )
 }

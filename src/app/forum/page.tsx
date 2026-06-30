@@ -11,6 +11,7 @@ import type {
 } from '@/server/pocketbase/types'
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel, SiteSearch } from '@/components/site'
 
 import { unstable_cache } from 'next/cache'
 
@@ -156,12 +157,15 @@ function TopicRow({
       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
         <TopicStatChip icon="/img/pincel-mini.png" label="Sujets" value={postCount} />
         <TopicStatChip icon="/img/comment-mini.png" label="Reponses" value={responseCount} />
-        <Link
-          href={`/forum/topic/${topicId}`}
-          className="inline-flex h-[38px] items-center rounded-[2px] bg-[#2596FF] px-4 text-[11px] font-bold uppercase text-white hover:bg-[#2976E8]"
+        <SiteButton
+          asChild
+          size="sm"
+          className="h-[38px] rounded-[2px] px-4"
         >
-          Voir plus
-        </Link>
+          <Link href={`/forum/topic/${topicId}`}>
+            Voir plus
+          </Link>
+        </SiteButton>
       </div>
     </article>
   )
@@ -180,17 +184,13 @@ function SectionBlock({
 }) {
   return (
     <section className="space-y-2">
-      <div className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0px_0px_0px_0px_rgba(255,255,255,0.05)]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={icon} alt="" className="h-[38px] w-auto image-pixelated object-contain" />
-        <h2 className="ml-3 text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">{label}</h2>
-      </div>
+      <SiteHeader title={label} imageSrc={icon} />
 
-      <div className="overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
+      <SitePanel padded={false} className="overflow-hidden">
         {topics.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm font-semibold uppercase tracking-[0.06em] text-[#BEBECE]/70">
+          <SiteEmptyState className="border-0 bg-transparent px-5 py-8 tracking-[0.06em]">
             Aucun sujet dans cette section.
-          </div>
+          </SiteEmptyState>
         ) : (
           topics.map((topic) => (
             <TopicRow
@@ -200,7 +200,7 @@ function SectionBlock({
             />
           ))
         )}
-      </div>
+      </SitePanel>
     </section>
   )
 }
@@ -272,45 +272,35 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
   const allTopics = visibleTopics.slice(0, 48)
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-[50px] px-4 py-10 sm:px-8">
+    <SitePage className="gap-[50px] sm:px-8">
       <div className="flex w-full justify-end gap-3">
-        <Link
-          href="/forum/nouveau"
-          className="inline-flex h-[50px] items-center rounded-[4px] bg-[#2596FF] px-5 text-[11px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
-        >
-          Nouveau sujet
-        </Link>
+        <SiteButton asChild className="h-[50px] px-5 text-[11px]">
+          <Link href="/forum/nouveau">Nouveau sujet</Link>
+        </SiteButton>
         <form className="flex w-full max-w-[560px] flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-[5px]">
           {isAllView ? <input type="hidden" name="view" value="all" /> : null}
-          <div className="relative w-full sm:max-w-[255px]">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#BEBECE] material-icons text-[16px]">
-              search
-            </span>
-            <input
-              type="search"
-              name="q"
-              defaultValue={readQuery(resolvedSearchParams.q)}
-              placeholder="Rechercher un titre"
-              className="h-[50px] w-full rounded-[4px] border border-transparent bg-[rgba(255,255,255,0.1)] pl-9 pr-3 text-[12px] text-[#DDD] placeholder:text-[#BEBECE] focus-visible:border-[#2596FF] focus-visible:outline-none"
-            />
-          </div>
+          <SiteSearch
+            name="q"
+            defaultValue={readQuery(resolvedSearchParams.q)}
+            placeholder="Rechercher un titre"
+          />
 
           {isAllView ? (
-            <Link
-              href={readQuery(resolvedSearchParams.q) ? `/forum?q=${encodeURIComponent(readQuery(resolvedSearchParams.q))}` : '/forum'}
-              className="inline-flex h-[50px] items-center justify-center rounded-[4px] bg-[rgba(255,255,255,0.1)] px-5 text-[11px] font-bold uppercase tracking-[0.04em] text-[#DDD] hover:bg-[rgba(255,255,255,0.16)]"
-            >
-              Voir sections
-            </Link>
+            <SiteButton asChild variant="ghost" className="h-[50px] px-5 text-[11px]">
+              <Link href={readQuery(resolvedSearchParams.q) ? `/forum?q=${encodeURIComponent(readQuery(resolvedSearchParams.q))}` : '/forum'}>
+                Voir sections
+              </Link>
+            </SiteButton>
           ) : (
-            <button
+            <SiteButton
               type="submit"
               name="view"
               value="all"
-              className="h-[50px] rounded-[4px] bg-[rgba(255,255,255,0.1)] px-5 text-[11px] font-bold uppercase tracking-[0.04em] text-[#DDD] hover:bg-[rgba(255,255,255,0.16)]"
+              variant="ghost"
+              className="h-[50px] px-5 text-[11px]"
             >
               Lister toutes
-            </button>
+            </SiteButton>
           )}
         </form>
       </div>
@@ -335,6 +325,6 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
           ))
         )}
       </div>
-    </main>
+    </SitePage>
   )
 }

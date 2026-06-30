@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePagination, SiteSearch } from '@/components/site'
 import { mediaUrl } from '@/lib/media-url'
 import { buildExcerptFromHtml, buildPreviewText, stripHtml } from '@/lib/text-utils'
 
@@ -75,48 +76,32 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
   const visible = filtered.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE)
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-8 sm:px-8">
-      <section className="rounded-[4px] bg-[#2C2C4F]">
-        <div className="flex flex-col gap-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/news.png" alt="" className="h-[27px] w-auto image-pixelated" />
-            <h1 className="text-[14px] font-bold uppercase tracking-[0.08em] text-[#DDD]">
-              Tous les articles
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/news/nouveau"
-              className="inline-flex h-[40px] shrink-0 items-center rounded-[4px] bg-[#2596FF] px-4 text-[11px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
-            >
-              Publier un article
-            </Link>
-            <div className="relative w-full sm:w-[255px]">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#BEBECE] material-icons text-[16px]">
-                search
-              </span>
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                  setPage(0)
-                }}
-                placeholder="Rechercher un titre"
-                className="h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] pl-9 pr-3 text-[12px] font-normal text-[#DDD] placeholder:text-[#BEBECE]/60 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+    <SitePage className="gap-6 py-8 sm:px-8">
+      <SiteHeader
+        title="Tous les articles"
+        imageSrc="/img/news.png"
+        compact
+        actions={
+          <>
+            <SiteButton asChild size="sm">
+              <Link href="/news/nouveau">Publier un article</Link>
+            </SiteButton>
+            <SiteSearch
+              height="sm"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(0)
+              }}
+              placeholder="Rechercher un titre"
+            />
+          </>
+        }
+      />
 
       <section className="space-y-[10px]">
         {visible.length === 0 ? (
-          <div className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-6 py-14 text-center text-sm font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-            Aucun article trouvé.
-          </div>
+          <SiteEmptyState>Aucun article trouvé.</SiteEmptyState>
         ) : (
           visible.map((article) => {
             const imageUrl = mediaUrl(article?.imagem)
@@ -181,13 +166,15 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
                       {previewText || 'Aperçu indisponible.'}
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
-                      <Link
-                        href={`/news/${article.id}`}
-                        className="inline-flex items-center gap-2 rounded-[4px] bg-[#2596FF] px-5 py-3 text-[12px] font-bold uppercase tracking-[0.06em] text-white hover:bg-[#2976E8]"
+                      <SiteButton
+                        asChild
+                        className="h-auto px-5 py-3 text-[12px] tracking-[0.06em]"
                       >
-                        Lire plus
-                        <span className="text-[13px]">+</span>
-                      </Link>
+                        <Link href={`/news/${article.id}`}>
+                          Lire plus
+                          <span className="text-[13px]">+</span>
+                        </Link>
+                      </SiteButton>
                       <span className="rounded-[4px] bg-[#141433] px-4 py-3 text-[12px] font-normal uppercase text-[#DDD]">
                         {categoryLabel}
                       </span>
@@ -200,49 +187,12 @@ export default function NewsPageClient({ articles }: { articles: any[] }) {
         )}
       </section>
 
-      {pageCount > 1 ? (
-        <nav className="flex items-center justify-center gap-4 py-3" aria-label="Pagination des actualités">
-          <button
-            type="button"
-            onClick={() => setPage((value) => Math.max(0, value - 1))}
-            disabled={clampedPage === 0}
-            className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Page précédente"
-          >
-            <i className="material-icons text-[18px]" aria-hidden>chevron_left</i>
-          </button>
-
-          <div className="flex items-center gap-2">
-            {Array.from({ length: pageCount }, (_, index) => {
-              const isActive = index === clampedPage
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setPage(index)}
-                  className={`px-1 text-[14px] font-normal leading-none transition ${
-                    isActive ? 'text-white underline' : 'text-[#DDD] hover:text-white'
-                  }`}
-                  aria-current={isActive ? 'page' : undefined}
-                  aria-label={`Page ${index + 1}`}
-                >
-                  {index + 1}
-                </button>
-              )
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
-            disabled={clampedPage >= pageCount - 1}
-            className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Page suivante"
-          >
-            <i className="material-icons text-[18px]" aria-hidden>chevron_right</i>
-          </button>
-        </nav>
-      ) : null}
-    </main>
+      <SitePagination
+        page={clampedPage}
+        pageCount={pageCount}
+        onPageChange={setPage}
+        label="Pagination des actualités"
+      />
+    </SitePage>
   )
 }

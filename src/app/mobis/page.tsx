@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel, SiteSearch } from '@/components/site'
 
 type Mobi = {
   id: number
@@ -69,81 +70,65 @@ export default function MobisPageClient() {
   }, [visibleItems])
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] space-y-6 px-4 py-10 sm:px-6">
-      {/* Header */}
-      <header className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/store.png" alt="" className="h-[40px] w-auto image-pixelated" />
-          <div className="space-y-1">
-            <h1 className="text-[20px] font-bold uppercase tracking-[0.08em] text-[#DDD]">
-              Mobis Habbo
-            </h1>
-            <p className="text-[14px] text-[#BEBECE]">
-              Tous les mobiliers globaux publiés sur Habbo.
-            </p>
-          </div>
-        </div>
-      </header>
+    <SitePage>
+      <SiteHeader
+        title="Mobis Habbo"
+        imageSrc="/img/store.png"
+        description="Tous les mobiliers globaux publiés sur Habbo."
+      />
 
       {/* Search */}
-      <div className="relative w-full sm:w-[320px]">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#BEBECE] material-icons text-[16px]">
-          search
-        </span>
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
-            setPage(0)
-          }}
-          placeholder="Rechercher un mobi..."
-          className="h-[40px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] pl-9 pr-3 text-[12px] font-normal text-[#DDD] placeholder:text-[#BEBECE]/60 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
-        />
-      </div>
+      <SiteSearch
+        height="sm"
+        wrapperClassName="sm:w-[320px]"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setPage(0)
+        }}
+        placeholder="Rechercher un mobi..."
+      />
 
       {/* Mobis Grid */}
-      <section className="overflow-hidden rounded-[4px] border border-[#1F1F3E] bg-[#272746]">
+      <SitePanel padded={false} className="overflow-hidden">
         <header className="flex h-[50px] items-center justify-between border-b border-[#34345A] bg-[rgba(0,0,0,0.1)] px-5">
           <h2 className="text-[16px] font-bold uppercase text-white">
             Catalogue ({filtered.length} mobis)
           </h2>
 
           <div className="flex items-center gap-[5px]">
-            <button
+            <SiteButton
               type="button"
+              size="icon-md"
               aria-label="Page precedente"
               onClick={() => setPage((c) => Math.max(0, c - 1))}
               disabled={clampedPage === 0}
-              className="grid h-[40px] w-[40px] place-items-center rounded-[3px] bg-[#2596FF] text-white transition hover:bg-[#2976E8] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[3px]"
             >
               <i className="material-icons text-[18px]" aria-hidden>chevron_left</i>
-            </button>
+            </SiteButton>
             <span className="px-2 text-[12px] text-[#BEBECE]">
               {clampedPage + 1} / {pageCount}
             </span>
-            <button
+            <SiteButton
               type="button"
+              size="icon-md"
+              variant="ghost"
               aria-label="Page suivante"
               onClick={() => setPage((c) => Math.min(pageCount - 1, c + 1))}
               disabled={clampedPage >= pageCount - 1}
-              className="grid h-[40px] w-[40px] place-items-center rounded-[3px] bg-[rgba(255,255,255,0.1)] text-[#DDD] transition hover:bg-[rgba(255,255,255,0.16)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[3px]"
             >
               <i className="material-icons text-[18px]" aria-hidden>chevron_right</i>
-            </button>
+            </SiteButton>
           </div>
         </header>
 
         <div className="px-[18px] py-[20px]">
           {loading ? (
-            <div className="rounded-[4px] border border-dashed border-[#1F1F3E] px-4 py-16 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Chargement des mobis...
-            </div>
+            <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Chargement des mobis...</SiteEmptyState>
           ) : visibleItems.length === 0 ? (
-            <div className="rounded-[4px] border border-dashed border-[#1F1F3E] px-4 py-16 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Aucun mobi trouvé.
-            </div>
+            <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Aucun mobi trouvé.</SiteEmptyState>
           ) : (
             <TooltipProvider delayDuration={150}>
               <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8">
@@ -187,7 +172,7 @@ export default function MobisPageClient() {
             </TooltipProvider>
           )}
         </div>
-      </section>
-    </main>
+      </SitePanel>
+    </SitePage>
   )
 }
