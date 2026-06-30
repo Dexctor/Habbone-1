@@ -20,7 +20,7 @@ const targets: Target[] = [
 ];
 
 const urlRe = /https?:\/\/[^"' <>)]+|\/uploads\/[^"' <>)]+|^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/gi;
-const directusAssetRe = /\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
+const legacyAssetRe = /\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
 const mediaFileRe = /\.(?:png|jpe?g|gif|webp|svg|mp4|webm)$/i;
 
 const allowedExternalHosts = new Set([
@@ -41,10 +41,10 @@ function classify(raw: string): string {
   const value = raw.trim();
   const host = normalizeHost(value);
   const pbHost = normalizeHost(PB_URL);
-  const directusHost = normalizeHost(process.env.NEXT_PUBLIC_DIRECTUS_URL || '');
+  const legacyAssetHost = normalizeHost(process.env.LEGACY_ASSET_BASE || '');
 
-  if (/^[0-9a-f-]{36}$/i.test(value)) return 'directus-uuid';
-  if (directusAssetRe.test(value) || (directusHost && host === directusHost)) return 'directus';
+  if (/^[0-9a-f-]{36}$/i.test(value)) return 'legacy-asset-id';
+  if (legacyAssetRe.test(value) || (legacyAssetHost && host === legacyAssetHost)) return 'legacy-asset';
   if (value.startsWith('/uploads/')) return 'local-upload';
   if (pbHost && host === pbHost) return 'pocketbase';
   if (allowedExternalHosts.has(host)) return 'allowed-external';
@@ -60,7 +60,7 @@ function isMediaReference(raw: string): boolean {
   const value = raw.trim();
   if (/^[0-9a-f-]{36}$/i.test(value)) return true;
   if (value.startsWith('/uploads/')) return true;
-  if (directusAssetRe.test(value)) return true;
+  if (legacyAssetRe.test(value)) return true;
   try {
     const parsed = new URL(value);
     return mediaFileRe.test(parsed.pathname);

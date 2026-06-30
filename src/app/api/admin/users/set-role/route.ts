@@ -22,7 +22,7 @@ export const POST = withAdmin(async (req, { user }) => {
   console.info('[admin:set-role] incoming', {
     callerId: user?.id,
     callerNick: user?.nick,
-    callerRoleName: (user as any)?.directusRoleName,
+    callerRoleName: user?.roleName,
     callerIsFounder,
     targetUserId: userId,
     requestedRoleId: roleId,

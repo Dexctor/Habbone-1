@@ -60,12 +60,12 @@ export async function searchAdminUsers(input: SearchInput): Promise<SearchResult
     const isActive = activeStatus.isActive;
 
     // Role resolution: prefer the migrated role relation, fallback to role string.
-    const directusRoleId = row?.directus_role_id || null;
+    const userRoleId = row?.role_id || null;
     const roleNameRaw = String(row?.role || '').trim();
     let rolePayload: any = null;
 
-    if (directusRoleId) {
-      const match = rolesById.get(String(directusRoleId));
+    if (userRoleId) {
+      const match = rolesById.get(String(userRoleId));
       if (match) {
         rolePayload = {
           id: match.id,
@@ -155,7 +155,7 @@ export async function setAdminUserRole(userId: string, roleId: string): Promise<
 
   // Verify the write actually applied.
   // persisting if a hook or permission filter silently drops the patch).
-  const persistedRoleId = (writeResult as any)?.directus_role_id ?? null;
+  const persistedRoleId = (writeResult as any)?.role_id ?? null;
   if (persistedRoleId !== roleId) {
     console.warn('[setAdminUserRole] write did not persist as expected', {
       userId: cleanId,

@@ -11,7 +11,7 @@ const USERS_TABLE = TABLES.users;
  *
  * Keeps the legacy-lite output shape the admin UI expects (banido='s',
  * ativado='n', status string). In v2 the role is a relation (`role`), exposed
- * under the legacy name `directus_role_id`.
+ * as `role_id`.
  */
 
 const SEARCH_FIELDS = 'id,email,nick,active,banned,role';
@@ -25,7 +25,7 @@ function v2ToLegacyLite(row: any): LegacyUserLite {
     nick: row.nick ?? null,
     status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
     role: null,
-    directus_role_id: row.role ? String(row.role) : null,
+    role_id: row.role ? String(row.role) : null,
     banido: row.banned ? 's' : 'n',
     ativado: row.active ? 's' : 'n',
   };
@@ -110,7 +110,7 @@ export async function setLegacyUserRole(userId: string, _roleName: string) {
 
 export async function setLegacyUserRoleId(userId: string, roleId: string, _roleName?: string) {
   // v2: the role is a relation. Direct update (the old raw-PATCH workaround for
-  // the Directus SDK is no longer needed).
+  // previous SDKs is no longer needed).
   return pbUpdate(USERS_TABLE, String(userId), { role: roleId });
 }
 

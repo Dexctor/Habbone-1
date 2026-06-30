@@ -85,5 +85,5 @@ export async function guardTargetUser(opts: {
 }
 
 export function isCallerFounder(user: Session['user'] | null | undefined): boolean {
-  return isFounderRoleName(user?.directusRoleName);
+  return isFounderRoleName(user?.roleName);
 }

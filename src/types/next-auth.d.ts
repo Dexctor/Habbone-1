@@ -10,9 +10,9 @@ declare module 'next-auth' {
     missao: string | null;
     hotel: string;
     role: AppRole;
-    directusRoleId: string | null;
-    directusRoleName: string | null;
-    directusAdminAccess: boolean;
+    roleId: string | null;
+    roleName: string | null;
+    adminAccess: boolean;
   }
 
   interface Session {
@@ -24,9 +24,9 @@ declare module 'next-auth' {
       hotel: string;
       role: AppRole;
       email: string | null;
-      directusRoleId: string | null;
-      directusRoleName: string | null;
-      directusAdminAccess: boolean;
+      roleId: string | null;
+      roleName: string | null;
+      adminAccess: boolean;
     } & DefaultSession['user'];
   }
 }
@@ -40,8 +40,8 @@ declare module 'next-auth/jwt' {
     hotel: string;
     role: AppRole;
     email: string | null;
-    directusRoleId: string | null;
-    directusRoleName: string | null;
-    directusAdminAccess: boolean;
+    roleId: string | null;
+    roleName: string | null;
+    adminAccess: boolean;
   }
 }

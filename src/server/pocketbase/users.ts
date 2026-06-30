@@ -26,7 +26,7 @@ type LegacyUserRecord = {
   banido?: string | null;
   status?: string | null;
   role?: string | null;
-  directus_role_id?: string | null;
+  role_id?: string | null;
   data_criacao?: string | null;
   habbo_hotel?: string | null;
   habbo_unique_id?: string | null;
@@ -62,8 +62,7 @@ function v2ToLegacyRow(row: any): LegacyUserRecord & { id: string; moedas?: numb
     banido: row.banned ? 's' : 'n',
     status: row.banned ? 'suspended' : row.active ? 'active' : 'inactive',
     role: null,
-    // v2 uses a `role` relation; expose its id under the legacy name callers read.
-    directus_role_id: row.role ? String(row.role) : null,
+    role_id: row.role ? String(row.role) : null,
     data_criacao: row.created ?? null,
     habbo_hotel: row.habbo_hotel ?? null,
     habbo_unique_id: row.habbo_unique_id ?? null,
@@ -91,7 +90,7 @@ function legacyPatchToV2(patch: Record<string, unknown>): Record<string, unknown
       case 'banido': v2.banned = v === 's' || v === true; break;
       case 'data_criacao': v2.created = v; break;
       case 'role': /* drop — use the role relation directly */ break;
-      case 'directus_role_id': v2.role = v; break;
+      case 'role_id': v2.role = v; break;
       case 'moedas': v2.coins = v; break;
       default: v2[k] = v; // most Habbo-related columns share the same name
     }

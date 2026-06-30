@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Habbone
 
-## Getting Started
+Production Next.js application for habbone.fr.
 
-First, run the development server:
+## Stack
+
+- Next.js 15 App Router, React 19, TypeScript
+- Tailwind CSS v4
+- NextAuth credentials sessions
+- PocketBase for application data and uploads
+- Upstash Redis for cache
+- Vercel for the web app
+
+## Required Environment
+
+```env
+POCKETBASE_URL=https://pb.habbone.fr
+POCKETBASE_ADMIN_EMAIL=...
+POCKETBASE_ADMIN_PASSWORD=...
+REDIS_URL=rediss://default:...@...upstash.io:6379
+NEXTAUTH_URL=https://habbone.fr
+NEXTAUTH_SECRET=...
+HABBO_API_BASE=https://www.habbo.fr
+```
+
+`REDIS_URL` is optional for local development; the app falls back to direct fetches when it is missing.
+
+## Commands
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run typecheck
+npm run build
+npm run test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Operations
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+PocketBase service and backup units are versioned in `ops/pocketbase`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Useful audits:
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+node --import tsx scripts/migration-pb/_scan-external-media-urls.ts
+node --import tsx scripts/migration-pb/16-rehost-external-media.ts --dry-run
+```

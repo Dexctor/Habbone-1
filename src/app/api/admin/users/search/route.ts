@@ -27,8 +27,7 @@ export async function POST(req: Request) {
 
   const url = new URL(req.url);
   const preferSourceRaw = (url.searchParams.get('source') || 'auto').toLowerCase();
-  const preferSource =
-    preferSourceRaw === 'legacy' || preferSourceRaw === 'directus' ? preferSourceRaw : 'auto';
+  const preferSource = preferSourceRaw === 'users' ? 'users' : 'auto';
 
   const parsed = Body.safeParse(await req.json());
   if (!parsed.success) {

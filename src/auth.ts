@@ -74,45 +74,24 @@ export const authOptions: NextAuthOptions = {
           }
         } catch {}
 
-        // Role system: PocketBase users.role relation, exposed under the
-        // legacy session key names for backwards-compatible JWTs.
-        const directusRoleId: string | null = (user as any).directus_role_id || null;
-        let directusRoleName: string | null = null;
-        let directusAdminAccess = false;
+        const roleId: string | null = (user as any).role_id || null;
+        let roleName: string | null = null;
+        let adminAccess = false;
 
-        if (directusRoleId) {
+        if (roleId) {
           try {
-            const roleRow = await getRoleById(directusRoleId);
+            const roleRow = await getRoleById(roleId);
             if (roleRow) {
-              directusRoleName = roleRow.name ?? null;
-              directusAdminAccess = roleRow.admin_access === true;
+              roleName = roleRow.name ?? null;
+              adminAccess = roleRow.admin_access === true;
             }
           } catch {}
         }
 
-        // Fallback: ADMIN_NICKS env var for bootstrapping.
-        // This is ONLY honoured until ADMIN_NICKS_UNTIL (unix timestamp, seconds).
-        // Rationale: once a real admin exists in PocketBase, the nick-based fallback
-        // should stop being a trust anchor — otherwise anyone who grabs the nick
-        // regains admin after rotation.
-        const adminNicksUntilRaw = process.env.ADMIN_NICKS_UNTIL || '';
-        const adminNicksUntil = Number.parseInt(adminNicksUntilRaw, 10);
-        const nicksFallbackActive =
-          Number.isFinite(adminNicksUntil) && adminNicksUntil * 1000 > Date.now();
-
-        const adminNicks = nicksFallbackActive
-          ? (process.env.ADMIN_NICKS || '')
-              .split(',')
-              .map((s) => s.trim().toLowerCase())
-              .filter(Boolean)
-          : [];
-        const isAdminByNick = adminNicks.includes(String(user.nick || '').toLowerCase());
-
-        const computedAdminAccess = directusAdminAccess || isAdminByNick;
-        const role = computedAdminAccess ? 'admin' : 'member';
+        const role = adminAccess ? 'admin' : 'member';
 
         // Auto-assign role badge on login (non-blocking)
-        void ensureRoleBadge(String(user.id), directusRoleName || role);
+        void ensureRoleBadge(String(user.id), roleName || role);
 
         return {
           id: String(user.id),
@@ -122,9 +101,9 @@ export const authOptions: NextAuthOptions = {
           missao: user.missao || null,
           hotel: hotelCode,
           role,
-          directusRoleId,
-          directusRoleName,
-          directusAdminAccess: computedAdminAccess,
+          roleId,
+          roleName,
+          adminAccess,
         };
       },
     }),
@@ -139,13 +118,16 @@ export const authOptions: NextAuthOptions = {
         token.hotel = user.hotel ?? 'fr';
         token.role = user.role ?? 'member';
         token.email = user.email ?? null;
-        token.directusRoleId = user.directusRoleId ?? null;
-        token.directusRoleName = user.directusRoleName ?? null;
-        token.directusAdminAccess = user.directusAdminAccess === true;
+        token.roleId = user.roleId ?? null;
+        token.roleName = user.roleName ?? null;
+        token.adminAccess = user.adminAccess === true;
       }
       return token;
     },
     async session({ session, token }) {
+      const roleId = token.roleId ?? null;
+      const roleName = token.roleName ?? null;
+      const adminAccess = token.adminAccess === true;
       session.user = {
         id: token.uid,
         nick: token.nick,
@@ -154,9 +136,9 @@ export const authOptions: NextAuthOptions = {
         hotel: token.hotel ?? 'fr',
         role: token.role,
         email: token.email,
-        directusRoleId: token.directusRoleId ?? null,
-        directusRoleName: token.directusRoleName ?? null,
-        directusAdminAccess: token.directusAdminAccess === true,
+        roleId,
+        roleName,
+        adminAccess,
       };
       return session;
     },

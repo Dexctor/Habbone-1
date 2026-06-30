@@ -25,23 +25,19 @@ export async function assertAdmin(): Promise<AdminAssertion> {
     forbid();
   }
 
-  // Verify against the persisted PocketBase role relation.
-  const directusRoleId = sessionUser.directusRoleId;
-  if (directusRoleId) {
+  const roleId = sessionUser.roleId;
+  if (roleId) {
     try {
-      const roleRow = await getRoleById(String(directusRoleId));
+      const roleRow = await getRoleById(String(roleId));
       if (!roleRow || roleRow.admin_access !== true) {
-        // Role exists but doesn't have admin_access -> deny
-        // (unless ADMIN_NICKS fallback granted access, which is already in the token)
-        if (sessionUser.directusAdminAccess !== true) forbid();
+        if (sessionUser.adminAccess !== true) forbid();
       }
     } catch {
       // Backend unreachable -> trust the token only if it already says admin.
-      if (sessionUser.directusAdminAccess !== true) forbid();
+      if (sessionUser.adminAccess !== true) forbid();
     }
   } else {
-    // No persisted role at all -> only ADMIN_NICKS fallback can grant access.
-    if (sessionUser.directusAdminAccess !== true) forbid();
+    if (sessionUser.adminAccess !== true) forbid();
   }
 
   return { userId: sessionUser.id ?? null };

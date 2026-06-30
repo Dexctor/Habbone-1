@@ -42,7 +42,7 @@ type User = {
   last_name: string | null;
   status: string | null;
   role?: { id: string; name?: string } | string | null;
-  _source?: "legacy" | "directus";
+  _source?: "users";
   _roleName?: string | null;
   _flags?: { isFounder?: boolean; isAdmin?: boolean } | null;
 };
@@ -50,7 +50,7 @@ type User = {
 type AdminStatusPayload = {
   rolesVirtual: boolean;
   usersFallback: boolean;
-  usersSource: "legacy" | "directus" | "unknown";
+  usersSource: "users" | "unknown";
 };
 
 type ConfirmState = {
@@ -191,7 +191,7 @@ export default function AdminUsersPanel({
 
       const rows: User[] = Array.isArray(json?.data) ? json.data : [];
       const metaSource = json?.meta?.source;
-      const resolvedSource = metaSource === "legacy" || metaSource === "directus" ? metaSource : "unknown";
+      const resolvedSource = metaSource === "usuarios" || metaSource === "users" ? "users" : "unknown";
 
       setUsersSource(resolvedSource);
       setUsersFallback(Boolean(json?.meta?.fallback));

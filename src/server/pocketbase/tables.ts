@@ -2,8 +2,8 @@
  * Single source of truth for PocketBase collection names + frequently used
  * column names.
  *
- * Post-migration the app talks ONLY to the clean v2 PocketBase collections
- * (English names). The old legacy/USE_V2 dual mapping is gone.
+ * Post-migration the app talks only to the clean v2 PocketBase collections
+ * (English names). The old dual backend mapping is gone.
  */
 
 type TableMap = {
