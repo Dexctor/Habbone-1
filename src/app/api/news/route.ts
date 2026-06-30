@@ -16,6 +16,18 @@ const NewsBodySchema = z.object({
   imagem: z.string().max(500).nullable().optional(),
 })
 
+function normalizeCoverImage(value: string | null | undefined): string | null {
+  const image = String(value ?? '').trim()
+  if (!image) return null
+
+  try {
+    const url = new URL(image)
+    if (url.protocol === 'http:' || url.protocol === 'https:') return url.toString()
+  } catch {}
+
+  throw new Error('INVALID_COVER_IMAGE_URL')
+}
+
 export async function POST(req: Request): Promise<NextResponse> {
   try {
     const rl = checkRateLimit(req, { key: 'news:create', limit: 5, windowMs: 10 * 60 * 1000 })
@@ -37,10 +49,17 @@ export async function POST(req: Request): Promise<NextResponse> {
       return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    const { titulo: rawTitulo, descricao: rawDescricao, noticia: rawNoticia, imagem } = parsed.data
+    const { titulo: rawTitulo, descricao: rawDescricao, noticia: rawNoticia, imagem: rawImagem } = parsed.data
     const titulo = sanitizePlainText(rawTitulo)
     const descricao = rawDescricao ? sanitizePlainText(rawDescricao) : null
     const noticia = sanitizeRichContentHtml(rawNoticia)
+    let imagem: string | null = null
+
+    try {
+      imagem = normalizeCoverImage(rawImagem)
+    } catch {
+      return NextResponse.json({ error: "L'image de couverture doit être une URL valide." }, { status: 400 })
+    }
 
     if (!titulo || titulo.length < 3) {
       return NextResponse.json({ error: 'Titre trop court (min. 3 caractères)' }, { status: 400 })
@@ -49,7 +68,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const article = await adminCreateNews({
       titulo,
       descricao,
-      imagem: imagem ?? null,
+      imagem,
       noticia,
       autor: nick,
     })
@@ -61,6 +80,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     // (serialized as null), breaking the client redirect to the new article.
     return NextResponse.json({ ok: true, id: id != null ? String(id) : null })
   } catch (error: unknown) {
+    const status = typeof (error as any)?.status === 'number' ? (error as any).status : null
+    if (status && status >= 400 && status < 500) {
+      return NextResponse.json({ error: 'Données refusées par PocketBase' }, { status })
+    }
+
     const message = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
       { error: 'Erreur serveur', ...(process.env.NODE_ENV !== 'production' ? { detail: message } : {}) },

@@ -67,7 +67,6 @@ export default function NouveauArticlePage() {
   const [description, setDescription] = useState('')
   const [content, setContent] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-  const [imageId, setImageId] = useState('')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,7 +110,6 @@ export default function NouveauArticlePage() {
     setContent(buildBadgeContent(badge))
     // Use the badge image as cover
     setImageUrl(badge.image)
-    setImageId('')
     setEditorKey((k) => k + 1)
     setShowBadgeModal(false)
     setTemplate('badge')
@@ -128,19 +126,16 @@ export default function NouveauArticlePage() {
       setDescription('')
       setContent('')
       setImageUrl('')
-      setImageId('')
     } else if (id === 'update') {
       setTitle('Mise a jour Habbo - ')
       setDescription('Habbo vient de deployer une nouvelle mise a jour.')
       setContent(buildUpdateContent())
       setImageUrl('')
-      setImageId('')
     } else if (id === 'event') {
       setTitle('Evenement HabbOne - ')
       setDescription('Un nouvel evenement est organise sur HabbOne !')
       setContent(buildEventContent())
       setImageUrl('')
-      setImageId('')
     }
     setEditorKey((k) => k + 1)
   }
@@ -169,7 +164,7 @@ export default function NouveauArticlePage() {
           titulo: title.trim(),
           descricao: description.trim() || undefined,
           noticia: content,
-          imagem: imageId || imageUrl.trim() || undefined,
+          imagem: imageUrl.trim() || undefined,
         }),
       })
 
@@ -262,8 +257,8 @@ export default function NouveauArticlePage() {
             <input
               type="text"
               value={imageUrl}
-              onChange={(e) => { setImageUrl(e.target.value); setImageId('') }}
-              placeholder="URL ou UUID de l'image..."
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="URL de l'image..."
               className="h-[45px] flex-1 rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
             />
             <label className="inline-flex h-[45px] shrink-0 cursor-pointer items-center gap-2 rounded-[4px] border border-[#34345A] bg-[#1F1F3E] px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-[#BEBECE] transition hover:bg-[#25254D] hover:text-[#DDD]">
@@ -284,9 +279,8 @@ export default function NouveauArticlePage() {
                     formData.set('file', file)
                     const res = await fetch('/api/upload/image', { method: 'POST', body: formData })
                     const data = await res.json()
-                    if (data?.url && data?.id) {
+                    if (data?.url) {
                       setImageUrl(data.url)
-                      setImageId(data.id)
                     } else {
                       setError(data?.error || "Erreur lors de l'upload.")
                     }

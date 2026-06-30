@@ -70,7 +70,7 @@ export default function AdminRichEditor({
     const [showRoomIdModal, setShowRoomIdModal] = useState(false);
     const [roomIdInput, setRoomIdInput] = useState("");
     const extensions = [
-        StarterKit.configure({ codeBlock: false }),
+        StarterKit.configure({ codeBlock: false, link: false, underline: false }),
         Placeholder.configure({ placeholder }),
         TextAlign.configure({ types: ["heading", "paragraph"] }),
         Underline,
@@ -211,6 +211,10 @@ export default function AdminRichEditor({
             </div>
 
             <EditorContent editor={editor} />
+
+            <style>{`
+                .ProseMirror { white-space: pre-wrap; }
+            `}</style>
 
             {/* RoomID modal */}
             {showRoomIdModal && (

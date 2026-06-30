@@ -109,6 +109,8 @@ export default function RichEditor({
       bulletList: variant === "comment" ? false : undefined,
       orderedList: variant === "comment" ? false : undefined,
       heading: variant === "comment" ? false : undefined,
+      link: false,
+      underline: false,
     }),
     Placeholder.configure({ placeholder }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -310,7 +312,7 @@ export default function RichEditor({
 
       {/* ProseMirror content styles — remplace le plugin @tailwindcss/typography absent */}
       <style>{`
-        .ProseMirror { color: #fff; line-height: 1.65; }
+        .ProseMirror { color: #fff; line-height: 1.65; white-space: pre-wrap; }
         .ProseMirror:focus { outline: none; }
         .ProseMirror > * + * { margin-top: 0.6em; }
 
