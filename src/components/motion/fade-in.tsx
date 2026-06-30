@@ -18,8 +18,8 @@ export default function FadeIn<T extends keyof React.JSX.IntrinsicElements = 'di
   type MotionTag = keyof typeof motion
   const tag = (as || 'div') as MotionTag
   const Comp = motion[tag] as React.ComponentType<Record<string, unknown>>
-  const initial = reduce ? false : { opacity: 0, y: 10 }
-  const animate = reduce ? undefined : { opacity: 1, y: 0 }
+  const initial = reduce ? false : { opacity: 0, y: 14, scale: 0.996 }
+  const animate = reduce ? undefined : { opacity: 1, y: 0, scale: 1 }
 
   return (
     <Comp
@@ -27,7 +27,7 @@ export default function FadeIn<T extends keyof React.JSX.IntrinsicElements = 'di
       whileInView={animate}
       viewport={{ once: true, margin: '-6% 0px -6% 0px' }}
       transition={reduce ? { duration: 0 } : { ...transitions.reveal, delay }}
-      style={reduce ? undefined : { willChange: 'opacity, transform' }}
+      style={reduce ? undefined : { transformOrigin: '50% 0%', willChange: 'opacity, transform' }}
       className={cn(className)}
       {...(rest as Record<string, unknown>)}
     >
