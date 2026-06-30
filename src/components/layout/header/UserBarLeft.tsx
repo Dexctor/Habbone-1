@@ -257,7 +257,7 @@ export default function UserBarLeft({
               </Tooltip>
             </TooltipProvider>
           )}
-          {/* Story: caché sur mobile, visible sur sm+ */}
+          {/* Story */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -265,7 +265,7 @@ export default function UserBarLeft({
                   type="button"
                   onClick={onOpenStory}
                   aria-label="Publier une storie"
-                  className="hidden sm:grid rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.08)] ring-1 ring-white/5 hover:bg-[#2596FF] hover:text-white hover:ring-[#2596FF] transition-all"
+                  className="grid rounded-[4px] m-[1px] sm:m-[2px] h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] place-items-center text-[#BEBECE] bg-[rgba(255,255,255,.08)] ring-1 ring-white/5 hover:bg-[#2596FF] hover:text-white hover:ring-[#2596FF] transition-all"
                 >
                   <i className="material-icons text-[20px] sm:text-[24px]" aria-hidden>add_a_photo</i>
                 </button>

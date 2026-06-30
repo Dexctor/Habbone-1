@@ -1,7 +1,8 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toastError, toastSuccess } from '@/lib/sonner'
 
 type StoryUploadModalProps = {
@@ -12,19 +13,35 @@ type StoryUploadModalProps = {
 export default function StoryUploadModal({ open, onClose }: StoryUploadModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  return (
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [open])
+
+  if (!mounted) return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[60] bg-black/60 grid place-items-center px-4"
+          className="fixed inset-0 z-[1100] grid place-items-center bg-black/70 px-4 py-6 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="relative max-w-md w-full bg-[var(--bg-700)] border border-[var(--bg-800)] rounded-lg shadow-xl overflow-hidden"
+            className="relative w-full max-w-md overflow-hidden rounded-[8px] border border-[#141433] bg-[#1F1F3E] shadow-[0_24px_80px_-20px_rgba(0,0,0,0.85)]"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -34,9 +51,15 @@ export default function StoryUploadModal({ open, onClose }: StoryUploadModalProp
             aria-modal="true"
             aria-label="Publier une storie"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--bg-800)]">
-              <div className="font-semibold">Publier une storie</div>
-              <button className="rounded px-2 py-1 hover:bg-[var(--bg-600)]" onClick={onClose} aria-label="Fermer">Fermer</button>
+            <div className="flex items-center justify-between border-b border-[#141433] px-4 py-3">
+              <div className="font-semibold text-white">Publier une storie</div>
+              <button
+                className="grid h-9 w-9 place-items-center rounded-[6px] text-[22px] leading-none text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#2596FF]"
+                onClick={onClose}
+                aria-label="Fermer"
+              >
+                ×
+              </button>
             </div>
             <div className="p-4 space-y-3">
               <input
@@ -46,16 +69,18 @@ export default function StoryUploadModal({ open, onClose }: StoryUploadModalProp
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 disabled={busy}
               />
-              <p className="text-xs text-[var(--text-500)]">Formats autorisés: JPG, PNG, GIF. Limite: 10 stories / mois.</p>
+              <p className="text-xs text-[var(--text-500)]">
+                Formats autorisés: JPG, PNG, GIF. Max 10 MB, 1600x1600 px, 10 stories / mois.
+              </p>
             </div>
-            <div className="px-4 py-3 border-t border-[var(--bg-800)] flex justify-end gap-2">
+            <div className="flex justify-end gap-2 border-t border-[#141433] px-4 py-3">
               <button
-                className="rounded px-3 py-2 text-sm bg-[var(--bg-600)] hover:bg-[var(--bg-500)]"
+                className="rounded-[6px] bg-white/10 px-3 py-2 text-sm font-semibold text-[#BEBECE] transition-colors hover:bg-white/15 hover:text-white"
                 onClick={onClose}
                 disabled={busy}
               >Annuler</button>
               <button
-                className="rounded px-3 py-2 text-sm bg-[#0FD52F] text-white hover:brightness-90 disabled:opacity-50"
+                className="rounded-[6px] bg-[#0FD52F] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={async () => {
                   if (!file) { try { await toastError('Choisissez un fichier.') } catch {}; return }
                   setBusy(true)
@@ -80,7 +105,8 @@ export default function StoryUploadModal({ open, onClose }: StoryUploadModalProp
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 
