@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { formatDateTimeLoose } from "@/lib/date-utils"
+import { easings } from "@/lib/motion-tokens"
 
 export type StoryItem = {
   id: string
@@ -19,6 +20,35 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
   const [mounted, setMounted] = useState(false)
   const reduce = useReducedMotion()
   const activeDate = active ? formatDateTimeLoose(active.date) : ""
+  const listMotion = reduce
+    ? {}
+    : {
+        initial: "hidden",
+        whileInView: "show",
+        viewport: { once: true, amount: 0.6 },
+        variants: {
+          hidden: {},
+          show: {
+            transition: {
+              staggerChildren: 0.035,
+              delayChildren: 0.08,
+            },
+          },
+        },
+      }
+  const itemMotion = reduce
+    ? {}
+    : {
+        variants: {
+          hidden: { opacity: 0, y: 10, scale: 0.94 },
+          show: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: { duration: 0.38, ease: easings.soft },
+          },
+        },
+      }
 
   useEffect(() => {
     setMounted(true)
@@ -65,20 +95,21 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
 
   return (
     <div className="content">
-      <div className="flex gap-2.5 overflow-x-auto pb-2" id="boxs-storie">
+      <motion.div className="flex gap-2.5 overflow-x-auto pb-2" id="boxs-storie" {...listMotion}>
         {items.map((s) => (
-          <button
+          <motion.button
             key={s.id}
             className="box-storie shrink-0 w-[60px] h-[60px] grid place-items-center rounded-full border-2 border-[var(--blue-500)] p-0.5 hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-[var(--blue-500)] bg-[var(--bg-700)]"
             type="button"
             aria-label={`Story ${s.alt}`}
             onClick={() => setActive(s)}
+            {...itemMotion}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={s.src} alt={s.alt} className="img w-[48px] h-[48px] rounded-full object-cover" />
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       {mounted &&
         createPortal(

@@ -21,6 +21,7 @@ export const transitions = {
   standard: { duration: dur.md, ease: easings.std },
   page: { duration: 0.32, ease: easings.soft },
   reveal: { duration: 0.38, ease: easings.soft },
+  section: { duration: 0.62, ease: easings.soft },
 } as const
 
 export const variants = {
@@ -30,6 +31,10 @@ export const variants = {
   },
   reveal: {
     initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+  },
+  section: {
+    initial: { opacity: 0, y: 26 },
     animate: { opacity: 1, y: 0 },
   },
 } as const
