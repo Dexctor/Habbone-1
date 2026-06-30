@@ -11,6 +11,7 @@ export type HabboRankings = {
 };
 
 const RANKINGS_TTL = 60 * 30; // 30 minutes (HabboWidgets updates hourly)
+const RANKINGS_CACHE_VERSION = 'v2';
 
 /**
  * Parse a HabboWidgets habinfo HTML page and extract the 4 ranking values.
@@ -33,24 +34,27 @@ function parseRankings(html: string): HabboRankings {
     starGems: null,
   };
 
+  function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   function extract(pathSegment: string): { rank: number | null; score: number } | null {
-    // Scope to a small window after the link, up to the closing </div> of the .col block.
-    // This prevents the regex from continuing into unrelated content when the rank is "N/A".
-    const blockPattern = new RegExp(
-      `${pathSegment}[\\s\\S]{0,400}?<\\/div>`,
-      'i',
-    );
-    const blockMatch = html.match(blockPattern);
-    if (!blockMatch) return null;
-    const block = blockMatch[0];
+    const linkPattern = new RegExp(`href=["']${escapeRegExp(pathSegment)}[^"']*["']`, 'i');
+    const linkMatch = linkPattern.exec(html);
+    if (!linkMatch) return null;
+
+    // Read only the small widget column after the matching ranking link.
+    // HabboWidgets has changed surrounding markup a few times, so avoid relying
+    // on an exact Bootstrap structure while still preventing cross-block bleed.
+    const block = html.slice(linkMatch.index, linkMatch.index + 700);
 
     // Rank: either "# 123" (ranked) or "# N/A" (not ranked).
     const rankMatch = block.match(/#\s*(\d+|N\/A)/i);
     // Score: the "(NNNN)" right after the label.
-    const scoreMatch = block.match(/\((\d+)\)/);
+    const scoreMatch = block.match(/\(([\d\s.,]+)\)/);
 
     if (!scoreMatch) return null;
-    const score = Number(scoreMatch[1]);
+    const score = Number(scoreMatch[1].replace(/[^\d]/g, ''));
     if (!Number.isFinite(score)) return null;
 
     let rank: number | null = null;
@@ -106,7 +110,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const key = `habbo:rankings:${hotel}:${nick.toLowerCase()}`;
+    const key = `habbo:rankings:${RANKINGS_CACHE_VERSION}:${hotel}:${nick.toLowerCase()}`;
     const rankings = await cached<HabboRankings>(
       key,
       RANKINGS_TTL,
