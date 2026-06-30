@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
 
         // Brute-force protection. authorize() gets no Request (so no client IP),
         // so we throttle per-account by normalised nick. 10 attempts / 10 min.
-        const rl = checkRateLimitByKey(`login:${nick.toLowerCase()}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+        const rl = await checkRateLimitByKey(`login:${nick.toLowerCase()}`, { limit: 10, windowMs: 10 * 60 * 1000 });
         if (!rl.ok) {
           throw new Error('Trop de tentatives. Réessayez plus tard.');
         }

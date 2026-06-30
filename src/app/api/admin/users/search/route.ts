@@ -15,7 +15,7 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  const rl = checkRateLimit(req, { key: 'admin:users:search', limit: 60, windowMs: 60 * 1000 });
+  const rl = await checkRateLimit(req, { key: 'admin:users:search', limit: 60, windowMs: 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json({ error: 'RATE_LIMITED', code: 'RATE_LIMITED' }, { status: 429, headers: rl.headers });
   }

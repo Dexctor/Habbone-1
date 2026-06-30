@@ -30,7 +30,7 @@ function normalizeCoverImage(value: string | null | undefined): string | null {
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const rl = checkRateLimit(req, { key: 'news:create', limit: 5, windowMs: 10 * 60 * 1000 })
+    const rl = await checkRateLimit(req, { key: 'news:create', limit: 5, windowMs: 10 * 60 * 1000 })
     if (!rl.ok) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rl.headers })
     }

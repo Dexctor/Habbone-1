@@ -31,7 +31,7 @@ function normalizeHandle(input: string | null): string | null {
 const HANDLE_RE = /^[A-Za-z0-9_]{1,15}$/
 
 export async function POST(req: Request) {
-  const rl = checkRateLimit(req, { key: 'user:update-twitter', limit: 10, windowMs: 60 * 1000 })
+  const rl = await checkRateLimit(req, { key: 'user:update-twitter', limit: 10, windowMs: 60 * 1000 })
   if (!rl.ok) {
     return NextResponse.json({ error: 'Trop de tentatives, reessayez plus tard.' }, { status: 429, headers: rl.headers })
   }

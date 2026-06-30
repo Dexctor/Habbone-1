@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     // Soften but protect: 60 hits / 10 minutes per IP
-    const rl = checkRateLimit(req, { key: 'auth:check-user', limit: 60, windowMs: 10 * 60 * 1000 })
+    const rl = await checkRateLimit(req, { key: 'auth:check-user', limit: 60, windowMs: 10 * 60 * 1000 })
     if (!rl.ok) {
       return NextResponse.json(buildError('Trop de requêtes', { code: 'RATE_LIMITED' }), { status: 429, headers: rl.headers })
     }

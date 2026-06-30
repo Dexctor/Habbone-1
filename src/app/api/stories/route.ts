@@ -4,11 +4,18 @@ import { z } from 'zod'
 import { withAuth } from '@/server/api-helpers'
 import { uploadStoryFile, createStoryRow, countStoriesThisMonthByAuthor } from '@/server/pocketbase/stories'
 import { buildError, formatZodError } from '@/types/api'
+import { validateUploadedFile } from '@/server/upload-security'
 
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_MIME_SET = new Set(['image/png', 'image/jpeg', 'image/gif'])
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10MB
+
+function toBlobPart(buffer: Buffer): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(buffer.byteLength)
+  bytes.set(buffer)
+  return bytes
+}
 
 const StoryUploadSchema = z.object({
   file: z
@@ -27,6 +34,17 @@ export const POST = withAuth(async (req, { nick }) => {
     }
 
     const file = parsed.data.file
+    const validation = await validateUploadedFile(file, {
+      allowedMimes: ALLOWED_MIME_SET,
+      maxSize: MAX_FILE_BYTES,
+      allowSvg: false,
+    })
+    if (!validation.ok) {
+      return NextResponse.json(
+        buildError(validation.error, { code: validation.code }),
+        { status: 400 },
+      )
+    }
 
     const used = await countStoriesThisMonthByAuthor(nick).catch(() => 0)
     if (used >= 10) {
@@ -37,9 +55,9 @@ export const POST = withAuth(async (req, { nick }) => {
     }
 
     const filename = file.name?.trim() ? file.name.trim() : `story-${Date.now()}`
-    const mime = file.type || 'application/octet-stream'
+    const safeFile = new File([toBlobPart(validation.buffer)], filename, { type: validation.detectedMime })
 
-    const upload = await uploadStoryFile(file, filename, mime)
+    const upload = await uploadStoryFile(safeFile, filename, validation.detectedMime)
     const story = await createStoryRow({ author: nick, imageId: upload.id, title: filename })
     const storyId =
       story && typeof story === 'object' && story !== null ? (story as { id?: unknown }).id : null

@@ -19,7 +19,7 @@ const ERROR_NOT_FOUND = buildError('Utilisateur introuvable', { code: 'NOT_FOUND
 export async function POST(req: Request) {
   try {
     // Basic rate limit: 20 checks / 10 minutes per IP
-    const rl = checkRateLimit(req, { key: 'verify:status', limit: 20, windowMs: 10 * 60 * 1000 })
+    const rl = await checkRateLimit(req, { key: 'verify:status', limit: 20, windowMs: 10 * 60 * 1000 })
     if (!rl.ok) {
       return NextResponse.json(
         buildError('Trop de requêtes, réessayez plus tard.', { code: 'RATE_LIMITED' }),

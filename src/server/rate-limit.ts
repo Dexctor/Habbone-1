@@ -1,4 +1,5 @@
 import 'server-only'
+import { getRedis } from '@/server/redis'
 
 type Entry = { count: number; resetAt: number }
 
@@ -48,11 +49,50 @@ export function getClientIdentifier(req: Request): string {
  *
  * Returns { ok, retryAfter } — `retryAfter` is seconds until the window resets.
  */
-export function checkRateLimitByKey(
+function isRateLimitDisabled() {
+  return String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() === 'true'
+}
+
+async function checkRedisRateLimitByKey(
+  identifier: string,
+  opts?: { limit?: number; windowMs?: number },
+): Promise<{ ok: boolean; retryAfter: number; count: number; resetAt: number } | null> {
+  const r = getRedis()
+  if (!r) return null
+
+  const windowMs = Math.max(1000, opts?.windowMs ?? DEFAULT_WINDOW_MS)
+  const limit = Math.max(1, opts?.limit ?? DEFAULT_LIMIT)
+  const key = `rate:${identifier}`
+
+  try {
+    const count = await r.incr(key)
+    if (count === 1) {
+      await r.pexpire(key, windowMs)
+    }
+
+    let ttl = await r.pttl(key)
+    if (ttl < 0) {
+      await r.pexpire(key, windowMs)
+      ttl = windowMs
+    }
+
+    const resetAt = now() + ttl
+    return {
+      ok: count <= limit,
+      retryAfter: count > limit ? Math.ceil(ttl / 1000) : 0,
+      count,
+      resetAt,
+    }
+  } catch {
+    return null
+  }
+}
+
+function checkMemoryRateLimitByKey(
   identifier: string,
   opts?: { limit?: number; windowMs?: number },
 ): { ok: boolean; retryAfter: number } {
-  if (String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() === 'true') {
+  if (isRateLimitDisabled()) {
     return { ok: true, retryAfter: 0 }
   }
   const windowMs = Math.max(1000, opts?.windowMs ?? DEFAULT_WINDOW_MS)
@@ -80,11 +120,27 @@ export function checkRateLimitByKey(
   return { ok: true, retryAfter: 0 }
 }
 
-export function checkRateLimit(
+export async function checkRateLimitByKey(
+  identifier: string,
+  opts?: { limit?: number; windowMs?: number },
+): Promise<{ ok: boolean; retryAfter: number }> {
+  if (isRateLimitDisabled()) {
+    return { ok: true, retryAfter: 0 }
+  }
+
+  const redisResult = await checkRedisRateLimitByKey(identifier, opts)
+  if (redisResult) {
+    return { ok: redisResult.ok, retryAfter: redisResult.retryAfter }
+  }
+
+  return checkMemoryRateLimitByKey(identifier, opts)
+}
+
+export async function checkRateLimit(
   req: Request,
   opts: { key: string; limit?: number; windowMs?: number }
 ) {
-  if (String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() === 'true') {
+  if (isRateLimitDisabled()) {
     const headers = new Headers()
     headers.set('X-RateLimit-Bypass', 'true')
     return { ok: true as const, headers }
@@ -92,6 +148,20 @@ export function checkRateLimit(
   const windowMs = Math.max(1000, opts.windowMs ?? DEFAULT_WINDOW_MS)
   const limit = Math.max(1, opts.limit ?? DEFAULT_LIMIT)
   const id = `${opts.key}:${getClientIdentifier(req)}`
+
+  const redisResult = await checkRedisRateLimitByKey(id, { limit, windowMs })
+  if (redisResult) {
+    const headers = new Headers()
+    headers.set('X-RateLimit-Limit', String(limit))
+    headers.set('X-RateLimit-Remaining', String(Math.max(0, limit - redisResult.count)))
+    headers.set('X-RateLimit-Reset', String(Math.ceil(redisResult.resetAt / 1000)))
+    if (!redisResult.ok) {
+      headers.set('Retry-After', String(redisResult.retryAfter))
+      return { ok: false as const, headers }
+    }
+    headers.set('X-RateLimit-Store', 'redis')
+    return { ok: true as const, headers }
+  }
 
   const store = getStore()
 

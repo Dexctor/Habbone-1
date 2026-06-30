@@ -43,7 +43,7 @@ export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
     // Rate limit check
     if (rateLimit) {
-      const rl = checkRateLimit(req, rateLimit);
+      const rl = await checkRateLimit(req, rateLimit);
       if (!rl.ok) {
         return NextResponse.json(
           { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
@@ -89,7 +89,7 @@ export function withAuth(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
     // Rate limit check
     if (rateLimit) {
-      const rl = checkRateLimit(req, rateLimit);
+      const rl = await checkRateLimit(req, rateLimit);
       if (!rl.ok) {
         return NextResponse.json(
           { error: 'Trop de requêtes', code: 'RATE_LIMITED' },

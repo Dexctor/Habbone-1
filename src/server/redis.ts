@@ -5,7 +5,7 @@ const REDIS_URL = process.env.REDIS_URL?.trim() || '';
 
 let redis: Redis | null = null;
 
-function getRedis(): Redis | null {
+export function getRedis(): Redis | null {
   if (!REDIS_URL) return null;
   if (redis) return redis;
   try {

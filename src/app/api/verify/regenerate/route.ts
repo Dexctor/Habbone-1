@@ -15,7 +15,7 @@ const RETURN_VERIFICATION_CODE =
 export async function POST(req: Request) {
   try {
     // Basic rate limit: 10 requests / 10 minutes per IP
-    const rl = checkRateLimit(req, { key: 'verify:regenerate', limit: 10, windowMs: 10 * 60 * 1000 })
+    const rl = await checkRateLimit(req, { key: 'verify:regenerate', limit: 10, windowMs: 10 * 60 * 1000 })
     if (!rl.ok) {
       return NextResponse.json(
         buildError('Trop de requêtes, réessayez plus tard.', { code: 'RATE_LIMITED' }),

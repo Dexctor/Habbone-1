@@ -18,7 +18,7 @@ const ResetSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const rl = checkRateLimit(req, { key: 'user:forgot-password', limit: 10, windowMs: 10 * 60 * 1000 })
+  const rl = await checkRateLimit(req, { key: 'user:forgot-password', limit: 10, windowMs: 10 * 60 * 1000 })
   if (!rl.ok) {
     return NextResponse.json({ error: 'Trop de tentatives, reessayez plus tard.' }, { status: 429, headers: rl.headers })
   }
