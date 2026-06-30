@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { formatDateTimeLoose } from "@/lib/date-utils"
 
@@ -15,8 +16,13 @@ export type StoryItem = {
 
 export default function StoriesClient({ items }: { items: StoryItem[] }) {
   const [active, setActive] = useState<StoryItem | null>(null)
+  const [mounted, setMounted] = useState(false)
   const reduce = useReducedMotion()
   const activeDate = active ? formatDateTimeLoose(active.date) : ""
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Close on Escape
   useEffect(() => {
@@ -26,6 +32,15 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
+  }, [active])
+
+  useEffect(() => {
+    if (!active) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
   }, [active])
 
   const overlayAnim = useMemo(
@@ -65,60 +80,64 @@ export default function StoriesClient({ items }: { items: StoryItem[] }) {
         ))}
       </div>
 
-      <AnimatePresence>
-        {active && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/60 grid place-items-center px-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Story"
-            onClick={() => setActive(null)}
-            {...overlayAnim}
-          >
-            <motion.div
-              className="relative max-w-3xl w-full bg-[var(--bg-700)] border border-[var(--bg-800)] rounded-lg shadow-xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-              {...panelAnim}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--bg-800)]">
-                <div className="min-w-0">
-                  <div className="font-semibold text-[var(--text-100)] truncate">{active.alt}</div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--text-500)]">
-                    {active.author && <span>{active.author}</span>}
-                    {activeDate && (
-                      <>
-                        {active.author && <span className="opacity-50">•</span>}
-                        <time dateTime={String(active.date)}>Publié le {activeDate}</time>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <button
-                  className="rounded px-2 py-1 text-[var(--text-100)] hover:bg-[var(--bg-600)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-500)]"
-                  onClick={() => setActive(null)}
-                  aria-label="Fermer"
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {active && (
+              <motion.div
+                className="fixed inset-0 z-[1000] grid place-items-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Story"
+                onClick={() => setActive(null)}
+                {...overlayAnim}
+              >
+                <motion.div
+                  className="relative w-full max-w-[560px] overflow-hidden rounded-[8px] border border-[#141433] bg-[#1F1F3E] shadow-[0_24px_80px_-20px_rgba(0,0,0,0.85)]"
+                  onClick={(e) => e.stopPropagation()}
+                  {...panelAnim}
                 >
-                  ×
-                </button>
-              </div>
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-[#141433] px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-[var(--text-100)]">{active.alt}</div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--text-500)]">
+                        {active.author && <span>{active.author}</span>}
+                        {activeDate && (
+                          <>
+                            {active.author && <span className="opacity-50">•</span>}
+                            <time dateTime={String(active.date)}>Publié le {activeDate}</time>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      className="grid h-9 w-9 place-items-center rounded-[6px] text-[22px] leading-none text-[var(--text-100)] transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--blue-500)]"
+                      onClick={() => setActive(null)}
+                      aria-label="Fermer"
+                    >
+                      ×
+                    </button>
+                  </div>
 
-              {/* Image */}
-              <div className="w-full bg-black/20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.src} alt={active.alt} className="w-full h-auto max-h-[70vh] object-contain" />
-              </div>
+                  {/* Image */}
+                  <div className="grid max-h-[78vh] w-full place-items-center bg-black/20 p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={active.src} alt={active.alt} className="max-h-[72vh] w-auto max-w-full object-contain" />
+                  </div>
 
-              {/* Footer */}
-              {activeDate && (
-                <div className="px-4 py-3 border-t border-[var(--bg-800)] text-xs text-[var(--text-500)]">
-                  Date de publication : <time dateTime={String(active.date)}>{activeDate}</time>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
+                  {/* Footer */}
+                  {activeDate && (
+                    <div className="border-t border-[#141433] px-4 py-3 text-xs text-[var(--text-500)]">
+                      Date de publication : <time dateTime={String(active.date)}>{activeDate}</time>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   )
 }

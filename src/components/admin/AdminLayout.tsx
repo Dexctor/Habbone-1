@@ -234,6 +234,14 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="hidden items-center gap-2 rounded-[6px] border border-white/5 bg-white/[0.04] px-3 py-2 text-[12px] font-semibold text-admin-text-tertiary transition-colors hover:border-[#2596FF]/35 hover:bg-[#2596FF]/15 hover:text-white sm:flex"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voir le site
+            </Link>
+
             {/* Notification bell */}
             <div className="relative">
               <button
