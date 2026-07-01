@@ -157,8 +157,8 @@ export default function AdminThemeFeature() {
   return (
     <div className="space-y-5">
       {/* ── Preview ── */}
-      <section className="rounded-[4px] border border-[#141433] bg-[#25254D] overflow-hidden">
-        <header className="flex items-center justify-between px-4 py-2.5 border-b border-[#141433]">
+      <section className="overflow-hidden rounded-[10px] border border-white/10 bg-admin-bg-800/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <header className="flex items-center justify-between border-b border-white/10 bg-admin-bg-700/45 px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-white">Aperçu du header</p>
           <span className="text-[10px] uppercase tracking-[0.1em] text-admin-text-tertiary">
             {dirty ? "• Modifications non enregistrées" : "À jour"}
@@ -189,7 +189,7 @@ export default function AdminThemeFeature() {
       {/* ── Settings grid ── */}
       <div className="grid gap-5 md:grid-cols-2">
         {/* ── Logo column ── */}
-        <section className="space-y-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E]/40 p-4">
+        <section className="space-y-3 rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="flex items-center gap-2 pb-1">
             <ImageIcon className="h-4 w-4 text-admin-brand-blue" />
             <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-white">Logo</h3>
@@ -209,7 +209,7 @@ export default function AdminThemeFeature() {
                 }))
               }
               placeholder="/img/mon-logo.gif"
-              className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
+              className="h-[40px] rounded-[6px] border-white/10 bg-admin-bg-600 text-white"
             />
           </div>
 
@@ -228,7 +228,7 @@ export default function AdminThemeFeature() {
               type="button"
               onClick={() => logoInputRef.current?.click()}
               disabled={uploading === "logo"}
-              className="h-[36px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] text-xs font-bold uppercase text-white hover:bg-[#303060]"
+              className="h-[36px] w-full rounded-[6px] border border-white/10 bg-admin-bg-600 text-xs font-bold uppercase text-white hover:bg-admin-bg-500"
             >
               <Upload className="mr-2 h-3.5 w-3.5" />
               {uploading === "logo" ? "Envoi en cours..." : "Importer un logo"}
@@ -238,7 +238,7 @@ export default function AdminThemeFeature() {
             </p>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2.5 rounded-[4px] border border-[#141433] bg-[#1F1F3E] px-3 py-2.5 transition-colors hover:bg-[#25254D]">
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-[6px] border border-white/10 bg-admin-bg-600 px-3 py-2.5 transition-colors hover:bg-admin-bg-500">
             <input
               type="checkbox"
               checked={settings.showLogo}
@@ -250,7 +250,7 @@ export default function AdminThemeFeature() {
         </section>
 
         {/* ── Background column ── */}
-        <section className="space-y-3 rounded-[4px] border border-[#141433] bg-[#1F1F3E]/40 p-4">
+        <section className="space-y-3 rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="flex items-center gap-2 pb-1">
             <Palette className="h-4 w-4 text-admin-brand-blue" />
             <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-white">Fond du header</h3>
@@ -271,7 +271,7 @@ export default function AdminThemeFeature() {
                     headerBackgroundColor: event.target.value.toUpperCase(),
                   }))
                 }
-                className="h-[40px] w-14 shrink-0 rounded-[4px] border-[#141433] bg-[#1F1F3E] p-1 cursor-pointer"
+                className="h-[40px] w-14 shrink-0 cursor-pointer rounded-[6px] border-white/10 bg-admin-bg-600 p-1"
               />
               <Input
                 value={settings.headerBackgroundColor}
@@ -281,8 +281,8 @@ export default function AdminThemeFeature() {
                     headerBackgroundColor: event.target.value,
                   }))
                 }
-                className={`h-[40px] rounded-[4px] bg-[#1F1F3E] text-white font-mono uppercase ${
-                  colorValid ? "border-[#141433]" : "border-red-500/70 focus-visible:ring-red-500/30"
+                className={`h-[40px] rounded-[6px] bg-admin-bg-600 font-mono uppercase text-white ${
+                  colorValid ? "border-white/10" : "border-red-500/70 focus-visible:ring-red-500/30"
                 }`}
                 placeholder="#204E84"
                 maxLength={7}
@@ -307,7 +307,7 @@ export default function AdminThemeFeature() {
                 }))
               }
               placeholder="https://pb.habbone.fr/api/files/..."
-              className="h-[40px] rounded-[4px] border-[#141433] bg-[#1F1F3E] text-white"
+              className="h-[40px] rounded-[6px] border-white/10 bg-admin-bg-600 text-white"
             />
           </div>
 

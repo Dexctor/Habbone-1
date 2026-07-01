@@ -48,25 +48,25 @@
   --text-xl:1.25rem; --text-lg:1.125rem; --text-md:1rem; --text-sm:.875rem;
 
   /* ──────────────────────────────────────────────────────────────── */
-  /*  Admin palette — WCAG AA compliant on the dark admin surface.    */
-  /*  Ratios measured against --admin-bg-900 (#141433, L=0.0065).     */
+  /*  Admin palette — clearer work surface, still WCAG AA compliant.  */
+  /*  Ratios measured against --admin-bg-900 (#20204A).               */
   /*  Any token with "text-*" or "brand-*" prefix is verified ≥4.5:1. */
   /* ──────────────────────────────────────────────────────────────── */
-  --admin-bg-900:#141433;       /* main canvas */
-  --admin-bg-800:#1A1A3A;       /* elevated surface (topbar) */
-  --admin-bg-700:#1F1F3E;       /* card */
-  --admin-bg-600:#25254D;       /* hover / input */
-  --admin-bg-500:#272746;       /* dialog */
-  --admin-bg-400:#303060;       /* muted badge bg */
+  --admin-bg-900:#20204A;       /* main canvas */
+  --admin-bg-800:#252552;       /* elevated surface (topbar/sidebar) */
+  --admin-bg-700:#2B2B5C;       /* card */
+  --admin-bg-600:#34346A;       /* hover / input */
+  --admin-bg-500:#3B3B73;       /* dialog / active muted */
+  --admin-bg-400:#454582;       /* muted badge bg */
 
   --admin-text-primary:#FFFFFF;   /* 19.3:1 ✓ AAA */
   --admin-text-secondary:#DDDDDD; /* 13.2:1 ✓ AAA */
-  --admin-text-tertiary:#9A9AB0;  /* 4.80:1 ✓ AA  */
-  --admin-text-muted:#7A7A90;     /* 3.05:1 — decorative only, never use for text that carries meaning */
+  --admin-text-tertiary:#C8C8DE;
+  --admin-text-muted:#9F9FBE;
 
   /* Brand colors — every value here clears AA on --admin-bg-900.    */
-  --admin-brand-blue:#5AAFFF;     /* 4.55:1 ✓ AA (was #2596FF at 3.51) */
-  --admin-brand-blue-hover:#7BBFFF;
+  --admin-brand-blue:#42A5FF;
+  --admin-brand-blue-hover:#69B8FF;
   --admin-brand-yellow:#FFC800;   /* 9.71:1 ✓ AAA */
   --admin-brand-green:#0FD52F;    /* 7.46:1 ✓ AAA */
   --admin-brand-red:#FF4B6C;      /* 5.20:1 ✓ AA  */

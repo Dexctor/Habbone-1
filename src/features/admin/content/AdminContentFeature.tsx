@@ -240,8 +240,8 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
 
       <div className="space-y-4">
         {/* ── Primary content groups ───────────────────────────────── */}
-        <div className="rounded-[8px] border border-[#141433] bg-[#1F1F3E] p-2">
-          <div className="grid grid-cols-2 gap-1 lg:grid-cols-4">
+        <div className="rounded-[10px] border border-white/10 bg-admin-bg-800/80 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {CONTENT_GROUPS.map((group) => {
               const GroupIcon = group.icon;
               const active = contentGroup === group.id;
@@ -252,18 +252,23 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
                   type="button"
                   onClick={() => handleGroupChange(group.id)}
                   className={cn(
-                    "flex items-center justify-between gap-3 rounded-[6px] px-3 py-2.5 text-left transition-colors",
+                    "flex min-h-[62px] items-center justify-between gap-3 rounded-[8px] border px-3 py-2.5 text-left transition-colors",
                     active
-                      ? "bg-[#2596FF] text-white shadow-[0_10px_22px_-14px_rgba(37,150,255,0.9)]"
-                      : "text-admin-text-secondary hover:bg-white/[0.04] hover:text-white",
+                      ? "border-[#42A5FF]/55 bg-[#42A5FF]/18 text-white shadow-[0_12px_28px_-20px_rgba(66,165,255,0.95)]"
+                      : "border-transparent bg-white/[0.035] text-admin-text-secondary hover:border-white/10 hover:bg-white/[0.07] hover:text-white",
                   )}
                   aria-pressed={active}
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <GroupIcon className="h-4 w-4 shrink-0" />
-                    <span className="truncate text-[13px] font-bold">{group.label}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-[7px]", active ? "bg-[#42A5FF] text-white" : "bg-admin-bg-600 text-admin-text-tertiary")}>
+                      <GroupIcon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-black uppercase tracking-[0.04em]">{group.label}</span>
+                      <span className="mt-0.5 block text-[10px] font-medium text-admin-text-tertiary">{group.types.map((type) => CONTENT_META[type].label).join(" / ")}</span>
+                    </span>
                   </span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", active ? "bg-white/20" : "bg-white/5")}>
+                  <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-black", active ? "bg-white/20" : "bg-white/[0.08]")}>
                     {count.toLocaleString("fr-FR")}
                   </span>
                 </button>
@@ -273,7 +278,7 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
         </div>
 
         {/* ── Toolbar: subtype + search + counter ──────────────────── */}
-        <div className="rounded-[8px] border border-[#141433] bg-[#1F1F3E] p-3">
+        <div className="rounded-[10px] border border-white/10 bg-admin-bg-800/80 p-3">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="flex flex-wrap items-center gap-1.5">
               {activeGroup.types.length > 1 && (
@@ -293,8 +298,8 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
                     className={cn(
                       "inline-flex h-9 items-center gap-2 rounded-[5px] px-3 text-[12px] font-bold transition-colors",
                       active
-                        ? "bg-[#2596FF]/15 text-admin-brand-blue ring-1 ring-[#2596FF]/30"
-                        : "bg-white/[0.04] text-admin-text-tertiary hover:bg-white/[0.07] hover:text-white",
+                        ? "bg-[#42A5FF]/18 text-white ring-1 ring-[#42A5FF]/45"
+                        : "bg-white/[0.06] text-admin-text-tertiary hover:bg-white/[0.10] hover:text-white",
                     )}
                     aria-pressed={active}
                   >
@@ -317,7 +322,7 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
                   setSelectedId(null);
                   setIsEditing(false);
                 }}
-                className="h-[42px] rounded-[5px] border-[#141433] bg-[#25254D] pl-10 pr-10 text-white placeholder:text-admin-text-tertiary"
+                className="h-[42px] rounded-[6px] border-white/10 bg-admin-bg-600 pl-10 pr-10 text-white placeholder:text-admin-text-muted focus-visible:ring-[#42A5FF]/35"
               />
               {search && (
                 <button
@@ -364,11 +369,11 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
           {/* List — hidden on mobile when detail is open */}
           <div
             className={cn(
-              "overflow-hidden rounded-[6px] border border-[#141433] bg-[#1F1F3E]",
+              "overflow-hidden rounded-[10px] border border-white/10 bg-admin-bg-800/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
               mobileShowDetail && "hidden xl:block",
             )}
           >
-            <div className="flex items-center justify-between border-b border-[#141433] px-4 py-2.5">
+            <div className="flex items-center justify-between border-b border-white/10 bg-admin-bg-700/45 px-4 py-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">
                 {searchLower ? "Résultats" : "Liste"}
               </p>
@@ -445,13 +450,13 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
           {/* Detail panel — full width on mobile when open */}
           <div
             className={cn(
-              "min-h-[620px] overflow-hidden rounded-[6px] border border-[#141433] bg-[#1F1F3E]",
+              "min-h-[620px] overflow-hidden rounded-[10px] border border-white/10 bg-admin-bg-800/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
               !mobileShowDetail && "hidden xl:block",
             )}
           >
             {/* Mobile: back to list */}
             {mobileShowDetail && selectedItem && (
-              <div className="flex items-center gap-2 border-b border-[#141433] px-3 py-2 xl:hidden">
+              <div className="flex items-center gap-2 border-b border-white/10 bg-admin-bg-700/45 px-3 py-2 xl:hidden">
                 <button
                   type="button"
                   onClick={() => setMobileShowDetail(false)}

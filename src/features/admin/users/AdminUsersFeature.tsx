@@ -471,7 +471,7 @@ export default function AdminUsersFeature({
               }
             }}
             aria-label="Rechercher un utilisateur"
-            className="h-[42px] w-full rounded-[6px] border border-white/10 bg-[#141433]/60 pl-10 pr-4 text-[13px] text-white placeholder:text-admin-text-tertiary focus:border-[#2596FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
+            className="h-[42px] w-full rounded-[7px] border border-white/10 bg-admin-bg-600 pl-10 pr-4 text-[13px] text-white placeholder:text-admin-text-muted focus:border-[#42A5FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#42A5FF]/40"
           />
         </div>
 
@@ -508,7 +508,7 @@ export default function AdminUsersFeature({
       {loading && items.length === 0 ? (
         <div className="py-12 text-center text-[13px] text-admin-text-tertiary">Chargement...</div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-[8px] border border-dashed border-white/10 bg-[#141433]/30 p-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed border-white/15 bg-admin-bg-800/70 p-12 text-center">
           <div className="grid h-12 w-12 place-items-center rounded-full bg-white/5 text-admin-text-tertiary">
             <Users className="h-6 w-6" />
           </div>
@@ -518,10 +518,10 @@ export default function AdminUsersFeature({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[8px] border border-white/5">
+        <div className="overflow-x-auto rounded-[10px] border border-white/10 bg-admin-bg-800/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <table className="w-full min-w-[750px] text-left">
             <thead>
-              <tr className="border-b border-white/5 bg-[#141433]/60">
+              <tr className="border-b border-white/10 bg-admin-bg-700/60">
                 <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-admin-text-tertiary">
                   Utilisateur
                 </th>
@@ -880,7 +880,7 @@ function FilterDropdown({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className={`flex h-[42px] w-full items-center justify-between gap-2 rounded-[6px] border border-white/10 bg-[#141433]/60 px-3 text-[13px] transition-colors focus:border-[#2596FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40 ${
+            className={`flex h-[42px] w-full items-center justify-between gap-2 rounded-[7px] border border-white/10 bg-admin-bg-600 px-3 text-[13px] transition-colors focus:border-[#42A5FF]/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#42A5FF]/40 ${
               selected && selected.value ? "text-white" : "text-admin-text-tertiary"
             }`}
           >
@@ -890,7 +890,7 @@ function FilterDropdown({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
-          className="min-w-[180px] border-white/10 bg-[#1E1E3D] text-white"
+          className="min-w-[180px] border-white/10 bg-admin-bg-700 text-white"
         >
           {options.map((opt) => {
             const isSelected = opt.value === value;
@@ -898,7 +898,7 @@ function FilterDropdown({
               <DropdownMenuItem
                 key={opt.value}
                 onClick={() => onChange(opt.value)}
-                className="flex cursor-pointer items-center justify-between gap-2 text-[13px] text-[#BEBECE]/80 transition-colors focus:bg-[#2596FF]/10 focus:text-white"
+                className="flex cursor-pointer items-center justify-between gap-2 text-[13px] text-admin-text-secondary transition-colors focus:bg-[#42A5FF]/14 focus:text-white"
               >
                 <span className="truncate">{opt.label}</span>
                 {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-admin-brand-blue" />}
@@ -917,7 +917,7 @@ function FilterDropdown({
 
 function MiniStatCard({ value, label, color }: { value: number; label: string; color: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-[8px] border border-white/5 bg-[#141433]/50 px-4 py-3.5">
+    <div className="flex items-center gap-3 rounded-[10px] border border-white/10 bg-admin-bg-800/75 px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-[6px] ${color} text-[13px] font-bold text-white`}>
         {value}
       </div>

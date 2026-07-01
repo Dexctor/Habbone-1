@@ -549,7 +549,7 @@ function ActionPanel({
   const hasWork = items.some((item) => item.value > 0);
 
   return (
-    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+    <motion.section variants={STAGGER_ITEM} className="rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
       <PanelHeader title={title} subtitle={subtitle} />
       {!hasWork ? (
         <div className="flex items-center gap-3 rounded-[6px] bg-[#0FD52F]/[0.06] px-3 py-3">
@@ -580,7 +580,7 @@ function ShopPanel({
   onOpenShop: () => void;
 }) {
   return (
-    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+    <motion.section variants={STAGGER_ITEM} className="rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <PanelHeader
           title="Boutique"
@@ -626,7 +626,7 @@ function ShopPanel({
 
 function HealthPanel({ items }: { items: HealthItem[] }) {
   return (
-    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+    <motion.section variants={STAGGER_ITEM} className="rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
       <PanelHeader title="Santé du site" subtitle="Signaux rapides du back-office" />
       <div className="space-y-2">
         {items.map((item) => {
@@ -650,7 +650,7 @@ function HealthPanel({ items }: { items: HealthItem[] }) {
 
 function ActivityPanel({ items }: { items: RecentActivityItem[] }) {
   return (
-    <motion.section variants={STAGGER_ITEM} className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
+    <motion.section variants={STAGGER_ITEM} className="rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
       <div className="mb-4 flex items-center justify-between">
         <PanelHeader title="Activité récente" subtitle={`${items.length} événement${items.length > 1 ? 's' : ''}`} />
       </div>
@@ -727,7 +727,7 @@ function StatCard({
       variants={STAGGER_ITEM}
       whileHover={{ y: -4, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
       whileTap={{ scale: 0.98 }}
-      className="group relative overflow-hidden rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/25 hover:bg-[#141433]/70 hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2596FF]/40"
+      className="group relative overflow-hidden rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-[#42A5FF]/35 hover:bg-admin-bg-700 hover:shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#42A5FF]/40"
     >
       {/* subtle hover sheen */}
       <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#2596FF]/0 blur-2xl transition-colors duration-300 group-hover:bg-[#2596FF]/10" />
@@ -766,7 +766,7 @@ function QuickCard({
       variants={STAGGER_ITEM}
       whileHover={{ y: -4, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
       whileTap={{ scale: 0.98 }}
-      className="group rounded-[8px] border border-white/5 bg-[#141433]/50 p-5 text-left transition-colors hover:border-[#2596FF]/30 hover:bg-[#141433]/80 hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)]"
+      className="group rounded-[10px] border border-white/10 bg-admin-bg-800/75 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-colors hover:border-[#42A5FF]/35 hover:bg-admin-bg-700 hover:shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)]"
     >
       <div className="flex items-center gap-3">
         <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] transition-all duration-300 group-hover:scale-110 ${cls.icon}`}>

@@ -274,13 +274,13 @@ export default function AdminRolesFeature() {
       {/* Roles list */}
       <div className="mt-5 space-y-2">
         {loading && roleList.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-[8px] border border-dashed border-[#141433] p-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-white/15 bg-admin-bg-800/70 p-10 text-center">
             <p className="text-[13px] text-admin-text-tertiary">Chargement des rôles…</p>
           </div>
         )}
 
         {!loading && roleList.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-[8px] border border-dashed border-[#141433] p-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed border-white/15 bg-admin-bg-800/70 p-10 text-center">
             <Shield className="h-8 w-8 text-admin-text-tertiary" />
             <div>
               <p className="text-[14px] font-semibold text-white">Aucun rôle configuré</p>
@@ -296,14 +296,14 @@ export default function AdminRolesFeature() {
           return (
             <article
               key={role.id}
-              className="flex items-center gap-4 rounded-[8px] border border-[#141433] bg-[#1F1F3E] px-4 py-3.5 transition-colors hover:bg-[#25254D]"
+              className="flex items-center gap-4 rounded-[10px] border border-white/10 bg-admin-bg-800/75 px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors hover:border-[#42A5FF]/25 hover:bg-admin-bg-700"
             >
               {/* Icon */}
               <div
                 className={`grid h-10 w-10 shrink-0 place-items-center rounded-[8px] ${
                   role.admin_access
                     ? 'bg-admin-brand-blue/15 text-admin-brand-blue'
-                    : 'bg-[#303060] text-admin-text-tertiary'
+                    : 'bg-admin-bg-600 text-admin-text-tertiary'
                 }`}
               >
                 {iconFor(role.name)}

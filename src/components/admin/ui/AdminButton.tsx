@@ -7,12 +7,12 @@ type AdminButtonTone = "primary" | "secondary" | "success" | "warning" | "danger
 type AdminButtonSize = "sm" | "md";
 
 const toneClasses: Record<AdminButtonTone, string> = {
-  primary: "border-transparent bg-admin-brand-blue text-white hover:bg-admin-brand-blue-hover",
-  secondary: "border-[#141433] bg-admin-bg-600 text-white hover:bg-admin-bg-400",
+  primary: "border-transparent bg-admin-brand-blue text-white shadow-[0_10px_24px_-14px_rgba(66,165,255,0.9)] hover:bg-admin-brand-blue-hover",
+  secondary: "border-white/10 bg-admin-bg-600 text-white hover:bg-admin-bg-500",
   success: "border-transparent bg-admin-brand-green text-white hover:bg-[#16B354]",
   warning: "border-transparent bg-admin-brand-yellow text-black hover:bg-[#E6B400]",
   danger: "border-transparent bg-admin-brand-red-strong text-white hover:bg-[#E11036]",
-  ghost: "border-transparent bg-white/[0.04] text-admin-text-tertiary hover:bg-white/[0.08] hover:text-white",
+  ghost: "border-white/10 bg-admin-bg-700/70 text-admin-text-tertiary hover:bg-admin-bg-600 hover:text-white",
 };
 
 const sizeClasses: Record<AdminButtonSize, string> = {

@@ -59,20 +59,23 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { view, setView } = useAdminView();
 
   return (
-    <nav className="flex h-full flex-col p-3">
+    <nav className="flex h-full flex-col p-4">
       {/* Logo / brand */}
-      <div className="mb-6 flex items-center gap-2.5 px-3 py-2">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-[6px] bg-gradient-to-br from-[#2596FF] to-[#2976E8] text-[13px] font-bold text-white shadow-[0_4px_12px_-2px_rgba(37,150,255,0.5)]">
+      <div className="mb-5 flex items-center gap-3 rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-gradient-to-br from-[#42A5FF] to-[#2976E8] text-[14px] font-black text-white shadow-[0_8px_18px_-8px_rgba(66,165,255,0.9)]">
           H
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-white">Habbone</p>
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-admin-text-tertiary">Panneau admin</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-admin-text-tertiary">Panneau admin</p>
         </div>
       </div>
 
       {/* Nav items */}
-      <div className="flex flex-1 flex-col gap-0.5">
+      <div className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.12em] text-admin-text-muted">
+        Navigation
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5">
         {NAV_ITEMS.map((item) => {
           const active = view === item.id;
           return (
@@ -83,19 +86,25 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 setView(item.id);
                 onNavigate?.();
               }}
-              className={`group relative flex items-center gap-3 rounded-[6px] px-3 py-2.5 text-[13px] font-semibold transition-colors duration-200 ${
-                active ? 'text-white' : 'text-[#BEBECE]/80 hover:bg-white/[0.04] hover:text-white'
+              className={`group relative flex min-h-[46px] items-center gap-3 overflow-hidden rounded-[9px] border px-3 text-[13px] font-bold transition-colors duration-200 ${
+                active
+                  ? 'border-[#42A5FF]/45 bg-[#42A5FF]/16 text-white shadow-[0_10px_26px_-18px_rgba(66,165,255,0.95)]'
+                  : 'border-transparent text-admin-text-tertiary hover:border-white/10 hover:bg-white/[0.07] hover:text-white'
               }`}
             >
               {/* animated active background (shared layout) */}
               {active && (
                 <motion.span
                   layoutId="admin-nav-active"
-                  className="absolute inset-0 rounded-[6px] bg-gradient-to-r from-[#2596FF] to-[#2976E8] shadow-[0_4px_14px_-4px_rgba(37,150,255,0.6)]"
+                  className="absolute inset-y-1 left-1 w-1 rounded-full bg-[#42A5FF] shadow-[0_0_14px_rgba(66,165,255,0.9)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}
-              <span className="relative z-10 grid place-items-center transition-transform duration-200 group-hover:scale-110">
+              <span
+                className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-[7px] transition-colors duration-200 ${
+                  active ? 'bg-[#42A5FF] text-white' : 'bg-white/[0.06] text-admin-text-tertiary group-hover:bg-white/10 group-hover:text-white'
+                }`}
+              >
                 {item.icon}
               </span>
               <span className="relative z-10">{item.label}</span>
@@ -106,10 +115,10 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Separator + back to site at bottom */}
       <div className="mt-auto">
-        <div className="mb-2 h-px bg-white/5" />
+        <div className="mb-2 h-px bg-white/10" />
         <Link
           href="/"
-          className="group flex items-center gap-3 rounded-[6px] px-3 py-2.5 text-[13px] font-semibold text-admin-text-tertiary transition-colors hover:bg-white/[0.04] hover:text-white"
+          className="group flex min-h-[44px] items-center gap-3 rounded-[9px] border border-white/10 bg-white/[0.04] px-3 text-[13px] font-bold text-admin-text-secondary transition-colors hover:border-[#42A5FF]/40 hover:bg-[#42A5FF]/12 hover:text-white"
         >
           <ArrowLeft className="h-[18px] w-[18px] transition-transform duration-200 group-hover:-translate-x-0.5" />
           Voir le site
@@ -214,9 +223,9 @@ export default function AdminLayout({
 
   return (
     <AdminViewProvider>
-      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#141433]">
+      <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-admin-bg-900">
         {/* ── Top bar ── */}
-        <header className="flex h-[52px] shrink-0 items-center justify-between border-b border-white/5 bg-[#1A1A3A] px-4 lg:px-6">
+        <header className="flex h-[58px] shrink-0 items-center justify-between border-b border-white/10 bg-admin-bg-800 px-4 shadow-[0_12px_34px_-28px_rgba(0,0,0,0.9)] lg:px-6">
           <div className="flex items-center gap-3">
             {/* Mobile menu toggle */}
             <button
@@ -229,14 +238,14 @@ export default function AdminLayout({
             </button>
 
             <span className="text-[13px] text-admin-text-tertiary">
-              habbone.fr / <span className="text-admin-brand-blue">admin</span>
+              habbone.fr / <span className="font-bold text-admin-brand-blue">admin</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="hidden items-center gap-2 rounded-[6px] border border-white/5 bg-white/[0.04] px-3 py-2 text-[12px] font-semibold text-admin-text-tertiary transition-colors hover:border-[#2596FF]/35 hover:bg-[#2596FF]/15 hover:text-white sm:flex"
+              className="hidden items-center gap-2 rounded-[7px] border border-white/10 bg-white/[0.06] px-3 py-2 text-[12px] font-bold text-admin-text-secondary transition-colors hover:border-[#42A5FF]/40 hover:bg-[#42A5FF]/14 hover:text-white sm:flex"
             >
               <ArrowLeft className="h-4 w-4" />
               Voir le site
@@ -247,7 +256,7 @@ export default function AdminLayout({
               <button
                 type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative grid h-9 w-9 place-items-center rounded-[6px] text-admin-text-tertiary transition-colors hover:bg-white/5 hover:text-white"
+                className="relative grid h-9 w-9 place-items-center rounded-[7px] text-admin-text-tertiary transition-colors hover:bg-white/10 hover:text-white"
                 aria-label={`Notifications${notifCount > 0 ? ` (${notifCount} non lues)` : ''}`}
               >
                 <motion.span
@@ -265,7 +274,7 @@ export default function AdminLayout({
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-                      className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#F92330] px-1 text-[10px] font-bold text-white ring-2 ring-[#1A1A3A]"
+                      className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#F92330] px-1 text-[10px] font-bold text-white ring-2 ring-admin-bg-800"
                     >
                       {notifCount > 9 ? '9+' : notifCount}
                     </motion.span>
@@ -361,7 +370,7 @@ export default function AdminLayout({
             </div>
 
             {/* Admin badge */}
-            <div className="flex items-center gap-2 rounded-[6px] bg-white/5 px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-[8px] border border-white/10 bg-white/[0.07] px-3 py-1.5">
               <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#2596FF] to-[#2976E8] text-[11px] font-bold uppercase text-white">
                 {adminName.charAt(0)}
               </div>
@@ -372,7 +381,7 @@ export default function AdminLayout({
 
         <div className="flex flex-1 overflow-hidden">
           {/* ── Sidebar (desktop) ── */}
-          <aside className="hidden w-[230px] shrink-0 overflow-y-auto border-r border-white/5 bg-[#141433] lg:block">
+          <aside className="hidden w-[250px] shrink-0 overflow-y-auto border-r border-white/10 bg-admin-bg-800 lg:block">
             <Sidebar />
           </aside>
 
@@ -394,7 +403,7 @@ export default function AdminLayout({
                   animate={{ x: 0 }}
                   exit={{ x: -280 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                  className="fixed inset-y-0 left-0 z-50 w-[260px] overflow-y-auto bg-[#141433] pt-[52px] shadow-2xl lg:hidden"
+                  className="fixed inset-y-0 left-0 z-50 w-[280px] overflow-y-auto bg-admin-bg-800 pt-[58px] shadow-2xl lg:hidden"
                 >
                   <Sidebar onNavigate={() => setMobileOpen(false)} />
                 </motion.aside>
@@ -403,7 +412,7 @@ export default function AdminLayout({
           </AnimatePresence>
 
           {/* ── Main content ── */}
-          <main className="flex-1 overflow-y-auto bg-[#1A1A3A] p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(66,165,255,0.10),transparent_34%),linear-gradient(180deg,#292957_0%,#20204A_60%,#20204A_100%)] p-4 sm:p-6 lg:p-8">
             {children}
           </main>
         </div>

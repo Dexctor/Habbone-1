@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 type AdminPanelTone = "default" | "muted" | "accent";
 
 const toneClasses: Record<AdminPanelTone, string> = {
-  default: "border-white/5 bg-admin-bg-900/50",
-  muted: "border-[#141433] bg-admin-bg-700",
-  accent: "border-admin-brand-blue/20 bg-admin-bg-900/50",
+  default: "border-white/10 bg-admin-bg-800/75 shadow-[0_18px_50px_-38px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,255,255,0.05)]",
+  muted: "border-white/10 bg-admin-bg-700",
+  accent: "border-admin-brand-blue/30 bg-admin-brand-blue/[0.08]",
 };
 
 export interface AdminPanelProps extends HTMLAttributes<HTMLDivElement> {
