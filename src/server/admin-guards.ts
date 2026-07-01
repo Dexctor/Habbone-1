@@ -5,13 +5,27 @@ import type { Session } from 'next-auth';
 import { pbOne } from '@/server/pocketbase/helpers';
 import { TABLES } from '@/server/pocketbase/tables';
 import { getRoleById } from '@/server/pocketbase/roles';
-import { cleanUserId, decideGuard, isFounderRoleName } from '@/server/admin-guards-core';
+import {
+  cleanUserId,
+  decideGuard,
+  hasFounderPrivileges,
+  isOwnerRoleName,
+  isProtectedFounderRoleName,
+} from '@/server/admin-guards-core';
 
 const USERS_TABLE = TABLES.users;
 
 export type AdminGuardResult =
-  | { ok: true; target: { id: string; nick: string; roleId: string | null; isAdmin: boolean } }
+  | {
+      ok: true;
+      target: { id: string; nick: string; roleId: string | null; isAdmin: boolean; isFounder: boolean };
+    }
   | { ok: false; response: NextResponse };
+
+export type AdminPrivilege = {
+  isFounder: boolean;
+  isOwner: boolean;
+};
 
 async function fetchTarget(userId: string) {
   const cleanId = cleanUserId(userId);
@@ -40,27 +54,35 @@ async function fetchTarget(userId: string) {
 export async function guardTargetUser(opts: {
   callerId: string | null | undefined;
   callerIsFounder?: boolean;
+  callerIsOwner?: boolean;
   targetUserId: string;
   action: 'ban' | 'unban' | 'delete' | 'role_change' | 'coins';
 }): Promise<AdminGuardResult> {
   const target = await fetchTarget(opts.targetUserId);
-  const callerIsFounder = await resolveCallerIsFounder(opts.callerId, !!opts.callerIsFounder);
+  const callerPrivilege = await resolveCallerAdminPrivilege(opts.callerId, {
+    isFounder: !!opts.callerIsFounder,
+    isOwner: !!opts.callerIsOwner,
+  });
 
   let targetIsAdmin = false;
+  let targetIsFounder = false;
   if (target?.roleId) {
     try {
       const role = await getRoleById(target.roleId);
       targetIsAdmin = role?.admin_access === true;
+      targetIsFounder = isProtectedFounderRoleName(role?.name);
     } catch {
       targetIsAdmin = false;
+      targetIsFounder = false;
     }
   }
 
   const decision = decideGuard({
     callerId: opts.callerId ?? null,
-    callerIsFounder,
+    callerIsFounder: callerPrivilege.isFounder,
+    callerIsOwner: callerPrivilege.isOwner,
     targetUserId: opts.targetUserId,
-    target: target ? { id: target.id, isAdmin: targetIsAdmin } : null,
+    target: target ? { id: target.id, isAdmin: targetIsAdmin, isFounder: targetIsFounder } : null,
     action: opts.action,
   });
 
@@ -81,29 +103,59 @@ export async function guardTargetUser(opts: {
       nick: target!.nick,
       roleId: target!.roleId,
       isAdmin: targetIsAdmin,
+      isFounder: targetIsFounder,
     },
   };
 }
 
 export function isCallerFounder(user: Session['user'] | null | undefined): boolean {
-  return isFounderRoleName(user?.roleName);
+  return hasFounderPrivileges(user?.roleName);
+}
+
+export function isCallerOwner(user: Session['user'] | null | undefined): boolean {
+  return isOwnerRoleName(user?.roleName);
 }
 
 export async function resolveCallerIsFounder(
   callerId: string | null | undefined,
   sessionFallback = false,
 ): Promise<boolean> {
+  const privilege = await resolveCallerAdminPrivilege(callerId, { isFounder: sessionFallback });
+  return privilege.isFounder;
+}
+
+export async function resolveCallerAdminPrivilege(
+  callerId: string | null | undefined,
+  sessionFallback: Partial<AdminPrivilege> = {},
+): Promise<AdminPrivilege> {
   const cleanId = callerId ? cleanUserId(callerId) : '';
-  if (!cleanId) return sessionFallback;
+  if (!cleanId) {
+    return {
+      isFounder: !!sessionFallback.isFounder || !!sessionFallback.isOwner,
+      isOwner: !!sessionFallback.isOwner,
+    };
+  }
 
   try {
     const caller = await fetchTarget(cleanId);
-    if (!caller) return sessionFallback;
-    if (!caller.roleId) return false;
+    if (!caller) {
+      return {
+        isFounder: !!sessionFallback.isFounder || !!sessionFallback.isOwner,
+        isOwner: !!sessionFallback.isOwner,
+      };
+    }
+    if (!caller.roleId) return { isFounder: false, isOwner: false };
 
     const role = await getRoleById(caller.roleId);
-    return isFounderRoleName(role?.name);
+    const isOwner = isOwnerRoleName(role?.name);
+    return {
+      isFounder: isOwner || hasFounderPrivileges(role?.name),
+      isOwner,
+    };
   } catch {
-    return sessionFallback;
+    return {
+      isFounder: !!sessionFallback.isFounder || !!sessionFallback.isOwner,
+      isOwner: !!sessionFallback.isOwner,
+    };
   }
 }

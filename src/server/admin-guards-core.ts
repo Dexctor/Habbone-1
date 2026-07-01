@@ -13,15 +13,17 @@ export type GuardDecision =
 export type GuardDenyCode =
   | 'SELF_ACTION_FORBIDDEN'
   | 'TARGET_NOT_FOUND'
-  | 'ADMIN_TARGET_FORBIDDEN';
+  | 'ADMIN_TARGET_FORBIDDEN'
+  | 'FOUNDER_TARGET_FORBIDDEN';
 
 export type GuardAction = 'ban' | 'unban' | 'delete' | 'role_change' | 'coins';
 
 export type GuardInputs = {
   callerId: string | null;
   callerIsFounder: boolean;
+  callerIsOwner?: boolean;
   targetUserId: string;
-  target: { id: string; isAdmin: boolean } | null;
+  target: { id: string; isAdmin: boolean; isFounder?: boolean } | null;
   action?: GuardAction;
 };
 
@@ -57,6 +59,15 @@ export function decideGuard(inputs: GuardInputs): GuardDecision {
     };
   }
 
+  if (inputs.target.isFounder && !inputs.callerIsOwner) {
+    return {
+      ok: false,
+      code: 'FOUNDER_TARGET_FORBIDDEN',
+      status: 403,
+      error: 'Action impossible sur un fondateur',
+    };
+  }
+
   if (inputs.target.isAdmin && !inputs.callerIsFounder) {
     return {
       ok: false,
@@ -72,4 +83,20 @@ export function decideGuard(inputs: GuardInputs): GuardDecision {
 export function isFounderRoleName(name: string | null | undefined): boolean {
   const lowered = String(name || '').toLowerCase();
   return lowered.includes('fondateur') || lowered.includes('founder');
+}
+
+export function isOwnerRoleName(name: string | null | undefined): boolean {
+  const lowered = String(name || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+  return lowered.includes('proprietaire') || lowered.includes('owner') || lowered.includes('super admin');
+}
+
+export function hasFounderPrivileges(name: string | null | undefined): boolean {
+  return isOwnerRoleName(name) || isFounderRoleName(name);
+}
+
+export function isProtectedFounderRoleName(name: string | null | undefined): boolean {
+  return hasFounderPrivileges(name);
 }

@@ -8,7 +8,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cleanUserId, decideGuard, isFounderRoleName } from '../admin-guards-core';
+import {
+  cleanUserId,
+  decideGuard,
+  hasFounderPrivileges,
+  isFounderRoleName,
+  isOwnerRoleName,
+} from '../admin-guards-core';
 
 describe('cleanUserId', () => {
   it('strips the legacy: prefix', () => {
@@ -45,6 +51,28 @@ describe('isFounderRoleName', () => {
     assert.equal(isFounderRoleName(''), false);
     assert.equal(isFounderRoleName(null), false);
     assert.equal(isFounderRoleName(undefined), false);
+  });
+});
+
+describe('isOwnerRoleName', () => {
+  it('matches French and English owner roles', () => {
+    assert.equal(isOwnerRoleName('Propriétaire'), true);
+    assert.equal(isOwnerRoleName('Proprietaire'), true);
+    assert.equal(isOwnerRoleName('Owner'), true);
+    assert.equal(isOwnerRoleName('Super Admin'), true);
+  });
+
+  it('does not match founder-only roles', () => {
+    assert.equal(isOwnerRoleName('Fondateur'), false);
+    assert.equal(isOwnerRoleName('Responsable'), false);
+  });
+});
+
+describe('hasFounderPrivileges', () => {
+  it('treats owners as founders for admin privileges', () => {
+    assert.equal(hasFounderPrivileges('Propriétaire'), true);
+    assert.equal(hasFounderPrivileges('Fondateur'), true);
+    assert.equal(hasFounderPrivileges('Responsable'), false);
   });
 });
 
@@ -158,6 +186,32 @@ describe('decideGuard — admin target protection', () => {
       callerIsFounder: true,
       targetUserId: '2',
       target: { id: '2', isAdmin: true },
+    });
+    assert.equal(decision.ok, true);
+  });
+
+  it('blocks a founder from acting on another founder', () => {
+    const decision = decideGuard({
+      callerId: '1',
+      callerIsFounder: true,
+      callerIsOwner: false,
+      targetUserId: '2',
+      target: { id: '2', isAdmin: true, isFounder: true },
+    });
+    assert.equal(decision.ok, false);
+    if (!decision.ok) {
+      assert.equal(decision.code, 'FOUNDER_TARGET_FORBIDDEN');
+      assert.equal(decision.status, 403);
+    }
+  });
+
+  it('allows an owner to act on a founder', () => {
+    const decision = decideGuard({
+      callerId: '1',
+      callerIsFounder: true,
+      callerIsOwner: true,
+      targetUserId: '2',
+      target: { id: '2', isAdmin: true, isFounder: true },
     });
     assert.equal(decision.ok, true);
   });

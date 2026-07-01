@@ -6,6 +6,7 @@ export type DefaultRole = {
 };
 
 export const DEFAULT_ROLES: DefaultRole[] = [
+  { name: 'Propriétaire', description: 'Accès racine, gestion des fondateurs', adminAccess: true, appAccess: true },
   { name: 'Fondateur', description: 'Tous les accès (site + admin)', adminAccess: true, appAccess: true },
   { name: 'Responsables', description: 'Gérer le site (articles, validations, modération)', adminAccess: true, appAccess: true },
   { name: 'Journalistes', description: 'Créer des articles (validation requise)', adminAccess: false, appAccess: true },

@@ -3,7 +3,13 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { setAdminUserRole } from '@/server/services/admin-users';
-import { guardTargetUser, isCallerFounder, resolveCallerIsFounder } from '@/server/admin-guards';
+import {
+  guardTargetUser,
+  isCallerFounder,
+  isCallerOwner,
+  resolveCallerAdminPrivilege,
+} from '@/server/admin-guards';
+import { isOwnerRoleName } from '@/server/admin-guards-core';
 import { logAdminAction } from '@/server/pocketbase/admin-logs';
 import { getRoleById } from '@/server/pocketbase/roles';
 
@@ -17,13 +23,19 @@ export const POST = withAdmin(async (req, { user }) => {
 
   const { userId, roleId } = parsed.data;
 
-  const callerIsFounder = await resolveCallerIsFounder(user?.id, isCallerFounder(user));
+  const callerPrivilege = await resolveCallerAdminPrivilege(user?.id, {
+    isFounder: isCallerFounder(user),
+    isOwner: isCallerOwner(user),
+  });
+  const callerIsFounder = callerPrivilege.isFounder;
+  const callerIsOwner = callerPrivilege.isOwner;
 
   console.info('[admin:set-role] incoming', {
     callerId: user?.id,
     callerNick: user?.nick,
     callerRoleName: user?.roleName,
     callerIsFounder,
+    callerIsOwner,
     targetUserId: userId,
     requestedRoleId: roleId,
   });
@@ -31,6 +43,7 @@ export const POST = withAdmin(async (req, { user }) => {
   const guard = await guardTargetUser({
     callerId: user?.id,
     callerIsFounder,
+    callerIsOwner,
     targetUserId: userId,
     action: 'role_change',
   });
@@ -49,6 +62,13 @@ export const POST = withAdmin(async (req, { user }) => {
   if (newRole?.admin_access === true && !callerIsFounder) {
     return NextResponse.json(
       { error: "Seul un fondateur peut assigner un role administrateur", code: 'FOUNDER_REQUIRED' },
+      { status: 403 },
+    );
+  }
+
+  if (isOwnerRoleName(newRole?.name) && !callerIsOwner) {
+    return NextResponse.json(
+      { error: "Seul un proprietaire peut assigner le role proprietaire", code: 'OWNER_REQUIRED' },
       { status: 403 },
     );
   }
