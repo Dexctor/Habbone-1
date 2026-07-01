@@ -7,6 +7,7 @@ import {
   asTrue,
   asFalse,
   tryUpdateHabboSnapshotForUser,
+  getUserBySessionIdentity,
 } from '@/server/pocketbase/users';
 import { getRoleById } from '@/server/pocketbase/roles';
 import { getHabboUserByNameForHotel } from '@/server/habbo-cache';
@@ -22,6 +23,36 @@ function assertAuthSecret(): void {
   if (process.env.NODE_ENV === 'production' && (!secret || secret.length < 16)) {
     throw new Error('NEXTAUTH_SECRET manquant ou trop court (>= 16 caractères requis en production)');
   }
+}
+
+async function refreshTokenRole(token: any) {
+  if (!token?.uid) return token;
+
+  try {
+    const currentUser = await getUserBySessionIdentity({
+      id: String(token.uid),
+      nick: typeof token.nick === 'string' ? token.nick : null,
+      hotel: typeof token.hotel === 'string' ? token.hotel : null,
+    });
+    const roleId = currentUser?.role_id ? String(currentUser.role_id) : null;
+
+    let roleName: string | null = null;
+    let adminAccess = false;
+    if (roleId) {
+      const roleRow = await getRoleById(roleId);
+      roleName = roleRow?.name ?? null;
+      adminAccess = roleRow?.admin_access === true;
+    }
+
+    token.roleId = roleId;
+    token.roleName = roleName;
+    token.adminAccess = adminAccess;
+    token.role = adminAccess ? 'admin' : 'member';
+  } catch {
+    // Keep the existing token if PocketBase is temporarily unavailable.
+  }
+
+  return token;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -121,6 +152,8 @@ export const authOptions: NextAuthOptions = {
         token.roleId = user.roleId ?? null;
         token.roleName = user.roleName ?? null;
         token.adminAccess = user.adminAccess === true;
+      } else {
+        await refreshTokenRole(token);
       }
       return token;
     },
