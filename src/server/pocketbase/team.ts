@@ -46,19 +46,30 @@ const HIDDEN_ROLES = new Set(['member', 'frontend service']);
 
 // Display order: lower number = higher on the page. Unlisted roles go last.
 const ROLE_ORDER: Record<string, number> = {
-  'fondateur': 0,
-  'responsable': 1,
-  'animateurs': 2,
-  'journaliste': 3,
-  'correcteur': 4,
-  'configurateur wired': 5,
-  'constructeur': 6,
-  'graphiste': 7,
+  'proprietaire': 0,
+  'owner': 0,
+  'super admin': 0,
+  'fondateur': 1,
+  'responsable': 2,
+  'animateurs': 3,
+  'journaliste': 4,
+  'correcteur': 5,
+  'configurateur wired': 6,
+  'constructeur': 7,
+  'graphiste': 8,
 };
+
+function normalizeRoleName(roleName: string): string {
+  return roleName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Record<string, TeamMember[]>> {
   const roles = await fetchRoles();
-  const visibleRoles = roles.filter(r => !HIDDEN_ROLES.has(r.name.toLowerCase()));
+  const visibleRoles = roles.filter(r => !HIDDEN_ROLES.has(normalizeRoleName(r.name)));
 
   const result: Record<string, TeamMember[]> = {};
 
@@ -89,8 +100,8 @@ export async function listTeamMembersByRoles(_roleNames?: string[]): Promise<Rec
   const sorted = entries
     .filter(e => e.members.length > 0)
     .sort((a, b) => {
-      const orderA = ROLE_ORDER[a.roleName.toLowerCase()] ?? 99;
-      const orderB = ROLE_ORDER[b.roleName.toLowerCase()] ?? 99;
+      const orderA = ROLE_ORDER[normalizeRoleName(a.roleName)] ?? 99;
+      const orderB = ROLE_ORDER[normalizeRoleName(b.roleName)] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
       return a.roleName.localeCompare(b.roleName, 'fr', { sensitivity: 'base' });
     });
