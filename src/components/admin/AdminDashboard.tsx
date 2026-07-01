@@ -22,6 +22,7 @@ import {
   Coins,
 } from 'lucide-react';
 import { easings, dur } from '@/lib/motion-tokens';
+import { AdminPageHeader } from '@/components/admin/ui';
 import { useAdminView } from '@/components/admin/AdminContext';
 import AdminContentManager from '@/components/admin/AdminContentManager';
 import AdminRolesPanel from '@/components/admin/AdminRolesPanel';
@@ -105,19 +106,17 @@ export default function AdminDashboard(props: AdminDashboardProps) {
           animate="show"
         >
           {/* Header */}
-          <motion.div variants={STAGGER_ITEM} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-[20px] font-bold text-white">
-                Tableau de bord
-              </h2>
-              <p className="text-[13px] text-admin-text-tertiary">
-                Bienvenue sur le panneau d&apos;administration HabbOne
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-admin-text-tertiary">
-              <Clock className="h-3.5 w-3.5" />
-              Dernière mise à jour : maintenant
-            </div>
+          <motion.div variants={STAGGER_ITEM}>
+            <AdminPageHeader
+              title="Tableau de bord"
+              description="Bienvenue sur le panneau d'administration HabbOne"
+              meta={
+                <>
+                  <Clock className="h-3.5 w-3.5" />
+                  Dernière mise à jour : maintenant
+                </>
+              }
+            />
           </motion.div>
 
           {/* Stats grid — 4 clickable cards */}
@@ -211,9 +210,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Users ── */}
       {view === 'users' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Gestion des utilisateurs
-          </h2>
+          <AdminPageHeader title="Gestion des utilisateurs" description="Recherche, rôles, coins et sanctions." />
           <AdminUsersPanel />
         </ViewWrapper>
       )}
@@ -221,9 +218,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Content ── */}
       {view === 'content' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Gestion des contenus
-          </h2>
+          <AdminPageHeader title="Gestion des contenus" description="Actualités, forum, commentaires et stories." />
           <AdminContentManager
             topics={props.topics}
             posts={props.posts}
@@ -251,9 +246,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Theme ── */}
       {view === 'theme' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Personnalisation du thème
-          </h2>
+          <AdminPageHeader title="Personnalisation du thème" description="Logo, fond du header et affichage public." />
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminThemePanel />
           </div>
@@ -263,9 +256,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Roles ── */}
       {view === 'roles' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Gestion des rôles
-          </h2>
+          <AdminPageHeader title="Gestion des rôles" description="Permissions, accès admin et rôles par défaut." />
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminRolesPanel />
           </div>
@@ -275,9 +266,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Publicité ── */}
       {view === 'pub' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Gestion des partenaires
-          </h2>
+          <AdminPageHeader title="Gestion des partenaires" description="Publicités et liens affichés sur l'accueil." />
           <div className="rounded-[8px] border border-white/5 bg-[#141433]/50 p-5">
             <AdminPubPanel />
           </div>
@@ -287,9 +276,7 @@ export default function AdminDashboard(props: AdminDashboardProps) {
       {/* ── Boutique ── */}
       {view === 'shop' && (
         <ViewWrapper>
-          <h2 className="text-[20px] font-bold text-white">
-            Gestion de la boutique
-          </h2>
+          <AdminPageHeader title="Gestion de la boutique" description="Articles, stocks et commandes." />
           <AdminShopPanel />
         </ViewWrapper>
       )}

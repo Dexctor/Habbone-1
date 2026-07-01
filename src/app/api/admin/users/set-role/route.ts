@@ -30,16 +30,6 @@ export const POST = withAdmin(async (req, { user }) => {
   const callerIsFounder = callerPrivilege.isFounder;
   const callerIsOwner = callerPrivilege.isOwner;
 
-  console.info('[admin:set-role] incoming', {
-    callerId: user?.id,
-    callerNick: user?.nick,
-    callerRoleName: user?.roleName,
-    callerIsFounder,
-    callerIsOwner,
-    targetUserId: userId,
-    requestedRoleId: roleId,
-  });
-
   const guard = await guardTargetUser({
     callerId: user?.id,
     callerIsFounder,
@@ -48,7 +38,6 @@ export const POST = withAdmin(async (req, { user }) => {
     action: 'role_change',
   });
   if (!guard.ok) {
-    console.warn('[admin:set-role] blocked by guard');
     return guard.response;
   }
 
