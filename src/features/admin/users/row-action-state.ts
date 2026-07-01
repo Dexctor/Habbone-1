@@ -1,7 +1,7 @@
 /**
  * Per-row action state for the admin users panel.
  *
- * Extracted from AdminUsersPanel.tsx so it can be unit-tested without JSDOM.
+ * Extracted from AdminUsersFeature.tsx so it can be unit-tested without JSDOM.
  * Tracks, for each mutation type (saveRole / ban / delete / coins), which user
  * row is currently in-flight. Lets the UI show a spinner on the right row and
  * disable buttons during concurrent clicks.

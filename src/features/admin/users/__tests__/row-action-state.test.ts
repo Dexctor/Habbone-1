@@ -1,5 +1,5 @@
 /**
- * Unit tests for row-action-state reducer (AdminUsersPanel).
+ * Unit tests for the users feature row action reducer.
  *
  * Run with:
  *   npm test

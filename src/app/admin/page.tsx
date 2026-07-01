@@ -31,8 +31,7 @@ import {
   deleteStoryAction,
 } from '@/server/actions/admin-content';
 
-import AdminDashboard from '@/components/admin/AdminDashboard';
-import type { RecentActivityItem } from '@/components/admin/AdminDashboard';
+import { AdminDashboardFeature as AdminDashboard, type RecentActivityItem } from '@/features/admin/dashboard';
 
 function formatRelativeTime(date: Date): string {
   const now = Date.now();

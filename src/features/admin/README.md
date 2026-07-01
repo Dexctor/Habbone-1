@@ -12,14 +12,15 @@ This folder owns admin business features.
 
 ## Current features
 
+- `dashboard`: admin overview and view orchestration.
+- `content`: articles, forum content, comments and stories.
+- `users`: user search, roles, coins, sanctions, history modal and row action state.
+- `roles`: role CRUD, admin access and default role seeding.
+- `theme`: header logo/background configuration.
 - `shop`: shop items, order list, shop-specific image helpers.
 - `partners`: homepage partner/publicity management.
 
-## Migration target
+## Compatibility wrappers
 
-Move the remaining large panels here progressively:
-
-- `users`
-- `roles`
-- `content`
-- `theme`
+`src/components/admin/Admin*Panel.tsx` remains as a temporary import bridge while the
+admin shell and tests are migrated. New code should import from `src/features/admin`.
