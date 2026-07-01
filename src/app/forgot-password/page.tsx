@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { KeyRound, Copy, CheckCircle2 } from 'lucide-react'
+import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -74,18 +75,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[500px] space-y-6 px-4 py-10 sm:px-6">
-      <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-        <div className="flex items-center gap-3">
-          <KeyRound className="h-[28px] w-[28px] text-[#DDD]" />
-          <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-            Mot de passe oublie
-          </h1>
-        </div>
-      </header>
+    <SitePage width="sm">
+      <SiteHeader title="Mot de passe oublie" icon={<KeyRound className="h-[28px] w-[28px]" />} />
 
       {step === 'request' && (
-        <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
+        <SitePanel className="p-6">
           <p className="mb-5 text-[13px] leading-relaxed text-[#BEBECE]/80">
             Entre ton pseudo Habbo. On va generer un code que tu devras placer dans ta <strong className="text-white">mission Habbo</strong> pour prouver que c&apos;est bien ton compte.
           </p>
@@ -102,16 +96,16 @@ export default function ForgotPasswordPage() {
                 required
                 minLength={2}
                 placeholder="Ton pseudo Habbo"
-                className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
               />
             </div>
-            <button
+            <SiteButton
               type="submit"
               disabled={loading}
-              className="inline-flex h-[45px] w-full items-center justify-center rounded-[4px] bg-[#2596FF] text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-[#2976E8] disabled:opacity-50"
+              className="w-full"
             >
               {loading ? 'Generation...' : 'Generer le code'}
-            </button>
+            </SiteButton>
           </form>
 
           <div className="mt-4 text-center">
@@ -119,13 +113,13 @@ export default function ForgotPasswordPage() {
               Retour a l&apos;accueil
             </Link>
           </div>
-        </section>
+        </SitePanel>
       )}
 
       {step === 'reset' && (
         <section className="space-y-4">
           {/* Code display */}
-          <div className="rounded-[4px] border border-[#2596FF]/30 bg-[#1F1F3E] p-5">
+          <SitePanel className="border-[#2596FF]/30 bg-[#1F1F3E] p-5">
             <p className="mb-3 text-[13px] text-[#BEBECE]/80">
               Place ce code dans ta <strong className="text-white">mission Habbo</strong> puis clique sur &quot;Reinitialiser&quot; :
             </p>
@@ -142,10 +136,10 @@ export default function ForgotPasswordPage() {
                 {copied ? <CheckCircle2 className="h-4 w-4 text-[#0FD52F]" /> : <Copy className="h-4 w-4 text-[#BEBECE]" />}
               </button>
             </div>
-          </div>
+          </SitePanel>
 
           {/* Reset form */}
-          <div className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
+          <SitePanel className="p-6">
             <form onSubmit={handleReset} className="space-y-4">
               <div>
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
@@ -158,7 +152,7 @@ export default function ForgotPasswordPage() {
                   required
                   minLength={6}
                   placeholder="Minimum 6 caracteres"
-                  className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                  className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
                 />
               </div>
               <div>
@@ -172,18 +166,19 @@ export default function ForgotPasswordPage() {
                   required
                   minLength={6}
                   placeholder="Retape le mot de passe"
-                  className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                  className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
                 />
               </div>
-              <button
+              <SiteButton
                 type="submit"
                 disabled={loading}
-                className="inline-flex h-[45px] w-full items-center justify-center rounded-[4px] bg-[#0FD52F] text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-green-600 disabled:opacity-50"
+                variant="success"
+                className="w-full"
               >
                 {loading ? 'Reinitialisation...' : 'Reinitialiser le mot de passe'}
-              </button>
+              </SiteButton>
             </form>
-          </div>
+          </SitePanel>
 
           <button
             type="button"
@@ -194,6 +189,6 @@ export default function ForgotPasswordPage() {
           </button>
         </section>
       )}
-    </main>
+    </SitePage>
   )
 }

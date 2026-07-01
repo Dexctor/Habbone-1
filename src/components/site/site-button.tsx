@@ -10,11 +10,11 @@ type SiteButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variants = {
-  primary: "bg-[#2596FF] text-white hover:bg-[#2976E8]",
-  secondary: "border border-[#34345A] bg-[#1F1F3E] text-[#BEBECE] hover:bg-[#25254D] hover:text-[#DDD]",
-  danger: "border border-[#F92330]/30 bg-[#F92330]/10 text-[#FF4B6C] hover:bg-[#F92330]/20",
-  success: "bg-[#0FD52F] text-white hover:bg-green-600",
-  ghost: "bg-white/10 text-[#DDD] hover:bg-white/15",
+  primary: "border border-[#2596FF]/70 bg-[#2596FF] text-white shadow-[0_12px_24px_-18px_rgba(37,150,255,0.9)] hover:bg-[#2976E8]",
+  secondary: "border border-white/10 bg-[#303060]/70 text-[#DDD] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-[#2596FF]/45 hover:bg-[#25254D] hover:text-white",
+  danger: "border border-[#F92330]/35 bg-[#F92330]/10 text-[#FF4B6C] hover:bg-[#F92330]/20",
+  success: "border border-[#0FD52F]/50 bg-[#0FD52F] text-white hover:bg-green-600",
+  ghost: "border border-white/10 bg-white/[0.08] text-[#DDD] hover:border-white/20 hover:bg-white/[0.12]",
 }
 
 const sizes = {

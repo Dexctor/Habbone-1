@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 import { toast } from 'sonner'
+import { SiteHeader, SitePanel } from '@/components/site'
 
 type AvatarSize = 's' | 'm' | 'l'
 type AvatarFormat = 'png' | 'gif' | 'jpg'
@@ -131,22 +132,9 @@ export default function ImagerClient() {
 
   return (
     <div className="w-full">
-      {/* ─── Header ─── */}
-      <div className="flex h-[60px] items-center rounded-t-[4px] border border-b-0 border-[#141433] bg-[#1F1F3E] px-5 sm:h-[76px]">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/photo.png" alt="" className="h-[36px] w-[26px] sm:h-[44px] sm:w-[31px] image-pixelated" />
-          <span
-            className="text-base font-bold uppercase tracking-[0.08em] text-[#DDD] sm:text-lg"
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-          >
-            Habbo Imager
-          </span>
-        </div>
-      </div>
+      <SiteHeader title="Habbo Imager" imageSrc="/img/photo.png" className="rounded-b-none" />
 
-      {/* ─── Body ─── */}
-      <div className="rounded-b-[4px] border border-[#141433] bg-[#272746] px-4 py-5 sm:px-7 sm:py-6">
+      <SitePanel className="rounded-t-none px-4 py-5 sm:px-7 sm:py-6">
         {/* Desktop: side-by-side | Mobile: stacked */}
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
 
@@ -264,7 +252,7 @@ export default function ImagerClient() {
             </button>
           </div>
         </div>
-      </div>
+      </SitePanel>
     </div>
   )
 }

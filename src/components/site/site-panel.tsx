@@ -11,7 +11,13 @@ type SitePanelProps = {
 
 export function SitePanel({ children, className, padded = true, as: Comp = "section" }: SitePanelProps) {
   return (
-    <Comp className={cn("rounded-[4px] border border-[#1F1F3E] bg-[#272746]", padded && "p-5", className)}>
+    <Comp
+      className={cn(
+        "rounded-[6px] border border-[#141433] bg-[#272746] shadow-[0_18px_45px_-34px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.04)]",
+        padded && "p-5",
+        className,
+      )}
+    >
       {children}
     </Comp>
   )

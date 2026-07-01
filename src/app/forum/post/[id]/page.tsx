@@ -4,6 +4,7 @@ import {
 } from '@/server/pocketbase/forum';
 import { getLikesMapForTopicComments } from '@/server/pocketbase/likes';
 import { formatDateTimeSmart } from '@/lib/date-utils';
+import { SiteHeader, SitePage, SitePanel } from '@/components/site';
 
 export const revalidate = 300;
 
@@ -24,23 +25,24 @@ export default async function PostPage(props: { params: Promise<{ id: string }> 
   );
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <article className="border rounded p-4">
+    <SitePage width="md">
+      <SitePanel as="article" className="p-5">
+        <SiteHeader title={`Post #${post.id}`} imageSrc="/img/forum.png" compact className="mb-5" />
         <h1 className="text-xl font-bold">Post #{post.id}</h1>
         <div className="text-xs opacity-60">{formatDateTimeSmart(post.data)}</div>
         <div
           className="mt-3 prose prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: post.conteudo || "" }}
         />
-      </article>
+      </SitePanel>
 
-      <section>
+      <SitePanel>
         <h2 className="text-lg font-semibold mb-2">
           Commentaires du topic ({comments.length})
         </h2>
         <ul className="space-y-3">
           {comments.map((c: any) => (
-            <li key={c.id} className="border rounded p-3">
+            <li key={c.id} className="rounded-[6px] border border-[#141433] bg-[#1F1F3E]/50 p-3">
               <div className="text-xs opacity-60 mb-1">
                 {formatDateTimeSmart(c.data)} • 👍 {likesMap[String(c.id)] ?? 0}
               </div>
@@ -51,7 +53,7 @@ export default async function PostPage(props: { params: Promise<{ id: string }> 
             </li>
           ))}
         </ul>
-      </section>
-    </main>
+      </SitePanel>
+    </SitePage>
   );
 }

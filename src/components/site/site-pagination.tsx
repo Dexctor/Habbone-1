@@ -21,7 +21,7 @@ export function SitePagination({ page, pageCount, onPageChange, label, className
         type="button"
         onClick={() => onPageChange(Math.max(0, page - 1))}
         disabled={page === 0}
-        className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid h-[36px] w-[36px] place-items-center rounded-[6px] border border-white/10 bg-[#303060]/70 text-[#DDD] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[#2596FF]/45 hover:bg-[#2596FF] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Page précédente"
       >
         <ChevronLeft className="h-5 w-5" />
@@ -35,7 +35,10 @@ export function SitePagination({ page, pageCount, onPageChange, label, className
               key={index}
               type="button"
               onClick={() => onPageChange(index)}
-              className={cn("px-1 text-[14px] font-normal leading-none transition", isActive ? "text-white underline" : "text-[#DDD] hover:text-white")}
+              className={cn(
+                "grid h-[32px] min-w-[32px] place-items-center rounded-[5px] px-2 text-[13px] font-bold leading-none transition",
+                isActive ? "bg-[#2596FF] text-white shadow-[0_10px_20px_-15px_rgba(37,150,255,0.9)]" : "text-[#DDD] hover:bg-white/[0.08] hover:text-white",
+              )}
               aria-current={isActive ? "page" : undefined}
               aria-label={`Page ${index + 1}`}
             >
@@ -49,7 +52,7 @@ export function SitePagination({ page, pageCount, onPageChange, label, className
         type="button"
         onClick={() => onPageChange(Math.min(pageCount - 1, page + 1))}
         disabled={page >= pageCount - 1}
-        className="grid h-[30px] w-[30px] place-items-center rounded-[4px] bg-white/5 text-[#DDD] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid h-[36px] w-[36px] place-items-center rounded-[6px] border border-white/10 bg-[#303060]/70 text-[#DDD] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[#2596FF]/45 hover:bg-[#2596FF] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Page suivante"
       >
         <ChevronRight className="h-5 w-5" />

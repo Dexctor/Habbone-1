@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Lock, Eye, EyeOff, Twitter } from 'lucide-react'
+import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -42,9 +43,9 @@ export default function SettingsPage() {
 
   if (status === 'loading') {
     return (
-      <main className="mx-auto w-full max-w-[600px] px-4 py-10 sm:px-6">
-        <div className="h-[400px] animate-pulse rounded-[4px] bg-white/5" />
-      </main>
+      <SitePage width="sm">
+        <div className="h-[400px] animate-pulse rounded-[6px] border border-[#141433] bg-white/5" />
+      </SitePage>
     )
   }
 
@@ -113,17 +114,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[600px] space-y-6 px-4 py-10 sm:px-6">
-      <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-        <div className="flex items-center gap-3">
-          <span className="material-icons text-[32px] text-[#DDD]">settings</span>
-          <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-            Parametres du compte
-          </h1>
-        </div>
-      </header>
+    <SitePage width="sm">
+      <SiteHeader title="Parametres du compte" icon={<span className="material-icons text-[30px]">settings</span>} />
 
-      <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
+      <SitePanel className="p-6">
         <div className="mb-5 flex items-center gap-3">
           <Twitter className="h-5 w-5 text-[#2596FF]" />
           <h2 className="text-[16px] font-bold text-white">Profil public</h2>
@@ -148,7 +142,7 @@ export default function SettingsPage() {
                 placeholder="moncompte"
                 maxLength={15}
                 autoComplete="off"
-                className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] pl-8 pr-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none disabled:opacity-50"
+                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 pl-8 pr-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none disabled:opacity-50"
               />
             </div>
             <p className="mt-1 text-[11px] text-[#BEBECE]/50">
@@ -157,18 +151,17 @@ export default function SettingsPage() {
           </div>
 
           <div className="pt-2">
-            <button
+            <SiteButton
               type="submit"
               disabled={twitterLoading || twitterSubmitting || twitter.trim() === twitterInitial.trim()}
-              className="inline-flex h-[45px] items-center rounded-[4px] bg-[#2596FF] px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-[#2976E8] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {twitterSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
+            </SiteButton>
           </div>
         </form>
-      </section>
+      </SitePanel>
 
-      <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-6">
+      <SitePanel className="p-6">
         <div className="mb-5 flex items-center gap-3">
           <Lock className="h-5 w-5 text-[#2596FF]" />
           <h2 className="text-[16px] font-bold text-white">Changer le mot de passe</h2>
@@ -190,7 +183,7 @@ export default function SettingsPage() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
                 placeholder="Ton mot de passe actuel"
-                className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
               />
               <button
                 type="button"
@@ -214,7 +207,7 @@ export default function SettingsPage() {
                 required
                 minLength={6}
                 placeholder="Minimum 6 caracteres"
-                className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
               />
               <button
                 type="button"
@@ -237,21 +230,20 @@ export default function SettingsPage() {
               required
               minLength={6}
               placeholder="Retape le nouveau mot de passe"
-              className="h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 focus:border-[#2596FF] focus:outline-none"
+              className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
             />
           </div>
 
           <div className="pt-2">
-            <button
+            <SiteButton
               type="submit"
               disabled={submitting}
-              className="inline-flex h-[45px] items-center rounded-[4px] bg-[#2596FF] px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-[#2976E8] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Modification...' : 'Modifier le mot de passe'}
-            </button>
+            </SiteButton>
           </div>
         </form>
-      </section>
-    </main>
+      </SitePanel>
+    </SitePage>
   )
 }

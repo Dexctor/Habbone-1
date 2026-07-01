@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FileText, Award, Newspaper, PartyPopper, Search, X } from 'lucide-react'
+import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 const RichEditor = dynamic(() => import('@/components/editor/RichEditor'), {
   ssr: false,
@@ -185,17 +186,8 @@ export default function NouveauArticlePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[800px] space-y-6 px-4 py-10 sm:px-6">
-      {/* Header */}
-      <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/public.png" alt="" className="h-[38px] w-auto image-pixelated" />
-          <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-            Publier un article
-          </h1>
-        </div>
-      </header>
+    <SitePage width="md">
+      <SiteHeader title="Publier un article" imageSrc="/img/public.png" />
 
       {/* Templates */}
       <div className="flex flex-wrap gap-2">
@@ -219,7 +211,7 @@ export default function NouveauArticlePage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
-        <div className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
+        <SitePanel className="p-5">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
             Titre de l&apos;article
           </label>
@@ -231,10 +223,10 @@ export default function NouveauArticlePage() {
             maxLength={200}
             className="mt-2 h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
           />
-        </div>
+        </SitePanel>
 
         {/* Description */}
-        <div className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
+        <SitePanel className="p-5">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
             Resume (optionnel)
           </label>
@@ -246,10 +238,10 @@ export default function NouveauArticlePage() {
             maxLength={500}
             className="mt-2 h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
           />
-        </div>
+        </SitePanel>
 
         {/* Image */}
-        <div className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
+        <SitePanel className="p-5">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
             Image de couverture (optionnel)
           </label>
@@ -299,10 +291,10 @@ export default function NouveauArticlePage() {
               <img src={imageUrl} alt="Apercu" className="max-h-[150px] w-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
             </div>
           )}
-        </div>
+        </SitePanel>
 
         {/* Content */}
-        <div className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
+        <SitePanel className="p-5">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
             Contenu de l&apos;article
           </label>
@@ -315,7 +307,7 @@ export default function NouveauArticlePage() {
               variant="full"
             />
           </div>
-        </div>
+        </SitePanel>
 
         {/* Error */}
         {error && (
@@ -328,17 +320,16 @@ export default function NouveauArticlePage() {
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/news"
-            className="inline-flex h-[45px] items-center rounded-[4px] border border-[#34345A] bg-[#1F1F3E] px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-[#BEBECE] transition hover:bg-[#25254D] hover:text-[#DDD]"
+            className="inline-flex h-[45px] items-center rounded-[4px] border border-white/10 bg-[#303060]/70 px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-[#DDD] transition hover:border-[#2596FF]/45 hover:bg-[#25254D] hover:text-white"
           >
             Annuler
           </Link>
-          <button
+          <SiteButton
             type="submit"
             disabled={submitting}
-            className="inline-flex h-[45px] items-center rounded-[4px] bg-[#2596FF] px-6 text-[12px] font-bold uppercase tracking-[0.04em] text-white transition hover:bg-[#2976E8] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? 'Publication...' : "Publier l'article"}
-          </button>
+          </SiteButton>
         </div>
       </form>
 
@@ -406,6 +397,6 @@ export default function NouveauArticlePage() {
           </div>
         </div>
       )}
-    </main>
+    </SitePage>
   )
 }

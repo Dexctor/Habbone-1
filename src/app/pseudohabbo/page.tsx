@@ -1,6 +1,7 @@
 import { listPseudoChanges } from '@/server/pocketbase/pseudo-changes'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 import PseudoChangesClient from './pseudo-changes-client'
+import { SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 export const revalidate = 60
 
@@ -51,25 +52,10 @@ export default async function PseudoHabboPage({
   const { changes, total } = await fetchChanges(hotel)
 
   return (
-    <main className="mx-auto w-full max-w-[1000px] space-y-6 px-4 py-10 sm:px-6">
-      {/* Header */}
-      <header className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] p-5">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/info.png" alt="" className="h-[43px] w-auto image-pixelated" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#BEBECE]">
-              Extra
-            </p>
-            <h1 className="text-lg font-bold uppercase tracking-[0.08em] text-[#DDD]">
-              Changements de pseudo Habbo
-            </h1>
-          </div>
-        </div>
-      </header>
+    <SitePage width="lg">
+      <SiteHeader title="Changements de pseudo Habbo" eyebrow="Extra" imageSrc="/img/info.png" />
 
-      {/* Info */}
-      <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-4 space-y-2">
+      <SitePanel className="space-y-2 px-5 py-4">
         <p className="text-sm leading-relaxed text-[#BEBECE]">
           Depuis décembre 2022, les joueurs Habbo peuvent changer leur pseudo.
           Cette page recense les derniers changements détectés par HabbOne.
@@ -78,15 +64,14 @@ export default async function PseudoHabboPage({
           Les changements sont détectés lors des connexions à HabbOne et des consultations de profils.
           Seuls les profils ouverts (non bannis) sont suivis.
         </p>
-      </section>
+      </SitePanel>
 
-      {/* Tabs hotel + list (client) */}
       <PseudoChangesClient
         initialChanges={changes}
         initialHotel={hotel}
         initialTotal={total}
         hotelCodes={HOTEL_CODES as unknown as string[]}
       />
-    </main>
+    </SitePage>
   )
 }

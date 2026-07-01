@@ -1,25 +1,19 @@
 import Link from 'next/link'
+import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 const REQUIRED_MARK = ' *'
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
-      <header className="rounded-md border border-[color:var(--bg-700)]/65 bg-[color:var(--bg-900)]/45 px-6 py-5 shadow-[0_24px_60px_-45px_rgba(0,0,0,0.85)]">
-        <div className="space-y-2 text-[color:var(--foreground)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--foreground)]/55">
-            formulaire habbone
-          </p>
-          <h1 className="text-lg font-bold uppercase tracking-[0.04em]">
-            Une question ? Une demande ? n&apos;hésitez pas !
-          </h1>
-          <p className="text-xs text-[color:var(--foreground)]/60">
-            <span className="font-semibold">*</span> Indique une question obligatoire
-          </p>
-        </div>
-      </header>
+    <SitePage width="md" className="gap-8 lg:px-8">
+      <SiteHeader
+        title="Une question ? Une demande ?"
+        eyebrow="Formulaire HabbOne"
+        imageSrc="/img/info.png"
+        description={<span><span className="font-semibold">*</span> Indique une question obligatoire</span>}
+      />
 
-      <section className="rounded-md border border-[color:var(--bg-700)]/55 bg-[color:var(--bg-900)]/35 px-6 py-8 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.9)]">
+      <SitePanel className="px-6 py-8">
         <form className="space-y-6" noValidate>
           <Field
             label="Adresse e-mail"
@@ -54,19 +48,16 @@ export default function ContactPage() {
             <p className="text-xs text-[color:var(--foreground)]/55">
               Nous vous répondrons par e-mail dans les meilleurs délais.
             </p>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-md bg-[#1d4bff] px-5 py-2 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#335bff]"
-            >
+            <SiteButton type="submit" className="text-[12px]">
               Envoyer ma demande
-            </button>
+            </SiteButton>
           </div>
         </form>
-      </section>
+      </SitePanel>
 
-      <footer className="rounded-md border border-[color:var(--bg-700)]/45 bg-[color:var(--bg-900)]/25 px-6 py-5 text-sm text-[color:var(--foreground)]/70 shadow-[0_24px_60px_-60px_rgba(0,0,0,0.85)]">
+      <SitePanel as="div" className="px-6 py-5 text-sm text-[#BEBECE]/80">
         Besoin d&apos;une réponse immédiate ? Consulte aussi notre{' '}
-        <Link href="/forum" className="font-semibold text-[color:var(--foreground)] hover:text-sky-300">
+        <Link href="/forum" className="font-semibold text-white hover:text-[#25B1FF]">
           forum communautaire
         </Link>{' '}
         ou rejoins notre{' '}
@@ -78,8 +69,8 @@ export default function ContactPage() {
         >
           serveur Discord
         </a>.
-      </footer>
-    </main>
+      </SitePanel>
+    </SitePage>
   )
 }
 
@@ -104,11 +95,11 @@ function Field(props: FieldProps) {
     placeholder,
     required,
     className:
-      'w-full rounded-md border border-[color:var(--bg-700)]/70 bg-[color:var(--bg-900)]/55 px-3 py-3 text-sm text-[color:var(--foreground)] focus:border-[color:var(--bg-300)] focus:outline-none focus:ring-2 focus:ring-[color:var(--bg-300)]/30',
+      'w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-3 py-3 text-sm text-[#DDD] placeholder:text-[#BEBECE]/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none focus:ring-2 focus:ring-[#2596FF]/25',
   }
 
   return (
-    <label className={`block space-y-2 text-sm font-medium text-[color:var(--foreground)] ${className ?? ''}`}>
+    <label className={`block space-y-2 text-sm font-medium text-[#DDD] ${className ?? ''}`}>
       <span>
         {label}
         {required && <span className="ml-1 text-[color:var(--foreground)]/60">*</span>}

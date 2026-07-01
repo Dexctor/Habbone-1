@@ -16,6 +16,7 @@ import CommentsActionButton from "@/components/forum/CommentsActionButton"
 import ContentWithLightbox from "@/components/ui/image-lightbox"
 import { getRoleBadgesForNicks } from "@/server/pocketbase/badges"
 import ClickableImage from "@/components/ui/clickable-image"
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel } from "@/components/site"
 
 import { unstable_cache } from 'next/cache'
 
@@ -31,9 +32,9 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
 
   if (!newsId) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-16 text-center text-sm text-[#BEBECE]/55">
-        Article introuvable.
-      </main>
+      <SitePage>
+        <SiteEmptyState>Article introuvable.</SiteEmptyState>
+      </SitePage>
     )
   }
 
@@ -56,9 +57,9 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
 
   if (!newsItem) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-16 text-center text-sm text-[#BEBECE]/55">
-        Article introuvable.
-      </main>
+      <SitePage>
+        <SiteEmptyState>Article introuvable.</SiteEmptyState>
+      </SitePage>
     )
   }
 
@@ -96,32 +97,17 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
   const actionEl = isAuthenticated ? (
     <CommentsActionButton isAuthenticated={true} />
   ) : (
-    <a
-      href={`/login?from=/news/${newsId}`}
-      className="inline-flex items-center justify-center rounded-[4px] bg-[#2596FF] px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#2976E8] transition"
-    >
-      Se connecter
-    </a>
+    <SiteButton asChild>
+      <a href={`/login?from=/news/${newsId}`}>Se connecter</a>
+    </SiteButton>
   )
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] space-y-16 px-4 py-10">
-      {/* ─── Article Card ─── */}
-      <section className="w-full rounded-[8px] border border-[#141433] bg-[#1F1F3E] py-3">
-        {/* Title header bar */}
-        <div className="mx-3 rounded-[8px] bg-[#141433] p-4">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/news.png" alt="" className="h-[49px] w-auto image-pixelated" />
-            <span className="text-lg font-bold uppercase tracking-[0.12em] text-[#DDD]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
-              {title}
-            </span>
-          </div>
-        </div>
+    <SitePage className="gap-10">
+      <SitePanel className="overflow-hidden p-0">
+        <SiteHeader title={title} imageSrc="/img/news.png" className="rounded-none border-x-0 border-t-0" />
 
-        {/* Article body */}
         <div className="flex flex-col items-center gap-4 px-6 py-8">
-          {/* Centered image 150×150 */}
           {imageUrl ? (
             <div className="flex w-full items-center justify-center">
               <div className="flex w-full max-w-[760px] items-center justify-center overflow-hidden rounded-[4px] border border-[#141433] bg-[#272746] p-3">
@@ -137,7 +123,6 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
           />
         </div>
 
-        {/* Author footer */}
         <div className="border-t border-[#141433] px-4 pb-1 pt-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -150,45 +135,15 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
             </div>
           </div>
         </div>
-      </section>
+      </SitePanel>
 
-      {/* ─── Comments Section ─── */}
       <section className="w-full space-y-8">
-        {/* Comments header bar */}
-        <div className="flex items-center justify-between rounded-[4px] border border-[rgba(0,0,0,0.6)] bg-[#1F1F3E] px-5 py-4 shadow-[0_0_0_0_rgba(255,255,255,0.05)]">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/public.png" alt="" className="h-[50px] w-auto image-pixelated" />
-            <span className="text-lg font-bold uppercase tracking-[0.12em] text-[#DDD]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
-              Commentaires
-            </span>
-          </div>
-          {isAuthenticated ? (
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-[4px] bg-[#2596FF] px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#2976E8] transition"
-              onClick={undefined}
-            >
-              Écrire commentaire
-            </button>
-          ) : (
-            <a
-              href={`/login?from=/news/${newsId}`}
-              className="inline-flex items-center justify-center rounded-[4px] bg-[#2596FF] px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#2976E8] transition"
-            >
-              Se connecter
-            </a>
-          )}
-        </div>
+        <SiteHeader title="Commentaires" imageSrc="/img/public.png" actions={actionEl} />
 
-        {/* Comment form */}
         {isAuthenticated ? <NewsCommentForm newsId={newsId} /> : null}
 
-        {/* Comment list */}
         {comments.length === 0 ? (
-          <p className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-5 py-6 text-center text-sm text-[#BEBECE]/60">
-            Aucun commentaire pour le moment.
-          </p>
+          <SiteEmptyState>Aucun commentaire pour le moment.</SiteEmptyState>
         ) : (
           <div className="space-y-4">
             {comments.map((comment: NewsCommentRecord) => {
@@ -214,6 +169,6 @@ export default async function NewsDetailPage(props: NewsDetailProps) {
           </div>
         )}
       </section>
-    </main>
+    </SitePage>
   )
 }

@@ -4,6 +4,7 @@ import { CalendarClock, Twitter } from 'lucide-react'
 
 import { parseTimestamp } from '@/lib/date-utils'
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
+import { SiteEmptyState, SiteHeader, SitePage, SitePanel } from '@/components/site'
 
 // Force fully-dynamic rendering: bypass the full-route cache and the CDN edge
 // cache so role/ban changes from the admin panel are reflected immediately.
@@ -58,32 +59,18 @@ export default async function TeamPage() {
   )
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] space-y-3 px-4 py-10 sm:px-6">
-      <header className="flex h-[76px] items-center rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/img/member-team.png"
-            alt=""
-            className="h-[49px] w-auto image-pixelated"
-          />
-          <h1 className="text-[18px] font-bold uppercase text-[#DDD] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-            Equipe Habbone
-          </h1>
-        </div>
-      </header>
+    <SitePage className="gap-3">
+      <SiteHeader title="Equipe Habbone" imageSrc="/img/member-team.png" />
 
       {activeRoles.length === 0 ? (
-        <section className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6">
-          <p className="rounded-[6px] border border-dashed border-white/15 px-4 py-6 text-center text-sm text-[#BEBECE]">
-            Aucun membre reference pour le moment.
-          </p>
-        </section>
+        <SitePanel>
+          <SiteEmptyState>Aucun membre reference pour le moment.</SiteEmptyState>
+        </SitePanel>
       ) : (
         activeRoles.map((role) => {
           const members = membersByRole[role] ?? []
           return (
-            <section key={role} className="rounded-[4px] border border-[#1F1F3E] bg-[#272746] px-5 py-6">
+            <SitePanel key={role} className="px-5 py-6">
               <h2 className="text-[16px] font-bold text-white">{role}</h2>
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:justify-start md:[grid-template-columns:repeat(2,minmax(0,278px))]">
@@ -138,10 +125,10 @@ export default async function TeamPage() {
                   )
                 })}
               </div>
-            </section>
+            </SitePanel>
           )
         })
       )}
-    </main>
+    </SitePage>
   )
 }

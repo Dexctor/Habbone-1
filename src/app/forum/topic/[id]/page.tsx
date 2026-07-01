@@ -20,6 +20,7 @@ import { getRoleBadgesForNicks } from "@/server/pocketbase/badges";
 import { stripHtml } from "@/lib/text-utils";
 import { formatDateTimeFromAny } from "@/lib/date-utils";
 import styles from "@/components/forum/forum-content.module.css";
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel } from "@/components/site";
 
 import { unstable_cache } from 'next/cache';
 
@@ -58,9 +59,9 @@ export default async function TopicPage(props: TopicPageProps) {
 
   if (!topicId) {
     return (
-      <main className="mx-auto max-w-[1200px] px-4 py-16 text-center text-sm text-[#BEBECE]/70">
-        Sujet introuvable.
-      </main>
+      <SitePage>
+        <SiteEmptyState>Sujet introuvable.</SiteEmptyState>
+      </SitePage>
     );
   }
 
@@ -83,9 +84,9 @@ export default async function TopicPage(props: TopicPageProps) {
 
   if (!topic) {
     return (
-      <main className="mx-auto max-w-[1200px] px-4 py-16 text-center text-sm text-[#BEBECE]/70">
-        Sujet introuvable.
-      </main>
+      <SitePage>
+        <SiteEmptyState>Sujet introuvable.</SiteEmptyState>
+      </SitePage>
     );
   }
 
@@ -130,17 +131,11 @@ export default async function TopicPage(props: TopicPageProps) {
   const isAuthenticated = Boolean((session as { user?: unknown } | null)?.user);
 
   return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 sm:px-8">
-      <section>
-        <div className="flex h-[76px] items-center rounded-t-[4px] border border-[#141433] bg-[#1F1F3E] px-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/img/forum.png" alt="" className="h-[49px] w-auto image-pixelated object-contain" />
-          <h1 className="ml-3 line-clamp-1 text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">
-            {title}
-          </h1>
-        </div>
+    <SitePage className="gap-8 sm:px-8">
+      <SitePanel className="overflow-hidden p-0">
+        <SiteHeader title={title} imageSrc="/img/forum.png" className="rounded-none border-x-0 border-t-0" />
 
-        <div className="rounded-b-[4px] border border-[#141433] bg-[#272746] py-6">
+        <div className="py-6">
           <div className="mx-auto flex w-full max-w-[1150px] flex-col gap-5 px-4">
             {imageUrl ? (
               <div className="mx-auto flex w-full max-w-[760px] items-center justify-center overflow-hidden rounded-[4px] border border-[#141433] bg-[#1F1F3E] p-3">
@@ -171,38 +166,29 @@ export default async function TopicPage(props: TopicPageProps) {
             </div>
           </div>
         </div>
-      </section>
+      </SitePanel>
 
       <section className="space-y-3">
-        <div className="flex h-[76px] items-center justify-between rounded-[4px] border border-black/60 bg-[#1F1F3E] px-5">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/img/public.png" alt="" className="h-[50px] w-auto image-pixelated object-contain" />
-            <h2 className="text-[18px] font-bold uppercase tracking-[0.04em] text-[#DDD]">Commentaires</h2>
-          </div>
-
-          {isAuthenticated ? (
+        <SiteHeader
+          title="Commentaires"
+          imageSrc="/img/public.png"
+          actions={isAuthenticated ? (
             <CommentsActionButton
               isAuthenticated
               label="Ecrire commentaire"
-              className="inline-flex h-[38px] items-center justify-center rounded-[4px] bg-[#2596FF] px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
+              className="inline-flex h-[38px] items-center justify-center rounded-[4px] border border-[#2596FF]/70 bg-[#2596FF] px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
             />
           ) : (
-            <Link
-              href={`/login?from=${encodeURIComponent(`/forum/topic/${topicId}`)}`}
-              className="inline-flex h-[38px] items-center justify-center rounded-[4px] bg-[#2596FF] px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-white hover:bg-[#2976E8]"
-            >
-              Se connecter
-            </Link>
+            <SiteButton asChild size="sm">
+              <Link href={`/login?from=${encodeURIComponent(`/forum/topic/${topicId}`)}`}>Se connecter</Link>
+            </SiteButton>
           )}
-        </div>
+        />
 
         {isAuthenticated ? <ForumCommentForm topicId={topicId} /> : null}
 
         {visibleComments.length === 0 ? (
-          <div className="rounded-[4px] border border-dashed border-[#141433] bg-[#272746] px-5 py-8 text-center text-sm text-[#BEBECE]">
-            Aucun commentaire pour le moment.
-          </div>
+          <SiteEmptyState>Aucun commentaire pour le moment.</SiteEmptyState>
         ) : (
           <div className="space-y-3">
             {visibleComments.map((comment) => {
@@ -281,6 +267,6 @@ export default async function TopicPage(props: TopicPageProps) {
           </nav>
         ) : null}
       </section>
-    </main>
+    </SitePage>
   );
 }
