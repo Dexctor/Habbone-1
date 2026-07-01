@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
+import { SiteButton, SiteField, SiteHeader, SiteInput, SitePage, SitePanel, SiteTextarea } from '@/components/site'
 
 const REQUIRED_MARK = ' *'
 
@@ -89,26 +89,14 @@ type FieldProps =
 function Field(props: FieldProps) {
   const { label, name, placeholder, required, className } = props
   const isTextArea = props.as === 'textarea'
-  const inputProps = {
-    id: name,
-    name,
-    placeholder,
-    required,
-    className:
-      'w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-3 py-3 text-sm text-[#DDD] placeholder:text-[#BEBECE]/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none focus:ring-2 focus:ring-[#2596FF]/25',
-  }
 
   return (
-    <label className={`block space-y-2 text-sm font-medium text-[#DDD] ${className ?? ''}`}>
-      <span>
-        {label}
-        {required && <span className="ml-1 text-[color:var(--foreground)]/60">*</span>}
-      </span>
+    <SiteField label={label} required={required} className={className}>
       {isTextArea ? (
-        <textarea {...inputProps} rows={6} />
+        <SiteTextarea id={name} name={name} placeholder={placeholder} required={required} rows={6} />
       ) : (
-        <input {...inputProps} type={props.type ?? 'text'} />
+        <SiteInput id={name} name={name} placeholder={placeholder} required={required} type={props.type ?? 'text'} />
       )}
-    </label>
+    </SiteField>
   )
 }

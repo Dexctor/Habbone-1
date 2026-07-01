@@ -1,15 +1,16 @@
+import { SitePage, SiteSkeleton, SiteSkeletonHeader, SiteSkeletonPanel } from "@/components/site"
+
 export default function PostLoading() {
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
-      <div className="animate-pulse space-y-4 rounded-[8px] border border-white/5 bg-[#1F1F3E] p-6">
-        <div className="h-6 w-48 rounded bg-white/10" />
-        <div className="h-4 w-32 rounded bg-white/5" />
-        <div className="space-y-2 pt-4">
-          <div className="h-4 w-full rounded bg-white/5" />
-          <div className="h-4 w-3/4 rounded bg-white/5" />
-          <div className="h-4 w-1/2 rounded bg-white/5" />
+    <SitePage width="md">
+      <SiteSkeletonPanel className="p-5">
+        <SiteSkeletonHeader />
+        <div className="mt-5 space-y-2">
+          <SiteSkeleton className="h-4 w-full" />
+          <SiteSkeleton className="h-4 w-3/4" />
+          <SiteSkeleton className="h-4 w-1/2" />
         </div>
-      </div>
-    </main>
-  );
+      </SiteSkeletonPanel>
+    </SitePage>
+  )
 }

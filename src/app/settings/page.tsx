@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Lock, Eye, EyeOff, Twitter } from 'lucide-react'
-import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
+import { SiteButton, SiteField, SiteHeader, SiteInput, SitePage, SitePanel } from '@/components/site'
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -128,13 +128,13 @@ export default function SettingsPage() {
         </p>
 
         <form onSubmit={handleTwitterSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Pseudo Twitter
-            </label>
+          <SiteField
+            label="Pseudo Twitter"
+            hint="1 a 15 caracteres : lettres, chiffres et underscore. Laisser vide pour retirer."
+          >
             <div className="relative">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#BEBECE]/60">@</span>
-              <input
+              <SiteInput
                 type="text"
                 value={twitter.replace(/^@+/, '')}
                 onChange={(e) => setTwitter(e.target.value.replace(/^@+/, ''))}
@@ -142,13 +142,10 @@ export default function SettingsPage() {
                 placeholder="moncompte"
                 maxLength={15}
                 autoComplete="off"
-                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 pl-8 pr-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none disabled:opacity-50"
+                className="pl-8 text-white"
               />
             </div>
-            <p className="mt-1 text-[11px] text-[#BEBECE]/50">
-              1 a 15 caracteres : lettres, chiffres et underscore. Laisser vide pour retirer.
-            </p>
-          </div>
+          </SiteField>
 
           <div className="pt-2">
             <SiteButton
@@ -172,18 +169,15 @@ export default function SettingsPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Mot de passe actuel
-            </label>
+          <SiteField label="Mot de passe actuel">
             <div className="relative">
-              <input
+              <SiteInput
                 type={showCurrent ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
                 placeholder="Ton mot de passe actuel"
-                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+                className="pr-12 text-white"
               />
               <button
                 type="button"
@@ -193,21 +187,18 @@ export default function SettingsPage() {
                 {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-          </div>
+          </SiteField>
 
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Nouveau mot de passe
-            </label>
+          <SiteField label="Nouveau mot de passe">
             <div className="relative">
-              <input
+              <SiteInput
                 type={showNew ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 minLength={6}
                 placeholder="Minimum 6 caracteres"
-                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 pr-12 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+                className="pr-12 text-white"
               />
               <button
                 type="button"
@@ -217,22 +208,19 @@ export default function SettingsPage() {
                 {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-          </div>
+          </SiteField>
 
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-              Confirmer le nouveau mot de passe
-            </label>
-            <input
+          <SiteField label="Confirmer le nouveau mot de passe">
+            <SiteInput
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
               placeholder="Retape le nouveau mot de passe"
-              className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+              className="text-white"
             />
-          </div>
+          </SiteField>
 
           <div className="pt-2">
             <SiteButton

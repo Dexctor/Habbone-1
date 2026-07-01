@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 
 import { buildHabboAvatarUrl } from '@/lib/habbo-imaging'
 import { toast } from 'sonner'
-import { SiteHeader, SitePanel } from '@/components/site'
+import { SiteField, SiteHeader, SiteInput, SitePanel, SiteSelect } from '@/components/site'
 
 type AvatarSize = 's' | 'm' | 'l'
 type AvatarFormat = 'png' | 'gif' | 'jpg'
@@ -56,9 +56,6 @@ const FORMAT_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'gif', label: 'GIF (animé)' },
   { value: 'jpg', label: 'JPG' },
 ]
-
-/* ─── Custom dropdown chevron SVG ─── */
-const chevronSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%23BEBECE' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`
 
 export default function ImagerClient() {
   const { data: session } = useSession()
@@ -188,18 +185,17 @@ export default function ImagerClient() {
           <div className="flex-1 space-y-5">
             {/* Row 1: Nickname + Taille */}
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-8">
-              <div className="flex-1 space-y-2">
-                <label className="block text-sm font-bold text-[#DDD] sm:text-base">Pseudo</label>
-                <input
+              <SiteField label="Pseudo" className="flex-1">
+                <SiteInput
                   value={user}
                   onChange={(e) => {
                     if (!userDirty) setUserDirty(true)
                     setUser(e.target.value)
                   }}
                   placeholder={sessionNick || 'Utilisateur'}
-                  className="w-full rounded-[4px] border-2 border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.05)] px-3 py-3.5 text-sm font-bold text-[#DDD] outline-none transition focus:border-[#2596FF] placeholder:text-[#777]"
+                  className="font-bold"
                 />
-              </div>
+              </SiteField>
               <div className="flex-1 space-y-2">
                 <label className="block text-sm font-bold text-[#DDD] sm:text-base">Taille</label>
                 <div className="flex items-center gap-4 py-3.5 sm:justify-between sm:gap-2">
@@ -226,15 +222,15 @@ export default function ImagerClient() {
 
             {/* Row 2: Action + Objet + Expression */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
-              <FigmaSelect label="Action" value={action} onChange={setAction} options={ACTION_OPTIONS} chevron={chevronSvg} />
-              <FigmaSelect label="Objet" value={carryItem} onChange={setCarryItem} options={ITEM_OPTIONS} chevron={chevronSvg} />
-              <FigmaSelect label="Expression" value={gesture} onChange={setGesture} options={GESTURE_OPTIONS} chevron={chevronSvg} />
+              <FigmaSelect label="Action" value={action} onChange={setAction} options={ACTION_OPTIONS} />
+              <FigmaSelect label="Objet" value={carryItem} onChange={setCarryItem} options={ITEM_OPTIONS} />
+              <FigmaSelect label="Expression" value={gesture} onChange={setGesture} options={GESTURE_OPTIONS} />
             </div>
 
             {/* Row 3: Frame + Format */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
-              <FigmaSelect label="Frame" value={String(frameNum)} onChange={(v) => setFrameNum(Number(v))} options={FRAME_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))} chevron={chevronSvg} />
-              <FigmaSelect label="Format" value={format} onChange={(v) => setFormat(v as AvatarFormat)} options={FORMAT_OPTIONS} chevron={chevronSvg} />
+              <FigmaSelect label="Frame" value={String(frameNum)} onChange={(v) => setFrameNum(Number(v))} options={FRAME_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))} />
+              <FigmaSelect label="Format" value={format} onChange={(v) => setFormat(v as AvatarFormat)} options={FORMAT_OPTIONS} />
             </div>
 
             {/* Copy URL button */}
@@ -263,40 +259,22 @@ function FigmaSelect({
   value,
   onChange,
   options,
-  chevron,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   options: Array<{ value: string; label: string }>
-  chevron: string
 }) {
   return (
-    <div className="space-y-2">
-      <label className="block text-sm font-bold text-[#DDD] sm:text-base">{label}</label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full cursor-pointer appearance-none rounded-[4px] border-2 border-[rgba(255,255,255,0.1)] bg-[#1A1A3A] px-3 py-3.5 pr-10 text-sm font-bold text-[#DDD] outline-none transition focus:border-[#2596FF] hover:border-[rgba(255,255,255,0.2)]"
-          style={{
-            backgroundImage: chevron,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 12px center',
-          }}
-        >
-          {options.map((o) => (
-            <option
-              key={o.value}
-              value={o.value}
-              className="bg-[#1A1A3A] text-[#DDD] py-2"
-            >
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
+    <SiteField label={label}>
+      <SiteSelect value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value} className="bg-[#1A1A3A] text-[#DDD] py-2">
+            {o.label}
+          </option>
+        ))}
+      </SiteSelect>
+    </SiteField>
   )
 }
 

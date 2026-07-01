@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FileText, Award, Newspaper, PartyPopper, Search, X } from 'lucide-react'
-import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
+import { SiteButton, SiteField, SiteHeader, SiteInput, SitePage, SitePanel } from '@/components/site'
 
 const RichEditor = dynamic(() => import('@/components/editor/RichEditor'), {
   ssr: false,
@@ -212,46 +212,40 @@ export default function NouveauArticlePage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
         <SitePanel className="p-5">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
-            Titre de l&apos;article
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Entrez le titre..."
-            maxLength={200}
-            className="mt-2 h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
-          />
+          <SiteField label="Titre de l'article">
+            <SiteInput
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Entrez le titre..."
+              maxLength={200}
+            />
+          </SiteField>
         </SitePanel>
 
         {/* Description */}
         <SitePanel className="p-5">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
-            Resume (optionnel)
-          </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Bref resume de l'article..."
-            maxLength={500}
-            className="mt-2 h-[45px] w-full rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
-          />
+          <SiteField label="Resume (optionnel)">
+            <SiteInput
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Bref resume de l'article..."
+              maxLength={500}
+            />
+          </SiteField>
         </SitePanel>
 
         {/* Image */}
         <SitePanel className="p-5">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
-            Image de couverture (optionnel)
-          </label>
-          <div className="mt-2 flex items-center gap-2">
-            <input
+          <SiteField label="Image de couverture (optionnel)">
+          <div className="flex items-center gap-2">
+            <SiteInput
               type="text"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="URL de l'image..."
-              className="h-[45px] flex-1 rounded-[4px] border border-[#141433] bg-[#25254D] px-4 text-[14px] text-[#DDD] placeholder:text-[#BEBECE]/50 focus-visible:border-[#2596FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2596FF]/25"
+              className="flex-1"
             />
             <label className="inline-flex h-[45px] shrink-0 cursor-pointer items-center gap-2 rounded-[4px] border border-[#34345A] bg-[#1F1F3E] px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-[#BEBECE] transition hover:bg-[#25254D] hover:text-[#DDD]">
               <span className="material-icons text-[16px]">upload</span>
@@ -285,6 +279,7 @@ export default function NouveauArticlePage() {
               />
             </label>
           </div>
+          </SiteField>
           {imageUrl && (
             <div className="mt-3 overflow-hidden rounded-[4px] border border-[#141433] bg-[#1F1F3E]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -295,10 +290,8 @@ export default function NouveauArticlePage() {
 
         {/* Content */}
         <SitePanel className="p-5">
-          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]">
-            Contenu de l&apos;article
-          </label>
-          <div className="mt-2">
+          <SiteField label="Contenu de l'article">
+          <div>
             <RichEditor
               key={editorKey}
               name="noticia"
@@ -307,6 +300,7 @@ export default function NouveauArticlePage() {
               variant="full"
             />
           </div>
+          </SiteField>
         </SitePanel>
 
         {/* Error */}

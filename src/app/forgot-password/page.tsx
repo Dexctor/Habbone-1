@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { KeyRound, Copy, CheckCircle2 } from 'lucide-react'
-import { SiteButton, SiteHeader, SitePage, SitePanel } from '@/components/site'
+import { SiteButton, SiteField, SiteHeader, SiteInput, SitePage, SitePanel } from '@/components/site'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -85,20 +85,17 @@ export default function ForgotPasswordPage() {
           </p>
 
           <form onSubmit={handleRequestCode} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-                Pseudo Habbo
-              </label>
-              <input
+            <SiteField label="Pseudo Habbo">
+              <SiteInput
                 type="text"
                 value={nick}
                 onChange={(e) => setNick(e.target.value)}
                 required
                 minLength={2}
                 placeholder="Ton pseudo Habbo"
-                className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+                className="text-white"
               />
-            </div>
+            </SiteField>
             <SiteButton
               type="submit"
               disabled={loading}
@@ -141,34 +138,28 @@ export default function ForgotPasswordPage() {
           {/* Reset form */}
           <SitePanel className="p-6">
             <form onSubmit={handleReset} className="space-y-4">
-              <div>
-                <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-                  Nouveau mot de passe
-                </label>
-                <input
+              <SiteField label="Nouveau mot de passe">
+                <SiteInput
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
                   placeholder="Minimum 6 caracteres"
-                  className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+                  className="text-white"
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#BEBECE]/70">
-                  Confirmer le mot de passe
-                </label>
-                <input
+              </SiteField>
+              <SiteField label="Confirmer le mot de passe">
+                <SiteInput
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
                   placeholder="Retape le mot de passe"
-                  className="h-[45px] w-full rounded-[6px] border border-[#141433] bg-[#303060]/70 px-4 text-[14px] text-white placeholder:text-[#BEBECE]/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:border-[#2596FF] focus:bg-[#25254D] focus:outline-none"
+                  className="text-white"
                 />
-              </div>
+              </SiteField>
               <SiteButton
                 type="submit"
                 disabled={loading}
