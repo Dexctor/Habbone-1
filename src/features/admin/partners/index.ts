@@ -1,0 +1,1 @@
+export { AdminPartnersFeature } from "./AdminPartnersFeature";
