@@ -22,8 +22,9 @@ import {
   Coins,
 } from 'lucide-react';
 import { easings, dur } from '@/lib/motion-tokens';
-import { AdminPageHeader, AdminPanel } from '@/components/admin/ui';
-import { useAdminView } from '@/components/admin/AdminContext';
+import { AdminButton, AdminPanel } from '@/components/admin/ui';
+import { useAdminView, type AdminView } from '@/components/admin/AdminContext';
+import { ADMIN_VIEW_META, adminToneClasses } from '@/components/admin/admin-view-meta';
 import { AdminContentFeature } from '@/features/admin/content';
 import { AdminPartnersFeature } from '@/features/admin/partners';
 import { AdminRolesFeature } from '@/features/admin/roles';
@@ -105,19 +106,13 @@ export default function AdminDashboardFeature(props: AdminDashboardFeatureProps)
           initial="hidden"
           animate="show"
         >
-          {/* Header */}
-          <motion.div variants={STAGGER_ITEM}>
-            <AdminPageHeader
-              title="Tableau de bord"
-              description="Bienvenue sur le panneau d'administration HabbOne"
-              meta={
-                <>
-                  <Clock className="h-3.5 w-3.5" />
-                  Dernière mise à jour : maintenant
-                </>
-              }
-            />
-          </motion.div>
+          <OverviewHero
+            adminName={props.currentAdminName}
+            priorityTotal={cockpit.priorityTotal}
+            onOpenContent={() => setView('content')}
+            onOpenUsers={() => setView('users')}
+            onOpenShop={() => setView('shop')}
+          />
 
           {/* Stats grid — 4 clickable cards */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -209,14 +204,14 @@ export default function AdminDashboardFeature(props: AdminDashboardFeatureProps)
 
       {/* ── Users ── */}
       {view === 'users' && (
-        <FeatureView title="Gestion des utilisateurs" description="Recherche, rôles, coins et sanctions.">
+        <FeatureView view="users">
           <AdminUsersFeature />
         </FeatureView>
       )}
 
       {/* ── Content ── */}
       {view === 'content' && (
-        <FeatureView title="Gestion des contenus" description="Actualités, forum, commentaires et stories.">
+        <FeatureView view="content">
           <AdminContentFeature
             topics={props.topics}
             posts={props.posts}
@@ -243,28 +238,28 @@ export default function AdminDashboardFeature(props: AdminDashboardFeatureProps)
 
       {/* ── Theme ── */}
       {view === 'theme' && (
-        <FeatureView title="Personnalisation du thème" description="Logo, fond du header et affichage public." framed>
+        <FeatureView view="theme" framed>
           <AdminThemeFeature />
         </FeatureView>
       )}
 
       {/* ── Roles ── */}
       {view === 'roles' && (
-        <FeatureView title="Gestion des rôles" description="Permissions, accès admin et rôles par défaut." framed>
+        <FeatureView view="roles" framed>
           <AdminRolesFeature />
         </FeatureView>
       )}
 
       {/* ── Publicité ── */}
       {view === 'pub' && (
-        <FeatureView title="Gestion des partenaires" description="Publicités et liens affichés sur l'accueil." framed>
+        <FeatureView view="pub" framed>
           <AdminPartnersFeature />
         </FeatureView>
       )}
 
       {/* ── Boutique ── */}
       {view === 'shop' && (
-        <FeatureView title="Gestion de la boutique" description="Articles, stocks et commandes.">
+        <FeatureView view="shop">
           <AdminShopFeature />
         </FeatureView>
       )}
@@ -479,21 +474,139 @@ function ViewWrapper({ children }: { children: ReactNode }) {
 }
 
 function FeatureView({
-  title,
-  description,
+  view,
   framed = false,
   children,
 }: {
-  title: string;
-  description: string;
+  view: Exclude<AdminView, 'overview'>;
   framed?: boolean;
   children: ReactNode;
 }) {
   return (
     <ViewWrapper>
-      <AdminPageHeader title={title} description={description} />
+      <WorkspaceHeader view={view} />
       {framed ? <AdminPanel>{children}</AdminPanel> : children}
     </ViewWrapper>
+  );
+}
+
+function OverviewHero({
+  adminName,
+  priorityTotal,
+  onOpenContent,
+  onOpenUsers,
+  onOpenShop,
+}: {
+  adminName?: string;
+  priorityTotal: number;
+  onOpenContent: () => void;
+  onOpenUsers: () => void;
+  onOpenShop: () => void;
+}) {
+  const meta = ADMIN_VIEW_META.overview;
+  const tone = adminToneClasses(meta.tone);
+
+  return (
+    <motion.section
+      variants={STAGGER_ITEM}
+      className="overflow-hidden rounded-[16px] border border-white/12 bg-[linear-gradient(135deg,rgba(66,165,255,0.20),rgba(43,43,92,0.92)_42%,rgba(32,32,74,0.96))] p-5 shadow-[0_28px_70px_-44px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.08)] lg:p-6"
+    >
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex min-w-0 gap-4">
+          <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-[14px] ${tone.icon} ${tone.glow}`}>
+            {meta.icon}
+          </span>
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-white/12 bg-white/[0.08] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-admin-text-secondary">
+                Admin panel
+              </span>
+              <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${tone.soft}`}>
+                {priorityTotal > 0 ? `${priorityTotal} signal${priorityTotal > 1 ? 's' : ''}` : 'Stable'}
+              </span>
+            </div>
+            <h1 className="text-[26px] font-black leading-tight text-white lg:text-[32px]">
+              {adminName ? `Bonjour ${adminName}` : meta.title}
+            </h1>
+            <p className="mt-2 max-w-[760px] text-[13px] leading-6 text-admin-text-secondary">
+              {meta.description} Les modules sont regroupés par usage pour aller plus vite : modération, membres, boutique et configuration.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[430px]">
+          <HeroAction label="Modérer" detail="Contenus" icon={<FileText className="h-4 w-4" />} onClick={onOpenContent} />
+          <HeroAction label="Membres" detail="Rôles & coins" icon={<Users className="h-4 w-4" />} onClick={onOpenUsers} />
+          <HeroAction label="Boutique" detail="Commandes" icon={<ShoppingBag className="h-4 w-4" />} onClick={onOpenShop} />
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+function HeroAction({
+  label,
+  detail,
+  icon,
+  onClick,
+}: {
+  label: string;
+  detail: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex min-h-[72px] items-center gap-3 rounded-[12px] border border-white/12 bg-white/[0.075] px-3 text-left transition hover:border-[#42A5FF]/45 hover:bg-white/[0.12]"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-white/[0.10] text-admin-brand-blue transition group-hover:bg-[#42A5FF] group-hover:text-white">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13px] font-black text-white">{label}</span>
+        <span className="mt-0.5 block text-[11px] text-admin-text-tertiary">{detail}</span>
+      </span>
+    </button>
+  );
+}
+
+function WorkspaceHeader({ view }: { view: Exclude<AdminView, 'overview'> }) {
+  const meta = ADMIN_VIEW_META[view];
+  const tone = adminToneClasses(meta.tone);
+
+  return (
+    <section className="overflow-hidden rounded-[16px] border border-white/12 bg-admin-bg-800/80 p-5 shadow-[0_24px_60px_-44px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.07)]">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 gap-4">
+          <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-[14px] ${tone.icon} ${tone.glow}`}>
+            {meta.icon}
+          </span>
+          <div className="min-w-0">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-white/12 bg-white/[0.07] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-admin-text-tertiary">
+                {meta.group}
+              </span>
+              <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${tone.soft}`}>
+                {meta.focus}
+              </span>
+            </div>
+            <h1 className="text-[24px] font-black leading-tight text-white">{meta.title}</h1>
+            <p className="mt-1 max-w-[760px] text-[13px] leading-6 text-admin-text-secondary">{meta.description}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <AdminButton tone="ghost" size="sm" icon={<Clock className="h-3.5 w-3.5" />}>
+            Temps réel
+          </AdminButton>
+          <AdminButton tone="secondary" size="sm" onClick={() => window.location.reload()}>
+            Rafraîchir
+          </AdminButton>
+        </div>
+      </div>
+    </section>
   );
 }
 

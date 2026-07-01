@@ -7,20 +7,14 @@ import {
   ArrowLeft,
   Bell,
   CheckCheck,
-  FileText,
   Info,
-  LayoutGrid,
-  Megaphone,
   Menu,
-  Palette,
-  ShoppingBag,
-  Shield,
   ShoppingCart,
   TriangleAlert,
-  Users,
   X,
 } from 'lucide-react';
 import { AdminViewProvider, useAdminView, type AdminView } from './AdminContext';
+import { ADMIN_VIEW_GROUPS, ADMIN_VIEW_META, adminToneClasses } from './admin-view-meta';
 import { formatRelativeFr } from '@/lib/date-utils';
 import { easings, dur } from '@/lib/motion-tokens';
 
@@ -41,15 +35,7 @@ interface AdminNotif {
 /*  Sidebar navigation items                                           */
 /* ------------------------------------------------------------------ */
 
-const NAV_ITEMS: { id: AdminView; label: string; icon: ReactNode }[] = [
-  { id: 'overview', label: 'Tableau de bord', icon: <LayoutGrid className="h-[18px] w-[18px]" /> },
-  { id: 'content', label: 'Actualités', icon: <FileText className="h-[18px] w-[18px]" /> },
-  { id: 'users', label: 'Utilisateurs', icon: <Users className="h-[18px] w-[18px]" /> },
-  { id: 'shop', label: 'Boutique', icon: <ShoppingBag className="h-[18px] w-[18px]" /> },
-  { id: 'pub', label: 'Partenaires', icon: <Megaphone className="h-[18px] w-[18px]" /> },
-  { id: 'theme', label: 'Thème', icon: <Palette className="h-[18px] w-[18px]" /> },
-  { id: 'roles', label: 'Rôles', icon: <Shield className="h-[18px] w-[18px]" /> },
-];
+const NAV_ITEMS = Object.values(ADMIN_VIEW_META);
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -72,45 +58,54 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Nav items */}
-      <div className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.12em] text-admin-text-muted">
-        Navigation
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5">
-        {NAV_ITEMS.map((item) => {
-          const active = view === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setView(item.id);
-                onNavigate?.();
-              }}
-              className={`group relative flex min-h-[46px] items-center gap-3 overflow-hidden rounded-[9px] border px-3 text-[13px] font-bold transition-colors duration-200 ${
-                active
-                  ? 'border-[#42A5FF]/45 bg-[#42A5FF]/16 text-white shadow-[0_10px_26px_-18px_rgba(66,165,255,0.95)]'
-                  : 'border-transparent text-admin-text-tertiary hover:border-white/10 hover:bg-white/[0.07] hover:text-white'
-              }`}
-            >
-              {/* animated active background (shared layout) */}
-              {active && (
-                <motion.span
-                  layoutId="admin-nav-active"
-                  className="absolute inset-y-1 left-1 w-1 rounded-full bg-[#42A5FF] shadow-[0_0_14px_rgba(66,165,255,0.9)]"
-                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                />
-              )}
-              <span
-                className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-[7px] transition-colors duration-200 ${
-                  active ? 'bg-[#42A5FF] text-white' : 'bg-white/[0.06] text-admin-text-tertiary group-hover:bg-white/10 group-hover:text-white'
-                }`}
-              >
-                {item.icon}
-              </span>
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          );
-        })}
+      <div className="flex flex-1 flex-col gap-5">
+        {ADMIN_VIEW_GROUPS.map((group) => (
+          <div key={group} className="space-y-1.5">
+            <div className="px-2 text-[10px] font-black uppercase tracking-[0.12em] text-admin-text-muted">
+              {group}
+            </div>
+            {NAV_ITEMS.filter((item) => item.group === group).map((item) => {
+              const active = view === item.id;
+              const tone = adminToneClasses(item.tone);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setView(item.id);
+                    onNavigate?.();
+                  }}
+                  className={`group relative flex min-h-[58px] w-full items-center gap-3 overflow-hidden rounded-[11px] border px-3 text-left transition-colors duration-200 ${
+                    active
+                      ? `${tone.soft} ${tone.glow}`
+                      : 'border-transparent bg-white/[0.035] text-admin-text-tertiary hover:border-white/10 hover:bg-white/[0.075] hover:text-white'
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="admin-nav-active"
+                      className="absolute inset-y-2 left-1 w-1 rounded-full bg-current"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-[8px] transition-colors duration-200 ${
+                      active ? tone.icon : 'bg-white/[0.07] text-admin-text-tertiary group-hover:bg-white/10 group-hover:text-white'
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="relative z-10 min-w-0">
+                    <span className="block truncate text-[13px] font-black">{item.label}</span>
+                    <span className="mt-0.5 block truncate text-[10.5px] font-medium text-admin-text-tertiary">
+                      {item.focus}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Separator + back to site at bottom */}
@@ -156,6 +151,23 @@ export default function AdminLayout({
   adminName: string;
   children: ReactNode;
 }) {
+  return (
+    <AdminViewProvider>
+      <AdminChrome adminName={adminName}>{children}</AdminChrome>
+    </AdminViewProvider>
+  );
+}
+
+function AdminChrome({
+  adminName,
+  children,
+}: {
+  adminName: string;
+  children: ReactNode;
+}) {
+  const { view } = useAdminView();
+  const current = ADMIN_VIEW_META[view];
+  const currentTone = adminToneClasses(current.tone);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -222,7 +234,7 @@ export default function AdminLayout({
   };
 
   return (
-    <AdminViewProvider>
+    <>
       <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-admin-bg-900">
         {/* ── Top bar ── */}
         <header className="flex h-[58px] shrink-0 items-center justify-between border-b border-white/10 bg-admin-bg-800 px-4 shadow-[0_12px_34px_-28px_rgba(0,0,0,0.9)] lg:px-6">
@@ -237,7 +249,16 @@ export default function AdminLayout({
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
-            <span className="text-[13px] text-admin-text-tertiary">
+            <div className="hidden items-center gap-3 sm:flex">
+              <span className={`grid h-9 w-9 place-items-center rounded-[8px] ${currentTone.icon}`}>
+                {current.icon}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-black text-white">{current.title}</p>
+                <p className="max-w-[420px] truncate text-[11px] text-admin-text-tertiary">{current.description}</p>
+              </div>
+            </div>
+            <span className="text-[13px] text-admin-text-tertiary sm:hidden">
               habbone.fr / <span className="font-bold text-admin-brand-blue">admin</span>
             </span>
           </div>
@@ -417,6 +438,6 @@ export default function AdminLayout({
           </main>
         </div>
       </div>
-    </AdminViewProvider>
+    </>
   );
 }
