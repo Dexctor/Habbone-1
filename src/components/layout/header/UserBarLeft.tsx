@@ -24,6 +24,24 @@ type UserBarLeftProps = {
   onRequestLogin: () => void
 }
 
+function isAdminSessionUser(user: unknown): boolean {
+  const data = (user || {}) as Record<string, unknown>
+  const roleName = String(data.roleName ?? data.directusRoleName ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  return (
+    data.role === 'admin' ||
+    data.adminAccess === true ||
+    data.directusAdminAccess === true ||
+    roleName.includes('fondateur') ||
+    roleName.includes('proprietaire') ||
+    roleName.includes('owner') ||
+    roleName.includes('super admin')
+  )
+}
+
 export default function UserBarLeft({
   mounted,
   status,
@@ -56,6 +74,7 @@ export default function UserBarLeft({
 
   const isLoading = !mounted || status === 'loading'
   const isAuthenticated = mounted && status !== 'loading' && Boolean(session?.user)
+  const canAccessAdmin = isAuthenticated && isAdminSessionUser(session?.user)
 
   const avatarSrc = useMemo(() => {
     if (!isAuthenticated) return null
@@ -241,7 +260,7 @@ export default function UserBarLeft({
       {/* Boutons utilisateur connecté: compacts sur mobile */}
       {!isLoading && isAuthenticated && (
         <div className="box-buttons flex gap-1 sm:gap-[10px] ml-auto lg:ml-[10px]" id="logout">
-          {(session?.user as any)?.role === 'admin' && (
+          {canAccessAdmin && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
