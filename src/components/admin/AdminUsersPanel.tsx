@@ -44,7 +44,7 @@ type User = {
   role?: { id: string; name?: string } | string | null;
   _source?: "users";
   _roleName?: string | null;
-  _flags?: { isFounder?: boolean; isAdmin?: boolean } | null;
+  _flags?: { isOwner?: boolean; isFounder?: boolean; isAdmin?: boolean } | null;
 };
 
 type AdminStatusPayload = {
@@ -68,14 +68,48 @@ const LIMIT = 10;
 /*  Role badge colors                                                  */
 /* ------------------------------------------------------------------ */
 
-function getRoleBadge(roleName: string): { bg: string; text: string } {
-  const n = roleName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (n.includes("fondateur") || n.includes("founder")) return { bg: "bg-[#FFC800]/20", text: "text-[#FFC800]" };
+function normalizeRoleName(roleName: string): string {
+  return roleName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+function isOwnerRoleName(roleName: string): boolean {
+  const n = normalizeRoleName(roleName);
+  return n.includes("proprietaire") || n.includes("owner") || n.includes("super admin");
+}
+
+function isFounderRoleName(roleName: string): boolean {
+  const n = normalizeRoleName(roleName);
+  return n.includes("fondateur") || n.includes("founder");
+}
+
+function getRoleBadge(roleName: string): { bg: string; text: string; extra?: string } {
+  const n = normalizeRoleName(roleName);
+  if (isOwnerRoleName(roleName)) {
+    return {
+      bg: "border border-[#FFE889]/50 bg-[linear-gradient(135deg,rgba(255,232,137,.22),rgba(255,200,0,.16)_45%,rgba(37,150,255,.18))]",
+      text: "text-[#FFF3A3]",
+      extra: "shadow-[0_0_18px_rgba(255,200,0,0.18),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-white/10",
+    };
+  }
+  if (isFounderRoleName(roleName)) {
+    return {
+      bg: "border border-[#FFC800]/25 bg-[#FFC800]/20",
+      text: "text-[#FFC800]",
+      extra: "shadow-[0_0_10px_rgba(255,200,0,0.10)]",
+    };
+  }
   if (n.includes("admin")) return { bg: "bg-[#F92330]/20", text: "text-[#F92330]" };
   if (n.includes("editeur") || n.includes("editor")) return { bg: "bg-[#2596FF]/20", text: "text-admin-brand-blue" };
   if (n.includes("moderateur") || n.includes("moderator") || n.includes("modo")) return { bg: "bg-[#9B59B6]/20", text: "text-[#9B59B6]" };
   if (n.includes("animateur") || n.includes("animator")) return { bg: "bg-[#0FD52F]/20", text: "text-[#0FD52F]" };
   return { bg: "bg-white/10", text: "text-[#BEBECE]" };
+}
+
+function getRoleWeight(user: User): number {
+  if (user._flags?.isOwner) return 0;
+  if (user._flags?.isFounder) return 1;
+  if (user._flags?.isAdmin) return 2;
+  return 3;
 }
 
 /* ------------------------------------------------------------------ */
@@ -202,14 +236,15 @@ export default function AdminUsersPanel({
         .map((user) => {
           const roleObj = typeof user.role === "object" && user.role ? (user.role as Role) : null;
           const rawName = (user as { _roleName?: string | null })._roleName || roleObj?.name || "";
-          const normalized = String(rawName).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-          const isFounder = normalized.includes("fondateur") || normalized.includes("founder");
+          const normalized = normalizeRoleName(String(rawName));
+          const isOwner = isOwnerRoleName(String(rawName));
+          const isFounder = isOwner || isFounderRoleName(String(rawName));
           const isAdmin = isFounder || normalized.includes("admin") || roleObj?.admin_access === true;
-          return { ...user, _roleName: rawName || null, _flags: { isFounder, isAdmin } } as User;
+          return { ...user, _roleName: rawName || null, _flags: { isOwner, isFounder, isAdmin } } as User;
         })
         .sort((a, b) => {
-          const wA = a._flags?.isFounder ? 0 : a._flags?.isAdmin ? 1 : 2;
-          const wB = b._flags?.isFounder ? 0 : b._flags?.isAdmin ? 1 : 2;
+          const wA = getRoleWeight(a);
+          const wB = getRoleWeight(b);
           return wA - wB;
         });
 
@@ -551,7 +586,7 @@ export default function AdminUsersPanel({
                     {/* Role */}
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${roleBadge.bg} ${roleBadge.text}`}
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.04em] ${roleBadge.bg} ${roleBadge.text} ${roleBadge.extra ?? ""}`}
                       >
                         {displayRole}
                       </span>
@@ -605,7 +640,7 @@ export default function AdminUsersPanel({
                                   }}
                                   className="flex cursor-pointer items-center justify-between gap-2 text-[12px] text-[#BEBECE]/80 transition-colors focus:bg-[#2596FF]/10 focus:text-white"
                                 >
-                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.bg} ${badge.text}`}>
+                                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.bg} ${badge.text} ${badge.extra ?? ""}`}>
                                     {opt.label}
                                   </span>
                                   {isSelected && <Check className="h-3 w-3 shrink-0 text-admin-brand-blue" />}
