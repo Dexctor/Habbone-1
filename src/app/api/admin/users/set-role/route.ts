@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withAdmin } from '@/server/api-helpers';
 import { setAdminUserRole } from '@/server/services/admin-users';
-import { guardTargetUser, isCallerFounder } from '@/server/admin-guards';
+import { guardTargetUser, isCallerFounder, resolveCallerIsFounder } from '@/server/admin-guards';
 import { logAdminAction } from '@/server/pocketbase/admin-logs';
 import { getRoleById } from '@/server/pocketbase/roles';
 
@@ -17,7 +17,7 @@ export const POST = withAdmin(async (req, { user }) => {
 
   const { userId, roleId } = parsed.data;
 
-  const callerIsFounder = isCallerFounder(user);
+  const callerIsFounder = await resolveCallerIsFounder(user?.id, isCallerFounder(user));
 
   console.info('[admin:set-role] incoming', {
     callerId: user?.id,

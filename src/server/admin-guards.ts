@@ -44,6 +44,7 @@ export async function guardTargetUser(opts: {
   action: 'ban' | 'unban' | 'delete' | 'role_change' | 'coins';
 }): Promise<AdminGuardResult> {
   const target = await fetchTarget(opts.targetUserId);
+  const callerIsFounder = await resolveCallerIsFounder(opts.callerId, !!opts.callerIsFounder);
 
   let targetIsAdmin = false;
   if (target?.roleId) {
@@ -57,7 +58,7 @@ export async function guardTargetUser(opts: {
 
   const decision = decideGuard({
     callerId: opts.callerId ?? null,
-    callerIsFounder: !!opts.callerIsFounder,
+    callerIsFounder,
     targetUserId: opts.targetUserId,
     target: target ? { id: target.id, isAdmin: targetIsAdmin } : null,
     action: opts.action,
@@ -86,4 +87,23 @@ export async function guardTargetUser(opts: {
 
 export function isCallerFounder(user: Session['user'] | null | undefined): boolean {
   return isFounderRoleName(user?.roleName);
+}
+
+export async function resolveCallerIsFounder(
+  callerId: string | null | undefined,
+  sessionFallback = false,
+): Promise<boolean> {
+  const cleanId = callerId ? cleanUserId(callerId) : '';
+  if (!cleanId) return sessionFallback;
+
+  try {
+    const caller = await fetchTarget(cleanId);
+    if (!caller) return sessionFallback;
+    if (!caller.roleId) return false;
+
+    const role = await getRoleById(caller.roleId);
+    return isFounderRoleName(role?.name);
+  } catch {
+    return sessionFallback;
+  }
 }
