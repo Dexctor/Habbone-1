@@ -93,24 +93,24 @@ export const CONTENT_META: Record<ContentType, ContentTypeMeta> = {
 export function getItemTitle(
   item: ContentItem,
   contentType: ContentType,
-  topicTitleById: Record<number, string>,
-  articleTitleById: Record<number, string> = {},
+  topicTitleById: Record<string, string>,
+  articleTitleById: Record<string, string> = {},
 ): string {
   if (contentType === "topics") return (item as AdminTopic).titulo || "(sans titre)";
   if (contentType === "articles") return (item as AdminArticle).titulo || "(sans titre)";
   if (contentType === "posts") {
     const topicId = (item as AdminPost).id_topico ?? 0;
-    const title = topicTitleById[topicId];
+    const title = topicTitleById[String(topicId)];
     return title ? `Réponse sur « ${title} »` : `Réponse sur le sujet #${topicId}`;
   }
   if (contentType === "forumComments") {
     const topicId = (item as AdminForumComment).id_forum ?? 0;
-    const title = topicTitleById[topicId];
+    const title = topicTitleById[String(topicId)];
     return title ? `Commentaire sur « ${title} »` : `Commentaire sur le sujet #${topicId}`;
   }
   if (contentType === "newsComments") {
     const articleId = (item as AdminNewsComment).id_noticia ?? 0;
-    const title = articleTitleById[articleId];
+    const title = articleTitleById[String(articleId)];
     return title ? `Commentaire sur « ${title} »` : `Commentaire sur l'article #${articleId}`;
   }
   return (item as AdminStory).titulo || `Story #${(item as AdminStory).id}`;

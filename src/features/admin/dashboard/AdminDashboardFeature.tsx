@@ -68,7 +68,7 @@ interface AdminDashboardFeatureProps {
   forumComments: AdminForumComment[];
   newsComments: AdminNewsComment[];
   stories: AdminStory[];
-  topicTitleById: Record<number, string>;
+  topicTitleById: Record<string, string>;
   recentActivity?: RecentActivityItem[];
   updateTopic: ServerActionFn;
   deleteTopic: ServerActionFn;

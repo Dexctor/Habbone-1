@@ -60,8 +60,8 @@ export function ContentDetailPanel({
 }: {
   item: ContentItem;
   contentType: ContentType;
-  topicTitleById: Record<number, string>;
-  articleTitleById?: Record<number, string>;
+  topicTitleById: Record<string, string>;
+  articleTitleById?: Record<string, string>;
   isEditing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
@@ -269,8 +269,8 @@ function ViewContent({
 }: {
   item: ContentItem;
   contentType: ContentType;
-  topicTitleById: Record<number, string>;
-  articleTitleById?: Record<number, string>;
+  topicTitleById: Record<string, string>;
+  articleTitleById?: Record<string, string>;
   activeTab: "preview" | "metadata";
 }) {
   const itemId = (item as { id: number }).id;
@@ -309,16 +309,16 @@ function ViewContent({
   if (contentType === "posts") {
     metaCards.push({
       label: "Sujet lié",
-      value: topicTitleById[(item as AdminPost).id_topico ?? 0] || `Sujet #${(item as AdminPost).id_topico}`,
+      value: topicTitleById[String((item as AdminPost).id_topico ?? "")] || `Sujet #${(item as AdminPost).id_topico}`,
     });
   }
   if (contentType === "forumComments") {
     const topicId = (item as AdminForumComment).id_forum ?? 0;
-    metaCards.push({ label: "Sujet", value: topicTitleById[topicId] || `Sujet #${topicId}` });
+    metaCards.push({ label: "Sujet", value: topicTitleById[String(topicId)] || `Sujet #${topicId}` });
   }
   if (contentType === "newsComments") {
     const articleId = (item as AdminNewsComment).id_noticia ?? 0;
-    metaCards.push({ label: "Article", value: articleTitleById?.[articleId] || `Article #${articleId}` });
+    metaCards.push({ label: "Article", value: articleTitleById?.[String(articleId)] || `Article #${articleId}` });
   }
   if (contentType === "articles" && (item as AdminArticle).descricao) {
     metaCards.push({ label: "Résumé", value: (item as AdminArticle).descricao || "" });

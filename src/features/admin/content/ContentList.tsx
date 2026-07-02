@@ -32,8 +32,8 @@ export function ContentListItem({
 }: {
   item: ContentItem;
   contentType: ContentType;
-  topicTitleById: Record<number, string>;
-  articleTitleById?: Record<number, string>;
+  topicTitleById: Record<string, string>;
+  articleTitleById?: Record<string, string>;
   isSelected: boolean;
   onSelect: () => void;
 }) {

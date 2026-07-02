@@ -107,9 +107,9 @@ export default async function AdminPage() {
   const forumCommentsArray = Array.isArray(forumComments) ? forumComments : [];
   const newsCommentsArray = Array.isArray(newsComments) ? newsComments : [];
   const storiesArray = Array.isArray(stories) ? stories : [];
-  const topicTitleById = topicsArray.reduce((acc: Record<number, string>, t: any) => {
-    const id = Number(t?.id);
-    if (!Number.isNaN(id)) acc[id] = String(t?.titulo || '');
+  const topicTitleById = topicsArray.reduce((acc: Record<string, string>, t: any) => {
+    const id = t?.id;
+    if (id !== null && id !== undefined) acc[String(id)] = String(t?.titulo || '');
     return acc;
   }, {});
 

@@ -43,7 +43,7 @@ interface AdminContentFeatureProps {
   news: AdminArticle[];
   forumComments: AdminForumComment[];
   newsComments: AdminNewsComment[];
-  topicTitleById: Record<number, string>;
+  topicTitleById: Record<string, string>;
   updateTopic: ServerActionFn;
   deleteTopic: ServerActionFn;
   updatePost: ServerActionFn;
@@ -121,9 +121,9 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
 
   const articleTitleById = useMemo(
     () =>
-      news.reduce<Record<number, string>>((acc, article) => {
-        const id = Number(article.id);
-        if (!Number.isNaN(id)) acc[id] = String(article.titulo || "");
+      news.reduce<Record<string, string>>((acc, article) => {
+        const id = article.id;
+        if (id !== null && id !== undefined) acc[String(id)] = String(article.titulo || "");
         return acc;
       }, {}),
     [news],
@@ -159,18 +159,18 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
           matches(`${topic.titulo ?? ""} ${topic.autor ?? ""} ${topic.conteudo ?? ""}`),
         );
       case "posts":
-        return posts.filter((post) => matches(`${post.autor ?? ""} ${topicTitleById[post.id_topico ?? 0] ?? ""}`));
+        return posts.filter((post) => matches(`${post.autor ?? ""} ${topicTitleById[String(post.id_topico ?? "")] ?? ""}`));
       case "articles":
         return news.filter((article) =>
           matches(`${article.titulo ?? ""} ${article.autor ?? ""} ${article.descricao ?? ""} ${article.noticia ?? ""}`),
         );
       case "forumComments":
         return forumComments.filter((comment) =>
-          matches(`${comment.autor ?? ""} ${comment.id_forum ?? ""} ${topicTitleById[comment.id_forum ?? 0] ?? ""} ${comment.comentario ?? ""}`),
+          matches(`${comment.autor ?? ""} ${comment.id_forum ?? ""} ${topicTitleById[String(comment.id_forum ?? "")] ?? ""} ${comment.comentario ?? ""}`),
         );
       case "newsComments":
         return newsComments.filter((comment) =>
-          matches(`${comment.autor ?? ""} ${comment.id_noticia ?? ""} ${articleTitleById[comment.id_noticia ?? 0] ?? ""} ${comment.comentario ?? ""}`),
+          matches(`${comment.autor ?? ""} ${comment.id_noticia ?? ""} ${articleTitleById[String(comment.id_noticia ?? "")] ?? ""} ${comment.comentario ?? ""}`),
         );
       case "stories":
         return stories.filter((story) => matches(`${story.titulo ?? ""} ${story.autor ?? ""}`));
