@@ -39,6 +39,11 @@ function fixStr(v: unknown): string {
   return typeof v === 'string' ? fixEncoding(v) : String(v ?? '');
 }
 
+function isMissingPocketBaseConfig(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.includes('POCKETBASE_ADMIN_EMAIL') || message.includes('POCKETBASE_ADMIN_PASSWORD');
+}
+
 /* ------------------------------------------------------------------ */
 /*  Mappers: DB rows → App types                                       */
 /* ------------------------------------------------------------------ */
@@ -121,8 +126,10 @@ export async function listShopItems(onlyActive = false): Promise<ShopItem[]> {
       fields: ITEMS_FIELDS,
     });
     return rows.map(mapDbToShopItem);
-  } catch (error: any) {
-    console.error('[Shop] Failed to list items:', error?.message || error);
+  } catch (error: unknown) {
+    if (!isMissingPocketBaseConfig(error)) {
+      console.error('[Shop] Failed to list items:', error instanceof Error ? error.message : error);
+    }
     return [];
   }
 }

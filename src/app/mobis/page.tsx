@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel, SiteSearch } from '@/components/site'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel, SiteSearch, SiteSkeleton } from '@/components/site'
 
 type Mobi = {
   id: number
@@ -126,7 +126,11 @@ export default function MobisPageClient() {
 
         <div className="px-[18px] py-[20px]">
           {loading ? (
-            <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Chargement des mobis...</SiteEmptyState>
+            <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8" aria-label="Chargement des mobis">
+              {Array.from({ length: PAGE_SIZE }, (_, index) => (
+                <SiteSkeleton key={index} className="aspect-square min-h-[64px] rounded-[4px]" />
+              ))}
+            </div>
           ) : visibleItems.length === 0 ? (
             <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Aucun mobi trouvé.</SiteEmptyState>
           ) : (

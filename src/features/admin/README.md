@@ -20,7 +20,7 @@ This folder owns admin business features.
 - `shop`: shop items, order list, shop-specific image helpers.
 - `partners`: homepage partner/publicity management.
 
-## Compatibility wrappers
+## Legacy wrappers
 
-`src/components/admin/Admin*Panel.tsx` remains as a temporary import bridge while the
-admin shell and tests are migrated. New code should import from `src/features/admin`.
+The temporary `src/components/admin/Admin*Panel.tsx` bridge files have been removed.
+Admin features should be imported directly from `src/features/admin`.

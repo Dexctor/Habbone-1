@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel } from '@/components/site'
+import { SiteButton, SiteEmptyState, SiteHeader, SitePage, SitePanel, SiteSkeleton } from '@/components/site'
 
 type Badge = {
   code: string
@@ -160,7 +160,11 @@ export default function BadgesPageClient() {
 
         <div className="px-[18px] py-[20px]">
           {loading ? (
-            <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Chargement des badges...</SiteEmptyState>
+            <div className="grid grid-cols-4 gap-[10px] sm:grid-cols-6 lg:grid-cols-8" aria-label="Chargement des badges">
+              {Array.from({ length: PAGE_SIZE }, (_, index) => (
+                <SiteSkeleton key={index} className="aspect-square min-h-[64px] rounded-[4px]" />
+              ))}
+            </div>
           ) : visibleItems.length === 0 ? (
             <SiteEmptyState className="border-[#1F1F3E] bg-transparent px-4 py-16 text-xs">Aucun badge disponible.</SiteEmptyState>
           ) : (

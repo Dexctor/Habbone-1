@@ -24,6 +24,15 @@ type RateLimitConfig = {
   windowMs: number;
 };
 
+function routeRateLimit(req: Request, scope: 'admin' | 'auth'): RateLimitConfig {
+  const url = new URL(req.url);
+  return {
+    key: `${scope}:${req.method}:${url.pathname}`,
+    limit: scope === 'admin' ? 120 : 60,
+    windowMs: 60_000,
+  };
+}
+
 /**
  * Wrap an API route handler with admin auth + optional rate limiting.
  * Eliminates ~8 lines of boilerplate per route.
@@ -41,15 +50,13 @@ type RateLimitConfig = {
  */
 export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
-    // Rate limit check
-    if (rateLimit) {
-      const rl = await checkRateLimit(req, rateLimit);
-      if (!rl.ok) {
-        return NextResponse.json(
-          { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
-          { status: 429, headers: rl.headers },
-        );
-      }
+    const effectiveRateLimit = rateLimit ?? routeRateLimit(req, 'admin');
+    const rl = await checkRateLimit(req, effectiveRateLimit);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
+        { status: 429, headers: rl.headers },
+      );
     }
 
     // Admin auth check
@@ -87,15 +94,13 @@ export function withAdmin(handler: ApiHandler, rateLimit?: RateLimitConfig) {
  */
 export function withAuth(handler: ApiHandler, rateLimit?: RateLimitConfig) {
   return async (req: Request, routeCtx?: any) => {
-    // Rate limit check
-    if (rateLimit) {
-      const rl = await checkRateLimit(req, rateLimit);
-      if (!rl.ok) {
-        return NextResponse.json(
-          { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
-          { status: 429, headers: rl.headers },
-        );
-      }
+    const effectiveRateLimit = rateLimit ?? routeRateLimit(req, 'auth');
+    const rl = await checkRateLimit(req, effectiveRateLimit);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes', code: 'RATE_LIMITED' },
+        { status: 429, headers: rl.headers },
+      );
     }
 
     // Auth check

@@ -26,7 +26,7 @@ type UserBarLeftProps = {
 
 function isAdminSessionUser(user: unknown): boolean {
   const data = (user || {}) as Record<string, unknown>
-  const roleName = String(data.roleName ?? data.directusRoleName ?? '')
+  const roleName = String(data.roleName ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -34,7 +34,6 @@ function isAdminSessionUser(user: unknown): boolean {
   return (
     data.role === 'admin' ||
     data.adminAccess === true ||
-    data.directusAdminAccess === true ||
     roleName.includes('fondateur') ||
     roleName.includes('proprietaire') ||
     roleName.includes('owner') ||

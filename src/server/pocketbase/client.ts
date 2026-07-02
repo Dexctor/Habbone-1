@@ -10,11 +10,6 @@ import PocketBase from 'pocketbase';
  */
 
 const PB_URL = process.env.POCKETBASE_URL || 'http://127.0.0.1:8090';
-const ADMIN_EMAIL = process.env.POCKETBASE_ADMIN_EMAIL!;
-const ADMIN_PASSWORD = process.env.POCKETBASE_ADMIN_PASSWORD!;
-
-if (!ADMIN_EMAIL) throw new Error('POCKETBASE_ADMIN_EMAIL manquant');
-if (!ADMIN_PASSWORD) throw new Error('POCKETBASE_ADMIN_PASSWORD manquant');
 
 /**
  * Shared PocketBase instance. On the server we disable auto-cancellation so that
@@ -33,8 +28,14 @@ pb.autoCancellation(false);
  * those flows must use a *separate* PocketBase instance, not this one.
  */
 export async function pbAdmin(): Promise<PocketBase> {
+  const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
+  const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+  if (!adminEmail) throw new Error('POCKETBASE_ADMIN_EMAIL manquant');
+  if (!adminPassword) throw new Error('POCKETBASE_ADMIN_PASSWORD manquant');
+
   if (!pb.authStore.isValid) {
-    await pb.collection('_superusers').authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD);
+    await pb.collection('_superusers').authWithPassword(adminEmail, adminPassword);
   }
   return pb;
 }

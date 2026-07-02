@@ -6,12 +6,13 @@ import LatestBadges from "@/components/home/latest-mobis";
 import Publicite from "@/components/home/publicite";
 import Ranking from "@/components/home/ranking";
 import SectionReveal from "@/components/motion/section-reveal";
+import { SitePage } from "@/components/site";
 
 export const revalidate = 300;
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-[1200px] space-y-[70px] px-4 py-10 sm:px-6">
+    <SitePage className="gap-[70px]">
       <SectionReveal>
         <Stories />
       </SectionReveal>
@@ -36,6 +37,6 @@ export default function Home() {
       <SectionReveal>
         <Ranking />
       </SectionReveal>
-    </main>
+    </SitePage>
   );
 }
