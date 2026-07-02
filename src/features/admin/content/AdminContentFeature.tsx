@@ -119,6 +119,16 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
     [topics.length, posts.length, news.length, forumComments.length, newsComments.length, stories.length],
   );
 
+  const articleTitleById = useMemo(
+    () =>
+      news.reduce<Record<number, string>>((acc, article) => {
+        const id = Number(article.id);
+        if (!Number.isNaN(id)) acc[id] = String(article.titulo || "");
+        return acc;
+      }, {}),
+    [news],
+  );
+
   const handleTypeChange = useCallback((type: ContentType) => {
     setContentType(type);
     setContentGroup(groupForType(type));
@@ -156,18 +166,18 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
         );
       case "forumComments":
         return forumComments.filter((comment) =>
-          matches(`${comment.autor ?? ""} ${comment.id_forum ?? ""} ${comment.comentario ?? ""}`),
+          matches(`${comment.autor ?? ""} ${comment.id_forum ?? ""} ${topicTitleById[comment.id_forum ?? 0] ?? ""} ${comment.comentario ?? ""}`),
         );
       case "newsComments":
         return newsComments.filter((comment) =>
-          matches(`${comment.autor ?? ""} ${comment.id_noticia ?? ""} ${comment.comentario ?? ""}`),
+          matches(`${comment.autor ?? ""} ${comment.id_noticia ?? ""} ${articleTitleById[comment.id_noticia ?? 0] ?? ""} ${comment.comentario ?? ""}`),
         );
       case "stories":
         return stories.filter((story) => matches(`${story.titulo ?? ""} ${story.autor ?? ""}`));
       default:
         return [];
     }
-  }, [contentType, topics, posts, news, forumComments, newsComments, stories, topicTitleById, searchLower]);
+  }, [contentType, topics, posts, news, forumComments, newsComments, stories, topicTitleById, articleTitleById, searchLower]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -401,6 +411,7 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
                       item={item}
                       contentType={contentType}
                       topicTitleById={topicTitleById}
+                      articleTitleById={articleTitleById}
                       isSelected={selectedId === (item as { id: number }).id}
                       onSelect={() => {
                         setSelectedId((item as { id: number }).id);
@@ -480,6 +491,7 @@ export default function AdminContentFeature(props: AdminContentFeatureProps) {
                 item={selectedItem}
                 contentType={contentType}
                 topicTitleById={topicTitleById}
+                articleTitleById={articleTitleById}
                 isEditing={isEditing}
                 onEdit={() => setIsEditing(true)}
                 onCancelEdit={() => setIsEditing(false)}

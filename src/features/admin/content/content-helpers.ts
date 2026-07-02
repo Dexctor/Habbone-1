@@ -94,14 +94,25 @@ export function getItemTitle(
   item: ContentItem,
   contentType: ContentType,
   topicTitleById: Record<number, string>,
+  articleTitleById: Record<number, string> = {},
 ): string {
   if (contentType === "topics") return (item as AdminTopic).titulo || "(sans titre)";
   if (contentType === "articles") return (item as AdminArticle).titulo || "(sans titre)";
   if (contentType === "posts") {
-    return topicTitleById[(item as AdminPost).id_topico ?? 0] || `Sujet #${(item as AdminPost).id_topico}`;
+    const topicId = (item as AdminPost).id_topico ?? 0;
+    const title = topicTitleById[topicId];
+    return title ? `Réponse sur « ${title} »` : `Réponse sur le sujet #${topicId}`;
   }
-  if (contentType === "forumComments") return `Commentaire sujet #${(item as AdminForumComment).id_forum}`;
-  if (contentType === "newsComments") return `Commentaire article #${(item as AdminNewsComment).id_noticia}`;
+  if (contentType === "forumComments") {
+    const topicId = (item as AdminForumComment).id_forum ?? 0;
+    const title = topicTitleById[topicId];
+    return title ? `Commentaire sur « ${title} »` : `Commentaire sur le sujet #${topicId}`;
+  }
+  if (contentType === "newsComments") {
+    const articleId = (item as AdminNewsComment).id_noticia ?? 0;
+    const title = articleTitleById[articleId];
+    return title ? `Commentaire sur « ${title} »` : `Commentaire sur l'article #${articleId}`;
+  }
   return (item as AdminStory).titulo || `Story #${(item as AdminStory).id}`;
 }
 
@@ -127,8 +138,52 @@ export function resolveAssetUrl(value?: string | null): string | null {
  */
 export function extractExcerpt(html: string | null | undefined, max = 120): string {
   if (!html) return "";
-  const plain = String(html).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const decoded = decodeHtmlEntities(String(html));
+  const plain = decodeHtmlEntities(decoded)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (plain.length <= max) return plain;
   return plain.slice(0, max - 1).trimEnd() + "…";
+}
+
+export function decodeHtmlEntities(value: string): string {
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    copy: "©",
+    eacute: "é",
+    egrave: "è",
+    ecirc: "ê",
+    agrave: "à",
+    acirc: "â",
+    ccedil: "ç",
+    icirc: "î",
+    iuml: "ï",
+    ocirc: "ô",
+    ugrave: "ù",
+    ucirc: "û",
+    nbsp: " ",
+    quot: '"',
+    lt: "<",
+    gt: ">",
+  };
+
+  return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity: string) => {
+    const normalized = entity.toLowerCase();
+    if (normalized.startsWith("#x")) {
+      const code = Number.parseInt(normalized.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    if (normalized.startsWith("#")) {
+      const code = Number.parseInt(normalized.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    return named[normalized] ?? match;
+  });
 }
 

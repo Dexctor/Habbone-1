@@ -26,17 +26,19 @@ export function ContentListItem({
   item,
   contentType,
   topicTitleById,
+  articleTitleById,
   isSelected,
   onSelect,
 }: {
   item: ContentItem;
   contentType: ContentType;
   topicTitleById: Record<number, string>;
+  articleTitleById?: Record<number, string>;
   isSelected: boolean;
   onSelect: () => void;
 }) {
   const itemId = (item as { id: number }).id;
-  const title = getItemTitle(item, contentType, topicTitleById);
+  const title = getItemTitle(item, contentType, topicTitleById, articleTitleById);
   const author = (item as { autor?: string | null }).autor || "Inconnu";
   const date = resolveItemDate(item);
 

@@ -32,6 +32,7 @@ import {
   type ContentItem,
   type ContentType,
   type ServerActionFn,
+  decodeHtmlEntities,
   getItemTitle,
   resolveAssetUrl,
   resolveItemDate,
@@ -50,6 +51,7 @@ export function ContentDetailPanel({
   item,
   contentType,
   topicTitleById,
+  articleTitleById,
   isEditing,
   onEdit,
   onCancelEdit,
@@ -59,6 +61,7 @@ export function ContentDetailPanel({
   item: ContentItem;
   contentType: ContentType;
   topicTitleById: Record<number, string>;
+  articleTitleById?: Record<number, string>;
   isEditing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
@@ -68,7 +71,7 @@ export function ContentDetailPanel({
   const [formState, setFormState] = useState<Record<string, string | boolean>>({});
   const [detailTab, setDetailTab] = useState<"preview" | "metadata">("preview");
   const itemId = (item as { id: number }).id;
-  const title = getItemTitle(item, contentType, topicTitleById) || "(sans titre)";
+  const title = getItemTitle(item, contentType, topicTitleById, articleTitleById) || "(sans titre)";
   const author = (item as { autor?: string | null }).autor || "Inconnu";
   const date = resolveItemDate(item);
 
@@ -213,6 +216,7 @@ export function ContentDetailPanel({
                 item={item}
                 contentType={contentType}
                 topicTitleById={topicTitleById}
+                articleTitleById={articleTitleById}
                 activeTab={detailTab}
               />
             </div>
@@ -260,11 +264,13 @@ function ViewContent({
   item,
   contentType,
   topicTitleById,
+  articleTitleById,
   activeTab,
 }: {
   item: ContentItem;
   contentType: ContentType;
   topicTitleById: Record<number, string>;
+  articleTitleById?: Record<number, string>;
   activeTab: "preview" | "metadata";
 }) {
   const itemId = (item as { id: number }).id;
@@ -292,6 +298,7 @@ function ViewContent({
             : contentType === "newsComments"
               ? (item as AdminNewsComment).comentario
               : null;
+  const normalizedBodyHtml = bodyHtml ? decodeHtmlEntities(bodyHtml) : null;
 
   const metaCards: Array<{ label: string; value: string }> = [];
   metaCards.push({ label: "ID", value: `#${itemId}` });
@@ -306,10 +313,12 @@ function ViewContent({
     });
   }
   if (contentType === "forumComments") {
-    metaCards.push({ label: "Sujet", value: `#${(item as AdminForumComment).id_forum}` });
+    const topicId = (item as AdminForumComment).id_forum ?? 0;
+    metaCards.push({ label: "Sujet", value: topicTitleById[topicId] || `Sujet #${topicId}` });
   }
   if (contentType === "newsComments") {
-    metaCards.push({ label: "Article", value: `#${(item as AdminNewsComment).id_noticia}` });
+    const articleId = (item as AdminNewsComment).id_noticia ?? 0;
+    metaCards.push({ label: "Article", value: articleTitleById?.[articleId] || `Article #${articleId}` });
   }
   if (contentType === "articles" && (item as AdminArticle).descricao) {
     metaCards.push({ label: "Résumé", value: (item as AdminArticle).descricao || "" });
@@ -354,19 +363,19 @@ function ViewContent({
         </div>
       )}
 
-      {bodyHtml && (
+      {normalizedBodyHtml && (
         <div className="overflow-hidden rounded-[5px] border border-[#141433] bg-[#25254D]">
           <div className="border-b border-[#141433] px-4 py-2.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white">Contenu</p>
           </div>
           <div
             className="prose prose-sm prose-invert max-w-none bg-[#1F1F3E] p-4"
-            dangerouslySetInnerHTML={{ __html: bodyHtml || "<em>Aucun contenu</em>" }}
+            dangerouslySetInnerHTML={{ __html: normalizedBodyHtml || "<em>Aucun contenu</em>" }}
           />
         </div>
       )}
 
-      {!imageUrl && !bodyHtml && (
+      {!imageUrl && !normalizedBodyHtml && (
         <div className="flex min-h-[220px] items-center justify-center rounded-[5px] border border-[#141433] bg-[#25254D] px-6 py-10 text-center">
           <p className="text-sm text-admin-text-tertiary">Aucun aperçu disponible pour ce contenu.</p>
         </div>
